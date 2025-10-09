@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+
+@theme {
+  /* Define custom colors as CSS custom properties */
+  --color-brand-red: #FF0000;
+  --color-black: #000000;
+  --color-gray: #333333;
+  --color-primary-blue: #ADD8E6;
+  --color-primary-blue-dark: #87CEEB;
+  --color-background-white: #FFFFFF;
+}
+
+
+/* Include the Tailwind layers */
+@layer base, components, utilities;
