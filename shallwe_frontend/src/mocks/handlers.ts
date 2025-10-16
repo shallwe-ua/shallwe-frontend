@@ -1,5 +1,4 @@
 import { http, HttpResponse } from 'msw'
-import { env } from '@/config/env'
 
 
 // --- Mock data structures ---
@@ -136,6 +135,27 @@ const mockApiUrl = '*/api/rest'
 const simulateDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 
+const getMultipartRepresentation = (formData: FormData): Record<string, any> => {
+  const repr: Record<string, any> = {}
+
+  for (const [key, value] of formData.entries()) {
+    if (repr[key] !== undefined) {
+      // Already exists -> convert to array (if not yet)
+      if (!Array.isArray(repr[key])) {
+        repr[key] = [repr[key]]
+      }
+      repr[key].push(value)
+    }
+    else {
+      // First occurrence
+      repr[key] = value
+    }
+  }
+
+  return repr
+}
+
+
 export const handlers = [
 
   // --- Auth ---
@@ -187,7 +207,8 @@ export const handlers = [
     console.log("Mock: Received create profile request")
 
     const formData = await request.formData()
-    console.log("Mock: Received profile data:", Object.fromEntries(formData.entries()))
+    const formDataRepr = getMultipartRepresentation(formData)
+    console.log('Mock: Received profile data:', formDataRepr)
 
     await simulateDelay(800)
     return new HttpResponse(null, { status: 201 })
@@ -199,7 +220,8 @@ export const handlers = [
     console.log("Mock: Received update profile request")
 
     const formData = await request.formData()
-    console.log("Mock: Received profile update data:", Object.fromEntries(formData.entries()))
+    const formDataRepr = getMultipartRepresentation(formData)
+    console.log('Mock: Received profile data:', formDataRepr)
 
     await simulateDelay(600)
     return HttpResponse.json(mockUserProfile) // Return "updated" profile data

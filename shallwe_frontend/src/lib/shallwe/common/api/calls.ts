@@ -8,7 +8,7 @@ export interface ApiError {
 }
 
 
-const getCookie = (name: string): string | undefined => {
+export const getCookie = (name: string): string | undefined => {
   if (typeof document === 'undefined') return undefined // Guard for server-side execution
 
   const value = ` ${document.cookie}`
@@ -21,7 +21,7 @@ const getCookie = (name: string): string | undefined => {
 
 
 // --- BASE API CALL FUNCTION (TO EXTEND) ---
-const baseApiCall = async (
+export const baseApiCall = async (
   endpoint: string, options: RequestInit = {}, serverCookies?: string // Optional cookies string passed from server context (e.g., middleware)
 ): Promise<any> => {
 
@@ -99,7 +99,7 @@ const baseApiCall = async (
       return null
     }
 
-    return response.json()
+    return response.text().then(text => text ? JSON.parse(text) : null)
   }
 
   // Handle runtime errors (ours included)
@@ -113,114 +113,4 @@ const baseApiCall = async (
       throw new Error(`Network or unexpected error during API call to ${url}: ${(error as Error).message}`)
     }
   }
-}
-
-
-// --- SPECIFIC API CALLS ---
-// --- Auth ---
-// Login
-export const loginGoogle = async (code: string): Promise<any> => {
-  return baseApiCall('auth/login/google/', {
-    method: 'POST',
-    body: { code } as any,
-  })
-}
-
-
-// Logout
-export const logout = async (): Promise<void> => {
-  await baseApiCall('auth/logout/', {
-    method: 'POST',
-  })  // Note: The backend handles cookie invalidation. Frontend state cleanup is separate too.
-}
-
-
-// --- Access ---
-// Profile status
-export const getProfileStatus = async (serverCookies?: string): Promise<{ status: number }> => {
-  try {
-    await baseApiCall('access/profile-status/', {}, serverCookies)
-    return { status: 200 }  // Authorized and profile exists
-  }
-
-  catch (error) {  // Catch expected (403/404), re-throw others
-    const apiError = error as ApiError
-
-    if (apiError.details && 'status' in apiError.details) {
-      if (apiError.details.status === 403) {
-        return { status: 403 }  // Unauthorized
-      }
-      else if (apiError.details.status === 404) {
-        return { status: 404 }  // Authorized, but no profile
-      }
-      throw error
-    }
-    else {  // If details don't contain status, it's an unexpected issue
-      throw error
-    }
-  }
-}
-
-
-// --- Profile ---
-// Read profile
-export const getProfile = async (): Promise<any> => {
-  return baseApiCall('profile/me/')
-}
-
-
-// Create profile
-export const createProfile = async (profileData: FormData): Promise<any> => {
-  return baseApiCall('profile/me/', {
-    method: 'POST',
-    body: profileData,
-  })
-}
-
-
-// Update profile
-export const updateProfile = async (profileData: FormData): Promise<any> => {
-  return baseApiCall('profile/me/', {
-    method: 'PATCH',
-    body: profileData,
-  })
-}
-
-
-// Update profile visibility
-export const updateProfileVisibility = async (isHidden: boolean): Promise<any> => {
-  return baseApiCall('profile/visibility/', {
-    method: 'PATCH',
-    body: { is_hidden: isHidden } as any,
-  })
-}
-
-
-// --- Locations ---
-// Search locations
-export const searchLocations = async (query: string): Promise<any> => {
-  const params = new URLSearchParams({ query })
-  return baseApiCall(`locations/search/?${params}`)
-}
-
-
-// --- Facecheck ---
-// Perform facecheck
-export const performFacecheck = async (imageFile: File): Promise<any> => {
-  const formData = new FormData()
-  formData.append('image', imageFile)
-
-  return baseApiCall('photo/facecheck/', {
-    method: 'POST',
-    body: formData,
-  })
-}
-
-
-// --- User ---
-// Delete user
-export const deleteUser = async (): Promise<void> => {
-  await baseApiCall('auth/user/', {
-    method: 'DELETE',
-  })
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { env } from '@/config/env'
-import { getProfileStatus } from '@/lib/api'
+import { getProfileStatus } from '@/lib/shallwe/access/api/calls'
 
 
 const apiBaseUrl = env.NEXT_PUBLIC_SHALLWE_API_BASE_URL_EXTERNAL

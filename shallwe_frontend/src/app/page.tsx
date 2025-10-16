@@ -4,7 +4,8 @@
 import { useState, useEffect, useRef } from 'react'
 
 import { env } from '@/config/env'
-import { loginGoogle, ApiError } from '@/lib/api'
+import { ApiError } from '@/lib/shallwe/common/api/calls'
+import { loginGoogle } from '@/lib/shallwe/auth/api/calls'
 
 
 export default function LandingPage() {
@@ -69,7 +70,8 @@ export default function LandingPage() {
   }
 
 
-  useEffect(() => {  // Effect to check for code and finish auth flow
+  // Effect to check for code and finish auth flow after redirect back from Google
+  useEffect(() => {
     if (typeof window === 'undefined') return
 
     const handleHomeLoad = async () => {

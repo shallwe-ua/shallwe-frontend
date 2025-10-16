@@ -4,7 +4,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-import { ApiError, logout } from '@/lib/api'
+import { ApiError } from '@/lib/shallwe/common/api/calls'
+import { logout } from '@/lib/shallwe/auth/api/calls'
+
 
 
 const Header = () => {
