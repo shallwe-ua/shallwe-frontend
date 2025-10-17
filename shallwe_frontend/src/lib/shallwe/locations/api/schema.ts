@@ -26,6 +26,16 @@ interface OtherPplReadFields {
 }
 
 
+export interface GenericLocationReadFields {  // For iterating over different types of locations
+  hierarchy: string
+  region_name?: string
+  subregion_name?: string
+  ppl_name?: string
+  district_name?: string
+  districts?: DistrictReadFields[]
+}
+
+
 export interface LocationsReadFields {
   regions: RegionReadFields[]
   cities: CityReadFields[]

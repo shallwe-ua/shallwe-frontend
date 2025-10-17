@@ -1,7 +1,7 @@
 'use client'
 
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { TagsInput } from "react-tag-input-component"
@@ -14,6 +14,7 @@ import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 
 import ProfilePhoto from '@/app/components/profile/ProfilePhoto'
+import Locations from '../components/profile/Locations'
 
 
 // Dividing visual flow in steps for better UX
@@ -56,8 +57,8 @@ export default function ProfileSetupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const photoInputRef = useRef<HTMLInputElement>(null)
   const [isAboutAccordionOpen, setIsAboutAccordionOpen] = useState(false)
+  const [locationsApiError, setLocationsApiError] = useState<string | null>(null)
   
 
   // Update the photo handler to interact with the PhotoCropper component
@@ -87,6 +88,11 @@ export default function ProfileSetupPage() {
   };
 
 
+  const clearLocationsApiError = () => {
+     if (locationsApiError) {
+         setLocationsApiError(null);
+     }
+  }
 
 
   const updateFormState = <S extends keyof ProfileCreateFormState, F extends keyof ProfileCreateFormState[S]>(
@@ -741,7 +747,7 @@ export default function ProfileSetupPage() {
             {/* End of Optional Fields Accordion */}
 
           </div>
-        );
+        )
       
       // Step 3 Rent
       case 2:
@@ -827,6 +833,19 @@ export default function ProfileSetupPage() {
                 {errors['rent_preferences.max_rent_duration_level'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.max_rent_duration_level']}</p>}
             </div>
             {/* Add room_sharing_level (select) and locations search component */}
+            {/* Add Location Search Component */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Locations (Select up to 30, no overlaps)
+                </label>
+                <Locations
+                    selectedLocations={formState.rent_preferences.locations as string[]} 
+                    onLocationsChange={(newLocations) => updateFormState('rent_preferences', 'locations', newLocations)}
+                    error={locationsApiError || errors['rent_preferences.locations']} // Pass error from main validator or specific API error
+                    onClearError={clearLocationsApiError} // Pass function to clear the specific API error
+                />
+            </div>
+            {/* End of Location Search Component */}
             <p className="text-sm text-gray-500">[Add room sharing level and locations search here]</p>
           </div>
         )
