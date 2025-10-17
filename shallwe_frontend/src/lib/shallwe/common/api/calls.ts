@@ -99,7 +99,7 @@ export const baseApiCall = async (
       return null
     }
 
-    return response.text().then(text => text ? JSON.parse(text) : null)
+    return response.text().then(text => text ? JSON.parse(text) : null)  // Avoid error when body is empty
   }
 
   // Handle runtime errors (ours included)
