@@ -13,7 +13,7 @@ import { validateProfileCreateFields, ValidationResult } from '@/lib/shallwe/pro
 import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 
-import ProfilePhoto from '@/app/components/profile/ProfilePhoto'
+import ProfilePhoto from '../components/profile/ProfilePhoto'
 import Locations from '../components/profile/Locations'
 
 
@@ -810,8 +810,9 @@ export default function ProfileSetupPage() {
                 </select>
                 {errors['rent_preferences.min_rent_duration_level'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.min_rent_duration_level']}</p>}
             </div>
-             {/* max_rent_duration_level (select) */}
-             <div>
+
+            {/* max_rent_duration_level (select) */}
+            <div>
                 <label htmlFor="max_rent_duration_level" className="block text-sm font-medium text-gray-700">
                   Max Rent Duration Level
                 </label>
@@ -832,7 +833,29 @@ export default function ProfileSetupPage() {
                 </select>
                 {errors['rent_preferences.max_rent_duration_level'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.max_rent_duration_level']}</p>}
             </div>
-            {/* Add room_sharing_level (select) and locations search component */}
+
+            {/* room_sharing_level (select) - Add this block */}
+            <div>
+                <label htmlFor="room_sharing_level" className="block text-sm font-medium text-gray-700">
+                  Room Sharing Level
+                </label>
+                <select
+                  id="room_sharing_level"
+                  value={formState.rent_preferences.room_sharing_level ?? ''} // Use ?? '' to handle null
+                  onChange={(e) => updateFormState('rent_preferences', 'room_sharing_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Assuming 1 | 2 | 3 based on API spec for rent_preferences
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                    errors['rent_preferences.room_sharing_level'] ? 'border-red-500' : ''
+                  }`}
+                >
+                  <option value="">Select...</option>
+                  <option value="1">Private Room Only</option>
+                  <option value="2">Shared Room Possible</option>
+                  <option value="3">Flexible (Any Arrangement)</option>
+                </select>
+                {errors['rent_preferences.room_sharing_level'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.room_sharing_level']}</p>}
+            </div>
+            {/* End of room_sharing_level field */}
+
             {/* Add Location Search Component */}
             <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -846,7 +869,6 @@ export default function ProfileSetupPage() {
                 />
             </div>
             {/* End of Location Search Component */}
-            <p className="text-sm text-gray-500">[Add room sharing level and locations search here]</p>
           </div>
         )
       default:
