@@ -14,6 +14,8 @@ export interface ProfileProfileReadFields {
 
 export interface ProfileReadData {
   profile: ProfileProfileReadFields
-  rent_preferences: RentPreferencesBaseFields & LocationsReadFields
+  rent_preferences: RentPreferencesBaseFields & {
+    locations: LocationsReadFields
+  }
   about: AboutBaseFields
 }
