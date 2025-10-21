@@ -2,9 +2,9 @@ import React, { useState, useCallback, useRef, useEffect } from 'react'
 
 import Cropper, { Area, Point } from 'react-easy-crop' // Import Cropper and required types, remove Size if not needed elsewhere
 
-import { performFacecheck } from '@/lib/shallwe/photo/api/calls' // Import the facecheck API call
 import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError type
-import { validateProfilePhotoFile } from '@/lib/shallwe/profile/formstates/validators' // Import THE specific validator
+import { performFacecheck } from '@/lib/shallwe/photo/api/calls' // Import the facecheck API call
+import { validateProfilePhotoFile } from '@/lib/shallwe/photo/formstates/validators' // Import THE specific validator
 
 
 type Crop = Point // Type alias for {x, y} point

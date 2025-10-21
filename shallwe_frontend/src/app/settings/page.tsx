@@ -8,6 +8,7 @@ import { getProfile, updateProfileVisibility } from '@/lib/shallwe/profile/api/c
 import { deleteUser } from '@/lib/shallwe/auth/api/calls' // Import delete API call
 import { ProfileReadData } from '@/lib/shallwe/profile/api/schema/read' // Import the read data type
 import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError type
+import { ProfileEditView } from '../components/profile/ProfileEditView'
 
 
 export default function SettingsPage() {
@@ -18,58 +19,75 @@ export default function SettingsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
 
   const defaultProfileImage = "/img/profile/default192.webp"
   const [defaultImageFailed, setDefaultImageFailed] = useState(false)
 
+  const handleEditClick = () => {
+    setIsEditing(true)
+    setApiError(null) // Clear any previous errors when starting edit
+  }
+
+  const handleEditSave = () => {
+    setIsEditing(false) // Set isEditing back to false on successful save
+    fetchProfile()
+  }
+
+  const handleEditCancel = () => {
+    setIsEditing(false) // Set isEditing back to false on cancel
+    setApiError(null) // Clear any errors set during editing
+  }
+
+
+  const fetchProfile = async () => {
+    try {
+      setIsLoading(true) // Set loading state
+      setApiError(null) // Clear previous errors
+      const data = await getProfile()
+      setProfileData(data)
+      console.log("Profile data fetched successfully:", data)
+    } catch (error) {
+      console.error("Error fetching profile in SettingsPage client component:", error)
+      // Handle potential 404 (profile not found) or 403 (unauthorized) from getProfile
+      // If API returns 403/404, redirect to setup or landing.
+      // Let's assume getProfile throws an error object compatible with ApiError.
+      if (error && typeof error === 'object' && 'details' in error) {
+        const err = error as ApiError
+        // Check if it's a 403 or 404 error from the API call
+        // This requires checking the response status within the error object,
+        // which baseApiCall should provide.
+        // Example: if (err.details.status === 404 || err.details.status === 403) { ... }
+        // For now, just set the error message.
+        let errorMessage = "Failed to load profile."
+        if (typeof err.details === 'string') {
+            errorMessage = err.details
+        } else if (typeof err.details === 'object' && err.details && 'error' in err.details) {
+            errorMessage = JSON.stringify(err.details.error)
+        } else if (err.details && 'status' in err.details) {
+            // Assuming err.details contains the response object or status
+            if (err.details.status === 404 || err.details.status === 403) {
+                // Redirect to setup or landing if profile not found/unauthorized
+                // This mimics the server-side redirect logic
+                console.log("Profile not found or unauthorized, redirecting...")
+                router.push('/') // Redirect to landing as a safe fallback
+                return // Exit useEffect after redirect
+            }
+        }
+        setApiError(errorMessage)
+      } else if (error instanceof Error) {
+        setApiError(error.message)
+      } else {
+        setApiError("An unexpected error occurred while loading your profile.")
+      }
+    } finally {
+      setIsLoading(false) // Clear loading state
+    }
+  }
+
   // Fetch profile data on component mount
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setIsLoading(true) // Set loading state
-        setApiError(null) // Clear previous errors
-        const data = await getProfile()
-        setProfileData(data)
-        console.log("Profile data fetched successfully:", data)
-      } catch (error) {
-        console.error("Error fetching profile in SettingsPage client component:", error)
-        // Handle potential 404 (profile not found) or 403 (unauthorized) from getProfile
-        // If API returns 403/404, redirect to setup or landing.
-        // Let's assume getProfile throws an error object compatible with ApiError.
-        if (error && typeof error === 'object' && 'details' in error) {
-          const err = error as ApiError
-          // Check if it's a 403 or 404 error from the API call
-          // This requires checking the response status within the error object,
-          // which baseApiCall should provide.
-          // Example: if (err.details.status === 404 || err.details.status === 403) { ... }
-          // For now, just set the error message.
-          let errorMessage = "Failed to load profile."
-          if (typeof err.details === 'string') {
-              errorMessage = err.details
-          } else if (typeof err.details === 'object' && err.details && 'error' in err.details) {
-              errorMessage = JSON.stringify(err.details.error)
-          } else if (err.details && 'status' in err.details) {
-              // Assuming err.details contains the response object or status
-              if (err.details.status === 404 || err.details.status === 403) {
-                  // Redirect to setup or landing if profile not found/unauthorized
-                  // This mimics the server-side redirect logic
-                  console.log("Profile not found or unauthorized, redirecting...")
-                  router.push('/') // Redirect to landing as a safe fallback
-                  return // Exit useEffect after redirect
-              }
-          }
-          setApiError(errorMessage)
-        } else if (error instanceof Error) {
-          setApiError(error.message)
-        } else {
-          setApiError("An unexpected error occurred while loading your profile.")
-        }
-      } finally {
-        setIsLoading(false) // Clear loading state
-      }
-    }
-
     fetchProfile()
   }, [router]) // Add router to dependency array if used for redirect
 
@@ -135,13 +153,6 @@ export default function SettingsPage() {
       }
       setApiError(errorMessage)
     }
-  }
-
-  const handleEditClick = () => {
-    // Placeholder: Navigate to an edit page or enable edit mode within this component
-    // For now, just log or show an alert
-    console.log("Edit button clicked. Navigate to edit page or enable edit mode.")
-    // Example navigation: router.push('/settings/edit')
   }
 
   // --- HELPER FUNCTIONS (Copied from ProfileReadView) ---
@@ -220,13 +231,16 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gradient-to-br from-background-white to-primary-blue flex flex-col items-center justify-center p-4">
       <div className="max-w-4xl w-full bg-white rounded-xl shadow-md p-8 space-y-6">
         <div className="flex justify-between items-start">
-            <h1 className="text-2xl font-bold text-black">Your Profile Settings</h1>
-            <button
-                onClick={handleEditClick}
-                className="ml-3 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-                Edit
-            </button>
+          <h1 className="text-2xl font-bold text-black">Your Profile Settings</h1>
+          {/* Show Edit button only when not editing */}
+          {!isEditing && (
+              <button
+                  onClick={handleEditClick}
+                  className="ml-3 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                  Edit
+              </button>
+          )}
         </div>
 
         {/* API Error Display */}
@@ -259,187 +273,196 @@ export default function SettingsPage() {
         </div>
 
         {/* Profile Data Display */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Photo and Basic Info */}
-          <div className="md:col-span-1 flex flex-col items-center"> {/* Added flex container for centering text fallback */}
-            {/* Conditional rendering: show img if profile photo or default is okay, otherwise show fallback div */}
-            {!defaultImageFailed ? (
-              <img
-                src={profileData.profile.photo_w64 || defaultProfileImage}
-                alt={`Profile picture of ${profileData.profile.name}`}
-                className="w-32 h-32 rounded-full object-cover mx-auto"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement
-                  // Check if the *currently loaded* src was the default image and it failed
-                  if (target.src.includes(defaultProfileImage)) {
-                    // The default image itself failed to load.
-                    // Set the state to trigger a re-render and show the fallback.
-                    setDefaultImageFailed(true)
-                  } else {
-                    // The profile photo failed, try the default.
-                    // Only set to default if it's not already trying to load the default.
-                    if (target.src !== defaultProfileImage) {
-                      target.src = defaultProfileImage
-                    }
-                    // If setting to default causes onError again, it will be caught by the check above.
-                  }
-                }}
-              />
-            ) : (
-              // Fallback div with centered text when default image also fails
-              <div className="w-32 h-32 rounded-full bg-gray-200 mx-auto flex items-center justify-center">
-                <span className="text-gray-500 text-xs text-center">Woops, image not found :(</span>
-              </div>
-            )}
-            <h2 className="text-xl font-semibold text-center mt-2">{profileData.profile.name}</h2>
-            <p className="text-gray-600 text-center">({profileData.profile.is_hidden ? 'Hidden' : 'Visible'})</p>
-          </div>
-
-          {/* Main Details */}
-          <div className="md:col-span-2 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Birth Date</p>
-                <p className="font-medium">{profileData.about.birth_date || 'Not specified'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Gender</p>
-                <p className="font-medium">{formatGender(profileData.about.gender)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Is Couple</p>
-                <p className="font-medium">{formatBoolean(profileData.about.is_couple)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Has Children</p>
-                <p className="font-medium">{formatBoolean(profileData.about.has_children)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Occupation</p>
-                <p className="font-medium">{formatOccupation(profileData.about.occupation_type)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Drinking Level</p>
-                <p className="font-medium">{formatLevel(profileData.about.drinking_level, 'drinking')}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Smoking Level</p>
-                <p className="font-medium">{formatLevel(profileData.about.smoking_level, 'smoking')}</p>
-              </div>
-            </div>
-
-            {/* Rent Preferences */}
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Rent Preferences</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Min Budget</p>
-                  <p className="font-medium">{profileData.rent_preferences.min_budget}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Max Budget</p>
-                  <p className="font-medium">{profileData.rent_preferences.max_budget}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Min Duration</p>
-                  <p className="font-medium">{formatLevel(profileData.rent_preferences.min_rent_duration_level, 'duration')}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Max Duration</p>
-                  <p className="font-medium">{formatLevel(profileData.rent_preferences.max_rent_duration_level, 'duration')}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Room Sharing</p>
-                  <p className="font-medium">{formatLevel(profileData.rent_preferences.room_sharing_level, 'room_sharing')}</p>
-                </div>
-              </div>
-              <div className="mt-2">
-                  <p className="text-sm text-gray-500">Locations</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                      {profileData.rent_preferences.locations &&
-                      (profileData.rent_preferences.locations.regions?.length > 0 ||
-                        profileData.rent_preferences.locations.cities?.length > 0 ||
-                        profileData.rent_preferences.locations.other_ppls?.length > 0) ? (
-                          <>
-                              {profileData.rent_preferences.locations.regions?.map((region, index) => (
-                                  <span key={`region-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                      {region.region_name}
-                                  </span>
-                              ))}
-                              {profileData.rent_preferences.locations.cities?.map((city, index) => (
-                                  <span key={`city-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                      {city.ppl_name}, {city.region_name}
-                                  </span>
-                              ))}
-                              {profileData.rent_preferences.locations.other_ppls?.map((otherPpl, index) => (
-                                  <span key={`other_ppl-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                      {otherPpl.ppl_name}{otherPpl.subregion_name ? `, ${otherPpl.subregion_name}` : ''}, {otherPpl.region_name}
-                                  </span>
-                              ))}
-                          </>
-                      ) : (
-                          <p className="text-gray-600">Вся Україна (Default)</p>
-                      )}
+        {isEditing ? (
+            <ProfileEditView
+                initialProfileData={profileData!} // Pass the loaded profile data
+                onSave={handleEditSave}           // Pass the save handler
+                onCancel={handleEditCancel}       // Pass the cancel handler
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Photo and Basic Info */}
+              <div className="md:col-span-1 flex flex-col items-center"> {/* Added flex container for centering text fallback */}
+                {/* Conditional rendering: show img if profile photo or default is okay, otherwise show fallback div */}
+                {!defaultImageFailed ? (
+                  <img
+                    src={profileData.profile.photo_w64 || defaultProfileImage}
+                    alt={`Profile picture of ${profileData.profile.name}`}
+                    className="w-32 h-32 rounded-full object-cover mx-auto"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      // Check if the *currently loaded* src was the default image and it failed
+                      if (target.src.includes(defaultProfileImage)) {
+                        // The default image itself failed to load.
+                        // Set the state to trigger a re-render and show the fallback.
+                        setDefaultImageFailed(true)
+                      } else {
+                        // The profile photo failed, try the default.
+                        // Only set to default if it's not already trying to load the default.
+                        if (target.src !== defaultProfileImage) {
+                          target.src = defaultProfileImage
+                        }
+                        // If setting to default causes onError again, it will be caught by the check above.
+                      }
+                    }}
+                  />
+                ) : (
+                  // Fallback div with centered text when default image also fails
+                  <div className="w-32 h-32 rounded-full bg-gray-200 mx-auto flex items-center justify-center">
+                    <span className="text-gray-500 text-xs text-center">Woops, image not found :(</span>
                   </div>
+                )}
+                <h2 className="text-xl font-semibold text-center mt-2">{profileData.profile.name}</h2>
+                <p className="text-gray-600 text-center">({profileData.profile.is_hidden ? 'Hidden' : 'Visible'})</p>
               </div>
-            </div>
 
-            {/* Other Details */}
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Other Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Neighbourliness</p>
-                  <p className="font-medium">{formatLevel(profileData.about.neighbourliness_level, 'neighbourliness')}</p>
+              {/* Main Details */}
+              <div className="md:col-span-2 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Birth Date</p>
+                    <p className="font-medium">{profileData.about.birth_date || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Gender</p>
+                    <p className="font-medium">{formatGender(profileData.about.gender)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Is Couple</p>
+                    <p className="font-medium">{formatBoolean(profileData.about.is_couple)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Has Children</p>
+                    <p className="font-medium">{formatBoolean(profileData.about.has_children)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Occupation</p>
+                    <p className="font-medium">{formatOccupation(profileData.about.occupation_type)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Drinking Level</p>
+                    <p className="font-medium">{formatLevel(profileData.about.drinking_level, 'drinking')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Smoking Level</p>
+                    <p className="font-medium">{formatLevel(profileData.about.smoking_level, 'smoking')}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Guests Level</p>
-                  <p className="font-medium">{formatLevel(profileData.about.guests_level, 'guests')}</p>
+
+                {/* Rent Preferences */}
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Rent Preferences</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Min Budget</p>
+                      <p className="font-medium">{profileData.rent_preferences.min_budget}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Max Budget</p>
+                      <p className="font-medium">{profileData.rent_preferences.max_budget}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Min Duration</p>
+                      <p className="font-medium">{formatLevel(profileData.rent_preferences.min_rent_duration_level, 'duration')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Max Duration</p>
+                      <p className="font-medium">{formatLevel(profileData.rent_preferences.max_rent_duration_level, 'duration')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Room Sharing</p>
+                      <p className="font-medium">{formatLevel(profileData.rent_preferences.room_sharing_level, 'room_sharing')}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                      <p className="text-sm text-gray-500">Locations</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                          {profileData.rent_preferences.locations &&
+                          (profileData.rent_preferences.locations.regions?.length > 0 ||
+                            profileData.rent_preferences.locations.cities?.length > 0 ||
+                            profileData.rent_preferences.locations.other_ppls?.length > 0) ? (
+                              <>
+                                  {profileData.rent_preferences.locations.regions?.map((region, index) => (
+                                      <span key={`region-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                          {region.region_name}
+                                      </span>
+                                  ))}
+                                  {profileData.rent_preferences.locations.cities?.map((city, index) => (
+                                      <span key={`city-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                          {city.ppl_name}, {city.region_name}
+                                      </span>
+                                  ))}
+                                  {profileData.rent_preferences.locations.other_ppls?.map((otherPpl, index) => (
+                                      <span key={`other_ppl-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                          {otherPpl.ppl_name}{otherPpl.subregion_name ? `, ${otherPpl.subregion_name}` : ''}, {otherPpl.region_name}
+                                      </span>
+                                  ))}
+                              </>
+                          ) : (
+                              <p className="text-gray-600">Вся Україна (Default)</p>
+                          )}
+                      </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Parties Level</p>
-                  <p className="font-medium">{formatLevel(profileData.about.parties_level, 'parties')}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Bedtime Level</p>
-                  <p className="font-medium">{formatLevel(profileData.about.bedtime_level, 'bedtime')}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Neatness Level</p>
-                  <p className="font-medium">{formatLevel(profileData.about.neatness_level, 'neatness')}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Has Cats</p>
-                  <p className="font-medium">{formatBoolean(profileData.about.has_cats)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Has Dogs</p>
-                  <p className="font-medium">{formatBoolean(profileData.about.has_dogs)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Has Reptiles</p>
-                  <p className="font-medium">{formatBoolean(profileData.about.has_reptiles)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Has Birds</p>
-                  <p className="font-medium">{formatBoolean(profileData.about.has_birds)}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">Other Animals</p>
-                  <p className="font-medium">{joinArray(profileData.about.other_animals)}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">Interests</p>
-                  <p className="font-medium">{joinArray(profileData.about.interests)}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">Bio</p>
-                  <p className="font-medium">{profileData.about.bio || 'Not specified'}</p>
+
+                {/* Other Details */}
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Other Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Neighbourliness</p>
+                      <p className="font-medium">{formatLevel(profileData.about.neighbourliness_level, 'neighbourliness')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Guests Level</p>
+                      <p className="font-medium">{formatLevel(profileData.about.guests_level, 'guests')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Parties Level</p>
+                      <p className="font-medium">{formatLevel(profileData.about.parties_level, 'parties')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Bedtime Level</p>
+                      <p className="font-medium">{formatLevel(profileData.about.bedtime_level, 'bedtime')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Neatness Level</p>
+                      <p className="font-medium">{formatLevel(profileData.about.neatness_level, 'neatness')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Has Cats</p>
+                      <p className="font-medium">{formatBoolean(profileData.about.has_cats)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Has Dogs</p>
+                      <p className="font-medium">{formatBoolean(profileData.about.has_dogs)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Has Reptiles</p>
+                      <p className="font-medium">{formatBoolean(profileData.about.has_reptiles)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Has Birds</p>
+                      <p className="font-medium">{formatBoolean(profileData.about.has_birds)}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500">Other Animals</p>
+                      <p className="font-medium">{joinArray(profileData.about.other_animals)}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500">Interests</p>
+                      <p className="font-medium">{joinArray(profileData.about.interests)}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500">Bio</p>
+                      <p className="font-medium">{profileData.about.bio || 'Not specified'}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          )}
+
 
         {/* Delete Button */}
         <div className="flex justify-end mt-6">
@@ -468,7 +491,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Spacer element for vertical centering (hidden) */}
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203</span>
 
             {/* Main Modal Content Container - Ensure it's above the overlay */}
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-[51]"> {/* Increased z-index slightly to ensure it's above the overlay */}

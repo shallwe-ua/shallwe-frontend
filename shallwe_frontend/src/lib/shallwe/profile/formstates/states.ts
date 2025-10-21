@@ -1,4 +1,6 @@
 import { ProfileCreateData } from "../api/schema/create"
+import { ProfileReadData } from "../api/schema/read"
+import { extractHierarchyStrings } from "./collectors/update"
 
 
 type UndefinedForbidden<T> = Exclude<T, undefined>
@@ -9,22 +11,17 @@ type ProfileCreateFormStateField<T> =
   UndefinedForbidden<T> | null
 
 
-// For FormState fields primitives are nullable
+// For CreateFormState fields primitives are nullable (for initial)
 // Undefined/optional is dropped everywhere to keep all fields explicitly tracked
 type ProfileCreateFormStateFieldsRequired<T> = {
   [K in keyof T]-?: ProfileCreateFormStateField<T[K]>
 }
 
 
-type ProfileFormStateProfileFields = ProfileCreateFormStateFieldsRequired<ProfileCreateData['profile']>
-type ProfileFormStateAboutFields = ProfileCreateFormStateFieldsRequired<ProfileCreateData['about']>
-type ProfileFormStateRentPreferencesFields = ProfileCreateFormStateFieldsRequired<ProfileCreateData['rent_preferences']>
-
-
 export interface ProfileCreateFormState {
-  profile: ProfileFormStateProfileFields
-  about: ProfileFormStateAboutFields
-  rent_preferences: ProfileFormStateRentPreferencesFields
+  profile: ProfileCreateFormStateFieldsRequired<ProfileCreateData['profile']>
+  about: ProfileCreateFormStateFieldsRequired<ProfileCreateData['about']>
+  rent_preferences: ProfileCreateFormStateFieldsRequired<ProfileCreateData['rent_preferences']>
 }
 
 
@@ -67,4 +64,68 @@ export const ProfileCreateFormStateInitial: ProfileCreateFormState = {
     room_sharing_level: null,
     locations: []
   }
+}
+
+
+// For CreateFormState fields primitives are nullable (for initial)
+// Undefined/optional is dropped everywhere to keep all fields explicitly tracked
+type ProfileUpdateFormStateFieldsRequired<T> = {
+  [K in keyof T]-?: UndefinedForbidden<T[K]>
+}
+
+
+export interface ProfileUpdateFormState {
+  profile: ProfileUpdateFormStateFieldsRequired<Omit<ProfileCreateData['profile'], 'photo'>> & {
+    photo: File | null
+  }
+  about: ProfileUpdateFormStateFieldsRequired<ProfileCreateData['about']>
+  rent_preferences: ProfileUpdateFormStateFieldsRequired<ProfileCreateData['rent_preferences']>
+}
+
+
+export const getProfileUpdateFormStateInitial = (initialProfileData: ProfileReadData): ProfileUpdateFormState => {
+ // Initialize editFormState from initialProfileData
+  // Required fields are pre-populated from profileData
+  const ProfileUpdateFormStateInitial: ProfileUpdateFormState = {
+    profile: {
+      name: initialProfileData.profile.name,
+      photo: null, // Initialize photo to null, meaning "no change intended". The cropper will show the existing photo URL.
+    },
+    about: {
+      birth_date: initialProfileData.about.birth_date,
+      gender: initialProfileData.about.gender,
+      is_couple: initialProfileData.about.is_couple,
+      has_children: initialProfileData.about.has_children,
+      // Initialize other 'about' fields from profileData
+      occupation_type: initialProfileData.about.occupation_type,
+      drinking_level: initialProfileData.about.drinking_level,
+      smoking_level: initialProfileData.about.smoking_level,
+      smokes_iqos: initialProfileData.about.smokes_iqos,
+      smokes_vape: initialProfileData.about.smokes_vape,
+      smokes_tobacco: initialProfileData.about.smokes_tobacco,
+      smokes_cigs: initialProfileData.about.smokes_cigs,
+      neighbourliness_level: initialProfileData.about.neighbourliness_level,
+      guests_level: initialProfileData.about.guests_level,
+      parties_level: initialProfileData.about.parties_level,
+      bedtime_level: initialProfileData.about.bedtime_level,
+      neatness_level: initialProfileData.about.neatness_level,
+      has_cats: initialProfileData.about.has_cats,
+      has_dogs: initialProfileData.about.has_dogs,
+      has_reptiles: initialProfileData.about.has_reptiles,
+      has_birds: initialProfileData.about.has_birds,
+      other_animals: initialProfileData.about.other_animals || [],
+      interests: initialProfileData.about.interests || [],
+      bio: initialProfileData.about.bio,
+    },
+    rent_preferences: {
+      min_budget: initialProfileData.rent_preferences.min_budget,
+      max_budget: initialProfileData.rent_preferences.max_budget,
+      min_rent_duration_level: initialProfileData.rent_preferences.min_rent_duration_level,
+      max_rent_duration_level: initialProfileData.rent_preferences.max_rent_duration_level,
+      room_sharing_level: initialProfileData.rent_preferences.room_sharing_level,
+      locations: extractHierarchyStrings(initialProfileData.rent_preferences.locations), // Convert object to array
+    }
+  }
+
+  return ProfileUpdateFormStateInitial
 }

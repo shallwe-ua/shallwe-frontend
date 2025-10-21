@@ -2,14 +2,16 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { searchLocations } from '@/lib/shallwe/locations/api/calls'
 import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
 
-interface LocationSearchProps {
+
+interface LocationsProps {
   selectedLocations: string[]
   onLocationsChange: (newLocations: string[]) => void
   error?: string
   onClearError: () => void
 }
 
-const Locations: React.FC<LocationSearchProps> = ({
+
+const Locations: React.FC<LocationsProps> = ({
   selectedLocations,
   onLocationsChange,
   error,

@@ -8,8 +8,9 @@ import { TagsInput } from "react-tag-input-component"
 
 import { createProfile } from '@/lib/shallwe/profile/api/calls'
 import { ProfileCreateFormState, ProfileCreateFormStateInitial } from '@/lib/shallwe/profile/formstates/states' 
-import { collectProfileCreateDataFromState } from '@/lib/shallwe/profile/formstates/collectors'
-import { validateProfileCreateFields, ValidationResult } from '@/lib/shallwe/profile/formstates/validators'
+import { collectProfileCreateDataFromState } from '@/lib/shallwe/profile/formstates/collectors/create'
+import { validateProfileCreateFields } from '@/lib/shallwe/profile/formstates/validators/create'
+import { ValidationResult } from '@/lib/shallwe/profile/formstates/validators/common'
 import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 
@@ -63,34 +64,34 @@ export default function ProfileSetupPage() {
 
   // Update the photo handler to interact with the PhotoCropper component
   const handlePhotoCropped = (croppedFile: File) => {
-    updateFormState('profile', 'photo', croppedFile);
+    updateFormState('profile', 'photo', croppedFile)
     // Clear the error state for profile.photo when the photo state is updated
     // This happens implicitly when validateCurrentStep/validateAllFields runs next,
     // but we can clear it explicitly here if desired, or let validation handle it.
     // The key is that if the state is valid, the error should disappear on next validation run.
-  };
+  }
 
   // Callback for PhotoCropper to set error in the main page's state
   const handlePhotoError = (error: string) => {
     setErrors(prevErrors => ({
         ...prevErrors,
         'profile.photo': error // Set the specific field error
-    }));
-  };
+    }))
+  }
 
   // Callback for PhotoCropper to clear error in the main page's state
   const clearPhotoError = () => {
     setErrors(prevErrors => {
-        const newErrors = { ...prevErrors };
-        delete newErrors['profile.photo']; // Remove the specific field error
-        return newErrors;
-    });
-  };
+        const newErrors = { ...prevErrors }
+        delete newErrors['profile.photo'] // Remove the specific field error
+        return newErrors
+    })
+  }
 
 
   const clearLocationsApiError = () => {
      if (locationsApiError) {
-         setLocationsApiError(null);
+         setLocationsApiError(null)
      }
   }
 

@@ -1,4 +1,10 @@
-import { ProfileCreateFormState } from './states'
+import { validateProfilePhotoFile } from "@/lib/shallwe/photo/formstates/validators"
+import { ProfileCreateFormState } from "../states"
+
+
+export const getNestedValue = (obj: any, path: string): any => {
+  return path.split('.').reduce((current, key) => current?.[key], obj)
+}
 
 
 export interface ValidationResult {
@@ -7,7 +13,7 @@ export interface ValidationResult {
 }
 
 
-const isEmptyValue = (value: any): boolean => {
+export const isEmptyValue = (value: any): boolean => {
   return value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
 }
 
@@ -23,14 +29,12 @@ const getAge = (birthDate: Date): number => {
 }
 
 
-const RU_UA_CHARS = /^[а-яА-ЯёЁіІїЇєЄґҐ'`]+$/u
-const RU_UA_CHARS_WITH_HYPHEN = /^[а-яА-ЯёЁіІїЇєЄґҐ\-`]+$/u
-const RU_UA_CHARS_WITH_SPACE = /^[а-яА-ЯёЁіІїЇєЄґҐ\s\-`]+$/u
-const MAX_IMAGE_SIZE = 20 * 1024 * 1024  // 20 MB
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif']
+export const RU_UA_CHARS = /^[а-яА-ЯёЁіІїЇєЄґҐ'`]+$/u
+export const RU_UA_CHARS_WITH_HYPHEN = /^[а-яА-ЯёЁіІїЇєЄґҐ\-`]+$/u
+export const RU_UA_CHARS_WITH_SPACE = /^[а-яА-ЯёЁіІїЇєЄґҐ\s\-`]+$/u
 
 
-type ProfileCreateFieldValidator = (value: any, formData: ProfileCreateFormState) => string | null
+type ProfileFieldValidator = (value: any, formData: ProfileCreateFormState) => string | null
 
 
 interface StringListValidationConfig {
@@ -43,9 +47,10 @@ interface StringListValidationConfig {
 }
 
 
-const createStringListValidator = (config: StringListValidationConfig): ProfileCreateFieldValidator => {
+export const createStringListValidator = (config: StringListValidationConfig): ProfileFieldValidator => {
   return (value: string[] | null) => {
-    if (isEmptyValue(value)) return null
+    if (!Array.isArray(value)) return `${config.itemName} must be a list, not ${typeof value}.`
+    if (value.length === 0) return null // Empty list is a legit value
     
     if (value!.length > config.maxItems) {
       return `${config.itemName} list must have up to ${config.maxItems} items.`
@@ -74,7 +79,7 @@ const createStringListValidator = (config: StringListValidationConfig): ProfileC
 }
 
 
-const validators: Record<string, ProfileCreateFieldValidator> = {
+export const validators: Record<string, ProfileFieldValidator> = {
 
   'profile.name': (value: string | null) => {
     if (isEmptyValue(value)) return 'Name is required.'
@@ -85,11 +90,7 @@ const validators: Record<string, ProfileCreateFieldValidator> = {
 
   'profile.photo': (value: File | null) => {
     if (isEmptyValue(value)) return 'Photo is required.'
-    if (!ALLOWED_IMAGE_TYPES.includes(value!.type.toLowerCase())) {
-      return 'Photo must be JPG, JPEG, PNG, HEIC, or HEIF.'
-    }
-    if (value!.size > MAX_IMAGE_SIZE) return 'Photo size must be less than 20MB.'
-    return null
+    else return validateProfilePhotoFile(value!)
   },
 
   'about.birth_date': (value: string | null) => {
@@ -122,6 +123,46 @@ const validators: Record<string, ProfileCreateFieldValidator> = {
         return 'If smoking level is greater than 1, at least one smoking type must be selected.'
       }
     }
+    return null
+  },
+
+  'about.smokes_iqos': (value: boolean | null) => {
+    if (value === null || value === undefined) return 'Smokes IQOS field cannot be unset'
+    return null
+  },
+
+  'about.smokes_vape': (value: boolean | null) => {
+    if (value === null || value === undefined) return 'Smokes vape field cannot be unset'
+    return null
+  },
+
+  'about.smokes_tobacco': (value: boolean | null) => {
+    if (value === null || value === undefined) return 'Smokes tobacco field cannot be unset'
+    return null
+  },
+
+  'about.smokes_cigs': (value: boolean | null) => {
+    if (value === null || value === undefined) return 'Smokes cigarettes field cannot be unset'
+    return null
+  },
+
+  'about.has_cats': (value: boolean | null) => {
+    if (value === null || value === undefined) return 'Has cats field cannot be unset'
+    return null
+  },
+
+  'about.has_dogs': (value: boolean | null) => {
+    if (value === null || value === undefined) return 'Has dogs field cannot be unset'
+    return null
+  },
+
+  'about.has_reptiles': (value: boolean | null) => {
+    if (value === null || value === undefined) return 'Has reptiles field cannot be unset'
+    return null
+  },
+
+  'about.has_birds': (value: boolean | null) => {
+    if (value === null || value === undefined) return 'Has birds field cannot be unset'
     return null
   },
 
@@ -161,6 +202,21 @@ const validators: Record<string, ProfileCreateFieldValidator> = {
     return null
   },
 
+  'rent_preferences.min_rent_duration_level': (value: number | null) => {
+    if (value === null || value === undefined) return 'Min rent duration level field cannot be unset'
+    return null
+  },
+
+  'rent_preferences.max_rent_duration_level': (value: number | null) => {
+    if (value === null || value === undefined) return 'Max rent duration level field cannot be unset'
+    return null
+  },
+
+  'rent_preferences.room_sharing_level': (value: number | null) => {
+    if (value === null || value === undefined) return 'Room sharing level field cannot be unset'
+    return null
+  },
+
   'rent_preferences.locations': createStringListValidator({
     maxItems: 30,
     itemName: 'Locations'
@@ -168,7 +224,7 @@ const validators: Record<string, ProfileCreateFieldValidator> = {
 }
 
 
-const validateProfileCrossFieldRules = (
+export const validateProfileCrossFieldRules = (
   formData: ProfileCreateFormState,
   fieldsToValidate: string[]
 ): Record<string, string> => {
@@ -199,47 +255,4 @@ const validateProfileCrossFieldRules = (
   }
 
   return errors
-}
-
-
-const getNestedValue = (obj: any, path: string): any => {
-  return path.split('.').reduce((current, key) => current?.[key], obj)
-}
-
-
-export const validateProfileCreateFields = (
-  formState: ProfileCreateFormState, 
-  fieldsToValidate: string[]
-): ValidationResult => {
-  const errors: Record<string, string> = {}
-
-  // Validate individual fields
-  for (const fieldPath of fieldsToValidate) {
-    const validator = validators[fieldPath]
-    if (validator) {
-      const value = getNestedValue(formState, fieldPath)
-      const error = validator(value, formState)
-      if (error) {
-        errors[fieldPath] = error
-      }
-    }
-  }
-
-  // Validate cross-field relationships
-  const crossFieldErrors = validateProfileCrossFieldRules(formState, fieldsToValidate)
-  Object.assign(errors, crossFieldErrors)
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  }
-}
-
-
-export const validateProfilePhotoFile = (value: File) => {
-  if (!ALLOWED_IMAGE_TYPES.includes(value!.type.toLowerCase())) {
-    return 'Photo must be JPG, JPEG, PNG, HEIC, or HEIF.'
-  }
-  if (value!.size > MAX_IMAGE_SIZE) return 'Photo size must be less than 20MB.'
-  return null
 }

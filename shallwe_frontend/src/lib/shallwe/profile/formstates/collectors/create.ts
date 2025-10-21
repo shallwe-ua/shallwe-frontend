@@ -1,5 +1,5 @@
-import { ProfileCreateData } from "../api/schema/create"
-import { ProfileCreateFormState } from "./states"
+import { ProfileCreateData } from "../../api/schema/create"
+import { ProfileCreateFormState } from "../states"
 
 
 // This function basically assures that we are collecting state correctly as per API data requirements
