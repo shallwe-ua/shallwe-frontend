@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateProfile } from '@/lib/shallwe/profile/api/calls' // Import update API call
 import { ProfileUpdateFormState, getProfileUpdateFormStateInitial } from '@/lib/shallwe/profile/formstates/states' // Import NEW update form state and its initializer
@@ -30,6 +30,38 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [apiError, setApiError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+
+
+  const initialLocationNamesMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    const locationsData = initialProfileData.rent_preferences.locations; // This is LocationsReadFields
+
+    // Populate map from regions
+    locationsData.regions?.forEach(region => {
+      map[region.hierarchy] = region.region_name;
+    });
+
+    // Populate map from cities
+    locationsData.cities?.forEach(city => {
+      // Format city name like in getDisplayName (e.g., "Kyiv (Kyivska)")
+      map[city.hierarchy] = `${city.ppl_name} (${city.region_name})`;
+      // Populate map from districts within cities
+      city.districts?.forEach(district => {
+        // Format district name like in getDisplayName (e.g., "Kyiv, Podilskyi")
+        map[district.hierarchy] = `${city.ppl_name}, ${district.district_name}`;
+      });
+    });
+
+    // Populate map from other_ppls
+    locationsData.other_ppls?.forEach(otherPpl => {
+      // Format other_ppl name like in getDisplayName
+      const suffix = otherPpl.subregion_name ? `${otherPpl.region_name}, ${otherPpl.subregion_name}` : otherPpl.region_name;
+      map[otherPpl.hierarchy] = `${otherPpl.ppl_name} (${suffix})`;
+    });
+
+    return map;
+  }, [initialProfileData]); // Recalculate if initialProfileData changes
+
 
   // Helper to safely update nested state - adapted for ProfileUpdateFormState
   const updateEditFormState = <S extends keyof ProfileUpdateFormState, F extends keyof ProfileUpdateFormState[S]>(
@@ -440,7 +472,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 <Locations
                     // Pass the array of hierarchies from editFormState
                     selectedLocations={editFormState.rent_preferences.locations}
-                    // Pass the handler to update the state
+                    initialLocationNames={initialLocationNamesMap} // PASS THE NEW PROP
                     onLocationsChange={handleLocationsChange}
                     // Pass error state and handler
                     // Ensure the error prop is either a string or undefined, never null
