@@ -14,7 +14,7 @@ import { ValidationResult } from '@/lib/shallwe/profile/formstates/validators/co
 import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 
-import ProfilePhoto from '../components/profile/ProfilePhoto'
+import ProfilePhotoPick from '../components/profile/ProfilePhotoPick'
 import Locations from '../components/profile/Locations'
 
 
@@ -114,12 +114,6 @@ export default function ProfileSetupPage() {
         return newErrors
       })
     }
-  }
-
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null // File can be null
-    updateFormState('profile', 'photo', file)
   }
 
 
@@ -251,7 +245,7 @@ export default function ProfileSetupPage() {
             </div>
 
             <div>
-              <ProfilePhoto
+              <ProfilePhotoPick
                 initialFile={formState.profile.photo} // Pass the current photo if editing
                 onError={handlePhotoError}
                 onClearError={clearPhotoError}
@@ -262,32 +256,6 @@ export default function ProfileSetupPage() {
               {/* This error will appear if the user proceeds without a valid photo after the component's internal checks */}
               {errors['profile.photo'] && <p className="mt-1 text-sm text-red-600">{errors['profile.photo']}</p>}
             </div>
-
-            {/* <div>
-              <label htmlFor="photo" className="block text-sm font-medium text-gray-700">
-                Photo (JPG, PNG, HEIC, HEIF, max 20MB, square dimensions)
-              </label>
-              <input
-                ref={photoInputRef} // Attach the ref
-                type="file"
-                id="photo"
-                accept="image/jpeg,image/jpg,image/png,image/heic,image/heif"
-                onChange={handlePhotoChange}
-                className={`mt-1 block w-full text-sm text-gray-500
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-md file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-blue-50 file:text-blue-700
-                  hover:file:bg-blue-100
-                  ${errors['profile.photo'] ? 'border-red-500' : ''}`}
-              />
-              {errors['profile.photo'] && <p className="mt-1 text-sm text-red-600">{errors['profile.photo']}</p>}
-              {formState.profile.photo && (
-                  <div className="mt-2">
-                      <p className="text-xs text-gray-500">Selected: {formState.profile.photo.name}</p>
-                  </div>
-              )}
-            </div> */}
           </div>
         )
       

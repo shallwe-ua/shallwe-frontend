@@ -9,6 +9,7 @@ import { deleteUser } from '@/lib/shallwe/auth/api/calls' // Import delete API c
 import { ProfileReadData } from '@/lib/shallwe/profile/api/schema/read' // Import the read data type
 import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError type
 import { ProfileEditView } from '../components/profile/ProfileEditView'
+import PhotoWithFallbacks from '../components/profile/PhotoWithFallbacks'
 
 
 export default function SettingsPage() {
@@ -283,35 +284,11 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Photo and Basic Info */}
               <div className="md:col-span-1 flex flex-col items-center"> {/* Added flex container for centering text fallback */}
-                {/* Conditional rendering: show img if profile photo or default is okay, otherwise show fallback div */}
-                {!defaultImageFailed ? (
-                  <img
-                    src={profileData.profile.photo_w64 || defaultProfileImage}
-                    alt={`Profile picture of ${profileData.profile.name}`}
-                    className="w-32 h-32 rounded-full object-cover mx-auto"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      // Check if the *currently loaded* src was the default image and it failed
-                      if (target.src.includes(defaultProfileImage)) {
-                        // The default image itself failed to load.
-                        // Set the state to trigger a re-render and show the fallback.
-                        setDefaultImageFailed(true)
-                      } else {
-                        // The profile photo failed, try the default.
-                        // Only set to default if it's not already trying to load the default.
-                        if (target.src !== defaultProfileImage) {
-                          target.src = defaultProfileImage
-                        }
-                        // If setting to default causes onError again, it will be caught by the check above.
-                      }
-                    }}
-                  />
-                ) : (
-                  // Fallback div with centered text when default image also fails
-                  <div className="w-32 h-32 rounded-full bg-gray-200 mx-auto flex items-center justify-center">
-                    <span className="text-gray-500 text-xs text-center">Woops, image not found :(</span>
-                  </div>
-                )}
+                <PhotoWithFallbacks
+                  src={profileData.profile.photo_w192 || ''} // Pass the photo URL or empty string
+                  alt={`Profile picture of ${profileData.profile.name}`}
+                  className="w-32 h-32 rounded-full object-cover mx-auto" // Pass Tailwind classes
+                />
                 <h2 className="text-xl font-semibold text-center mt-2">{profileData.profile.name}</h2>
                 <p className="text-gray-600 text-center">({profileData.profile.is_hidden ? 'Hidden' : 'Visible'})</p>
               </div>
