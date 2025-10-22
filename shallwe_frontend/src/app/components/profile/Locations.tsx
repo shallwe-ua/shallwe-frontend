@@ -5,6 +5,7 @@ import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
 
 interface LocationsProps {
   selectedLocations: string[]
+  initialLocationNames?: Record<string, string>
   onLocationsChange: (newLocations: string[]) => void
   error?: string
   onClearError: () => void
@@ -13,6 +14,7 @@ interface LocationsProps {
 
 const Locations: React.FC<LocationsProps> = ({
   selectedLocations,
+  initialLocationNames,
   onLocationsChange,
   error,
   onClearError,
@@ -22,7 +24,7 @@ const Locations: React.FC<LocationsProps> = ({
   const [isLoading, setIsLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [showResults, setShowResults] = useState(false)
-  const [nameMap, setNameMap] = useState<Record<string, string>>({})
+  const [nameMap, setNameMap] = useState<Record<string, string>>(initialLocationNames || {})
 
   const wrapperRef = useRef<HTMLDivElement>(null)
 
