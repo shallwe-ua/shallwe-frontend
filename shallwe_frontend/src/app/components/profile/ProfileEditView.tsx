@@ -9,7 +9,7 @@ import { validateProfileUpdateFields } from '@/lib/shallwe/profile/formstates/va
 import { ProfileUpdateData } from '@/lib/shallwe/profile/api/schema/update' // Import update schema
 import { ProfileReadData } from '@/lib/shallwe/profile/api/schema/read' // Import read schema to get original data
 import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError type
-import ProfilePhoto from '@/app/components/profile/ProfilePhoto' // Assuming this is the correct path
+import ProfilePhotoPick from '@/app/components/profile/ProfilePhotoPick' // Assuming this is the correct path
 import Locations from '@/app/components/profile/Locations' // Assuming this is the correct path
 import { ValidationResult } from '@/lib/shallwe/profile/formstates/validators/common'
 import { TagsInput } from 'react-tag-input-component'
@@ -223,8 +223,9 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           {/* Pass the existing photo URL from initialProfileData for display */}
           {/* Pass the cropped file handler */}
           {/* Pass error and clear error handlers */}
-          <ProfilePhoto
-            initialFile={editFormState.profile.photo}
+          <ProfilePhotoPick
+            initialFile={editFormState.profile.photo} // null if no new file, File if new file selected/cropped
+            initialPhotoUrl={initialProfileData.profile.photo_w192 || null} // URL of existing photo
             onError={handlePhotoError}
             onClearError={clearPhotoError}
             onCropComplete={handlePhotoCropped}
