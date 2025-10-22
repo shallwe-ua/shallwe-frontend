@@ -12,6 +12,7 @@ import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError typ
 import ProfilePhoto from '@/app/components/profile/ProfilePhoto' // Assuming this is the correct path
 import Locations from '@/app/components/profile/Locations' // Assuming this is the correct path
 import { ValidationResult } from '@/lib/shallwe/profile/formstates/validators/common'
+import { TagsInput } from 'react-tag-input-component'
 
 // Define the props for the edit view
 interface ProfileEditViewProps {
@@ -564,41 +565,38 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     <label htmlFor="other_animals_edit" className="block text-sm font-medium text-gray-700">
                       Other Animals (up to 5)
                     </label>
-                    {/* Assuming TagsInput component is available and works with string arrays */}
-                    {/* For now, a simple comma-separated input */}
-                    <input
-                      type="text"
-                      id="other_animals_edit"
-                      value={editFormState.about.other_animals?.join(', ') || ''}
-                      onChange={(e) => {
-                          const valueArray = e.target.value ? e.target.value.split(',').map(item => item.trim()).filter(item => item) : []
-                          updateEditFormState('about', 'other_animals', valueArray as string[])
+                    <TagsInput
+                      value={editFormState.about.other_animals || []} // Bind to editFormState
+                      onChange={(tags) => updateEditFormState('about', 'other_animals', tags)} // Use updateEditFormState
+                      name="other_animals_edit" // Unique name for this instance
+                      placeHolder="Type and press enter"
+                      // Adapted Tailwind classes for styling, matching the pattern from ProfileSetupPage and other inputs in ProfileEditView
+                      classNames={{
+                        tag: "bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm", // Style for individual tags
+                        input: "mt-0 block w-full p-0 text-sm border-0 focus:outline-none focus:ring-0", // Style for the input field itself, removing default border/ring to inherit from parent
+                        // The parent div provides the border, focus ring, and error styling
                       }}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.other_animals'] ? 'border-red-500' : ''
-                      }`}
                     />
+                    {/* Error display using the standard pattern for this component */}
                     {errors['about.other_animals'] && <p className="mt-1 text-sm text-red-600">{errors['about.other_animals']}</p>}
                   </div>
-                  {/* interests (TagsInput or similar) */}
+
                   <div className="col-span-2">
                     <label htmlFor="interests_edit" className="block text-sm font-medium text-gray-700">
                       Interests (up to 5)
                     </label>
-                    {/* Assuming TagsInput component is available and works with string arrays */}
-                    {/* For now, a simple comma-separated input */}
-                    <input
-                      type="text"
-                      id="interests_edit"
-                      value={editFormState.about.interests?.join(', ') || ''}
-                      onChange={(e) => {
-                          const valueArray = e.target.value ? e.target.value.split(',').map(item => item.trim()).filter(item => item) : []
-                          updateEditFormState('about', 'interests', valueArray as string[])
+                    <TagsInput
+                      value={editFormState.about.interests || []} // Bind to editFormState
+                      onChange={(tags) => updateEditFormState('about', 'interests', tags)} // Use updateEditFormState
+                      name="interests_edit" // Unique name for this instance
+                      placeHolder="Type and press enter"
+                      // Adapted Tailwind classes for styling
+                      classNames={{
+                        tag: "bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm",
+                        input: "mt-0 block w-full p-0 text-sm border-0 focus:outline-none focus:ring-0",
                       }}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.interests'] ? 'border-red-500' : ''
-                      }`}
                     />
+                    {/* Error display */}
                     {errors['about.interests'] && <p className="mt-1 text-sm text-red-600">{errors['about.interests']}</p>}
                   </div>
                   {/* bio (textarea) */}
