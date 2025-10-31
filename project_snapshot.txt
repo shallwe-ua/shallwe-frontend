@@ -7,7 +7,7 @@ shallwe-frontend/
 |   |-- public
 |   |   |-- img
 |   |   |   `-- profile
-|   |   |       `-- default192.webp
+|   |   |       `-- test-default192.webp
 |   |   `-- mockServiceWorker.js
 |   |-- src
 |   |   |-- app
@@ -18,12 +18,11 @@ shallwe-frontend/
 |   |   |   |   |-- mock
 |   |   |   |   |   `-- MSWInit.tsx
 |   |   |   |   `-- profile
+|   |   |   |       |-- BirthDateSelect.tsx
 |   |   |   |       |-- Locations.tsx
 |   |   |   |       |-- PhotoWithFallbacks.tsx
 |   |   |   |       |-- ProfileEditView.tsx
 |   |   |   |       `-- ProfilePhotoPick.tsx
-|   |   |   |-- contacts
-|   |   |   |-- search
 |   |   |   |-- settings
 |   |   |   |   `-- page.tsx
 |   |   |   |-- setup
@@ -34,6 +33,8 @@ shallwe-frontend/
 |   |   |-- config
 |   |   |   `-- env.ts
 |   |   |-- lib
+|   |   |   |-- common
+|   |   |   |   `-- cookie.ts
 |   |   |   `-- shallwe
 |   |   |       |-- access
 |   |   |       |   `-- api
@@ -74,19 +75,19 @@ shallwe-frontend/
 |   |   |               |   |-- create.ts
 |   |   |               |   `-- update.ts
 |   |   |               `-- states.ts
-|   |   `-- mocks
-|   |       |-- browser.ts
-|   |       `-- handlers.ts
+|   |   |-- mocks
+|   |   |   |-- browser.ts
+|   |   |   `-- handlers.ts
+|   |   `-- middleware.ts
 |   |-- .gitignore
 |   |-- eslint.config.mjs
-|   |-- middleware.ts
 |   |-- next.config.ts
 |   |-- package.json
 |   |-- postcss.config.mjs
 |   |-- tailwind.config.ts
 |   `-- tsconfig.json
 |-- tools
-|   `-- compose_project_snapshot.js
+|   `-- compose_project_snapshot.cjs
 |-- .env.example
 |-- .gitignore
 |-- LICENSE
@@ -97,7 +98,7 @@ shallwe-frontend/
 CODE/TEXT CONTENT OF THE PROJECT
 =================
 
-shallwe_frontend/public/img/profile/default192.webp:
+shallwe_frontend/public/img/profile/test-default192.webp:
 
 [skipped: .webp file (extension-based skip)]
 _____________________________
@@ -464,7 +465,7 @@ const Footer = () => {
         <div className="md:flex md:items-center md:justify-between">
           <div className="flex justify-center md:justify-start">
             <p className="text-center md:text-left text-sm text-gray-500">
-              &copy {new Date().getFullYear()} Shallwe. All rights reserved.
+              &copy; {new Date().getFullYear()} Shallwe. All rights reserved.
             </p>
           </div>
           <div className="mt-4 md:mt-0 flex justify-center space-x-6 md:order-2">
@@ -620,12 +621,303 @@ export function MSWInitializer({ children }: { children: ReactNode }) {
 
 _____________________________
 
+shallwe_frontend/src/app/components/profile/BirthDateSelect.tsx:
+
+import React, { useState, useEffect } from 'react'
+import { isBefore, isAfter, parseISO } from 'date-fns'
+
+
+interface BirthDateSelectProps {
+  inputId: string
+  currentValue: string | null // Expecting YYYY-MM-DD string or null
+  onChange: (dateString: string) => void // Expecting a valid YYYY-MM-DD string (never null from this component)
+  error?: string
+  className?: string
+}
+
+
+const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
+  inputId,
+  currentValue,
+  onChange,
+  error,
+  className = ''
+}) => {
+  // State for individual date components (always strings, representing valid numbers or empty initially)
+  const [day, setDay] = useState<string>('')
+  const [month, setMonth] = useState<string>('')
+  const [year, setYear] = useState<string>('')
+  
+  // State to track if date is selected
+  const [isInitiated, setIsInitiated] = useState<boolean>(currentValue !== null)
+
+  // Age limits as dates - calculated precisely
+  const currentDate = new Date() // Use current date for calculations
+  // Calculate exact dates 120 and 16 years ago
+  const minSelectableDate = new Date(currentDate.getFullYear() - 120, currentDate.getMonth(), currentDate.getDate())
+  const maxSelectableDate = new Date(currentDate.getFullYear() - 16, currentDate.getMonth(), currentDate.getDate())
+
+  // Generate options based on min/max dates
+  const minYear = minSelectableDate.getFullYear()
+  const maxYear = maxSelectableDate.getFullYear()
+  const monthOptions = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'))
+  const yearOptions = Array.from({ length: maxYear - minYear + 1 }, (_, i) => (maxYear - i).toString())
+
+  // Populate state from currentValue when it changes
+  useEffect(() => {
+    if (currentValue) {
+      try {
+        // Parse the input string into a Date object
+        const inputDate = parseISO(currentValue) // Handles YYYY-MM-DD format
+        // Validate if the date is within the allowed range
+        if (isBefore(inputDate, minSelectableDate)) {
+             console.warn("BirthDateSelect: currentValue too old (before minSelectableDate):", currentValue, "Min:", minSelectableDate.toISOString().split('T')[0])
+             setToMinDate() // Set to the minimum allowed date if too old
+             setIsInitiated(true)
+             return // Exit early after setting default
+        }
+        else if (isAfter(inputDate, maxSelectableDate)) {
+             console.warn("BirthDateSelect: currentValue too young (after maxSelectableDate):", currentValue, "Max:", maxSelectableDate.toISOString().split('T')[0])
+             setToMaxDate() // Set to the maximum allowed date if too young
+             setIsInitiated(true)
+             return // Exit early after setting default
+        }
+
+        // If within range, update state
+        const y = inputDate.getFullYear().toString()
+        const m = (inputDate.getMonth() + 1).toString().padStart(2, '0') // getMonth is 0-indexed
+        const d = inputDate.getDate().toString().padStart(2, '0')
+
+        // Ensure year is within the dynamic range (double-check after parsing)
+        if (Number(y) >= minYear && Number(y) <= maxYear) {
+            // Check if day is valid for the given month/year, adjust if necessary
+            const maxDayForDate = new Date(Number(y), Number(m), 0).getDate()
+            const finalDay = Math.min(Number(d), maxDayForDate).toString().padStart(2, '0')
+            setYear(y)
+            setMonth(m)
+            setDay(finalDay)
+            setIsInitiated(true)
+        } else {
+             console.warn("BirthDateSelect: Parsed year out of range:", y, "Expected between", minYear, "and", maxYear)
+             setToMaxDate() // Default to max if parsing results in out-of-range year
+             setIsInitiated(true)
+        }
+
+      } catch (e) {
+        console.warn("BirthDateSelect: Invalid currentValue format or parsing error:", currentValue, e)
+        // Set to the maximum allowed date if format is invalid or parsing fails
+        setToMaxDate()
+        setIsInitiated(true)
+      }
+    }
+    else {
+      setDay('')
+      setMonth('')
+      setYear('')
+      setIsInitiated(false)
+    }
+
+    function setToMinDate() {
+         const defaultYear = minSelectableDate.getFullYear().toString()
+         const defaultMonth = (minSelectableDate.getMonth() + 1).toString().padStart(2, '0') // getMonth is 0-indexed
+         const defaultDay = minSelectableDate.getDate().toString().padStart(2, '0')
+         setYear(defaultYear)
+         setMonth(defaultMonth)
+         setDay(defaultDay)
+    }
+
+    function setToMaxDate() {
+        const defaultYear = maxSelectableDate.getFullYear().toString()
+        const defaultMonth = (maxSelectableDate.getMonth() + 1).toString().padStart(2, '0') // getMonth is 0-indexed
+        const defaultDay = maxSelectableDate.getDate().toString().padStart(2, '0')
+        setYear(defaultYear)
+        setMonth(defaultMonth)
+        setDay(defaultDay)
+    }
+  }, [currentValue, minSelectableDate, maxSelectableDate])
+
+
+  // --- Calculate days based on selected month and year ---
+  const daysInMonth = month && year ? new Date(Number(year), Number(month), 0).getDate() : 31 // Month is 1-indexed for getDate, 0 gets last day of prev month
+  const dayOptions = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString().padStart(2, '0'))
+
+  // Handle change for any select
+  const handleSelectChange = (part: 'day' | 'month' | 'year', value: string) => {
+    // Update the specific part's state
+    let newDay = day
+    let newMonth = month
+    let newYear = year
+
+    if (part === 'day') newDay = value
+    if (part === 'month') newMonth = value
+    if (part === 'year') newYear = value
+
+    // If month or year changed, check if the current day is still valid for the new month/year
+    if ((part === 'month' || part === 'year') && newMonth && newYear) {
+        const maxDayForNewMonth = new Date(Number(newYear), Number(newMonth), 0).getDate()
+        // If the currently selected day is too high for the new month/year, adjust it to the maximum allowed
+        if (newDay && Number(newDay) > maxDayForNewMonth) {
+            newDay = maxDayForNewMonth.toString().padStart(2, '0')
+        }
+    }
+
+    // If day changed, check if it's valid for the current month/year, adjust if necessary
+    if (part === 'day' && newDay && newMonth && newYear) {
+        const maxDayForCurrentMonth = new Date(Number(newYear), Number(newMonth), 0).getDate()
+        if (Number(newDay) > maxDayForCurrentMonth) {
+            newDay = maxDayForCurrentMonth.toString().padStart(2, '0')
+        }
+    }
+
+    if (newDay && newMonth && newYear) {
+      const potentialDate = new Date(Number(newYear), Number(newMonth) - 1, Number(newDay)) // Month is 0-indexed for Date constructor
+
+      if (isBefore(potentialDate, minSelectableDate)) {
+        newYear = minSelectableDate.getFullYear().toString()
+        newMonth = (minSelectableDate.getMonth() + 1).toString().padStart(2, '0')
+        newDay = minSelectableDate.getDate().toString().padStart(2, '0')
+      }
+      else if (isAfter(potentialDate, maxSelectableDate)) {
+        newYear = maxSelectableDate.getFullYear().toString()
+        newMonth = (maxSelectableDate.getMonth() + 1).toString().padStart(2, '0')
+        newDay = maxSelectableDate.getDate().toString().padStart(2, '0')
+      }
+    }
+    else {
+      console.warn("BirthDateSelect: handleSelectChange received empty part, state might be inconsistent.", {part, value, newDay, newMonth, newYear})
+    }
+
+
+    // Update state with potentially adjusted values
+    setDay(newDay)
+    setMonth(newMonth)
+    setYear(newYear)
+    setIsInitiated(true)
+
+    // Construct the final date string after all validations and adjustments
+    // All parts should be non-empty strings representing valid numbers due to select options and adjustment logic
+    if (newDay && newMonth && newYear) {
+      const finalDateString = `${newYear}-${newMonth}-${newDay}`
+      console.log("BirthDateSelect: Sending adjusted/valid date to parent:", finalDateString)
+      onChange(finalDateString) // Always send a valid date string to the parent
+    } else {
+        // This 'else' block should theoretically never be reached if all logic is correct
+        // and select options are properly managed, as state should always hold valid parts.
+        // If it somehow happens, send the previous valid date or handle appropriately.
+        console.warn("BirthDateSelect: Attempted to send an incomplete date string after adjustments. State might be inconsistent.", {newDay, newMonth, newYear})
+    }
+  }
+
+  // Handle clicking the select date button
+  const handleSelectDateClick = () => {
+    // Set to the maximum selectable date (16 years ago) when user clicks the button
+    const defaultYear = maxSelectableDate.getFullYear().toString()
+    const defaultMonth = (maxSelectableDate.getMonth() + 1).toString().padStart(2, '0') // getMonth is 0-indexed
+    const defaultDay = maxSelectableDate.getDate().toString().padStart(2, '0')
+    setYear(defaultYear)
+    setMonth(defaultMonth)
+    setDay(defaultDay)
+    setIsInitiated(true)
+    
+    // Notify parent of the selected date
+    const finalDateString = `${defaultYear}-${defaultMonth}-${defaultDay}`
+    console.log("BirthDateSelect: Sending initial date to parent:", finalDateString)
+    onChange(finalDateString)
+  }
+
+  // Determine error state based on the parent's error and potentially internal logic if needed
+  // For now, just pass through the parent's error
+  const displayError = error
+
+  return (
+    <div>
+      <label htmlFor={inputId} className="block text-sm font-medium text-gray-700">
+        Birth Date (16-120 years old allowed)
+      </label>
+      <div className="flex flex-row space-x-2 mt-1">
+        {!isInitiated ? (
+          <div className="sm:col-span-3">
+            <button
+              type="button"
+              onClick={handleSelectDateClick}
+              className={`w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                displayError ? 'border-red-500' : ''
+              } ${className}`}
+            >
+              Select the date
+            </button>
+          </div>
+        ) : (
+          // Show date selects when date is selected
+          <>
+            {/* Day Select */}
+            <div className="flex flex-col"> {/* Container for Day label and select */}
+              <label htmlFor={`${inputId}-day`} className="text-xs text-gray-500 mb-1">Day</label>
+              <select
+                id={`${inputId}-day`}
+                value={day}
+                onChange={(e) => handleSelectChange('day', e.target.value)}
+                className={`rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                  displayError ? 'border-red-500' : ''
+                } ${className}`}
+              >
+                {dayOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Month Select */}
+            <div className="flex flex-col"> {/* Container for Month label and select */}
+              <label htmlFor={`${inputId}-month`} className="text-xs text-gray-500 mb-1">Month</label>
+              <select
+                id={`${inputId}-month`}
+                value={month}
+                onChange={(e) => handleSelectChange('month', e.target.value)}
+                className={`rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                  displayError ? 'border-red-500' : ''
+                } ${className}`}
+              >
+                {monthOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Year Select */}
+            <div className="flex flex-col"> {/* Container for Year label and select */}
+              <label htmlFor={`${inputId}-year`} className="text-xs text-gray-500 mb-1">Year</label>
+              <select
+                id={`${inputId}-year`}
+                value={year}
+                onChange={(e) => handleSelectChange('year', e.target.value)}
+                className={`rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                  displayError ? 'border-red-500' : ''
+                } ${className}`}
+              >
+                 {yearOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                 ))}
+              </select>
+            </div>
+          </>
+        )}
+      </div>
+      {displayError && <p className="mt-1 text-sm text-red-600">{displayError}</p>}
+    </div>
+  )
+}
+
+export default BirthDateSelect
+
+_____________________________
+
 shallwe_frontend/src/app/components/profile/Locations.tsx:
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { searchLocations } from '@/lib/shallwe/locations/api/calls'
 import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
-
+import { ApiError } from '@/lib/shallwe/common/api/calls'
 
 interface LocationsProps {
   selectedLocations: string[]
@@ -635,6 +927,7 @@ interface LocationsProps {
   onClearError: () => void
 }
 
+const MAX_LOCATIONS = 30;
 
 const Locations: React.FC<LocationsProps> = ({
   selectedLocations,
@@ -649,6 +942,8 @@ const Locations: React.FC<LocationsProps> = ({
   const [searchError, setSearchError] = useState<string | null>(null)
   const [showResults, setShowResults] = useState(false)
   const [nameMap, setNameMap] = useState<Record<string, string>>(initialLocationNames || {})
+  const [isInputFrozen, setIsInputFrozen] = useState(false);
+  const [isCounterSwinging, setIsCounterSwinging] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -657,6 +952,8 @@ const Locations: React.FC<LocationsProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowResults(false)
+        setIsInputFrozen(false);
+        setIsCounterSwinging(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -668,6 +965,13 @@ const Locations: React.FC<LocationsProps> = ({
   }
 
   const handleSelectLocation = (selectedHierarchy: string, displayName: string) => {
+    if (selectedLocations.length >= MAX_LOCATIONS && !selectedLocations.includes(selectedHierarchy)) {
+      setIsInputFrozen(true);
+      setIsCounterSwinging(true);
+      setTimeout(() => setIsCounterSwinging(false), 500); // Swing animation duration
+      return;
+    }
+
     onClearError()
     setSearchError(null)
 
@@ -685,12 +989,21 @@ const Locations: React.FC<LocationsProps> = ({
     }
 
     onLocationsChange(newLocations)
+    // Only unfreeze if we're below the limit
+    if (newLocations.length < MAX_LOCATIONS) {
+      setIsInputFrozen(false);
+      setIsCounterSwinging(false);
+    }
   }
 
   const handleRemoveLocation = (hierarchyToRemove: string) => {
     onClearError()
     const newLocations = selectedLocations.filter((h) => h !== hierarchyToRemove)
     onLocationsChange(newLocations)
+    
+    // Unfreeze input when removing a location since we're now below the limit
+    setIsInputFrozen(false);
+    setIsCounterSwinging(false);
   }
 
   const debouncedSearch = useCallback(
@@ -711,7 +1024,11 @@ const Locations: React.FC<LocationsProps> = ({
         } catch (err) {
           console.error('Error searching locations:', err)
           setSearchResults(null)
-          setSearchError('Failed to search locations. Please try again.')
+          const apiError = err as ApiError
+          if ('status' in apiError && apiError.status === 404) {
+            setSearchError('No locations matching this query. Please check the spelling.')
+          }
+          else setSearchError(`Error trying to search locations: ${apiError.message}`)
         } finally {
           setIsLoading(false)
         }
@@ -736,7 +1053,7 @@ const Locations: React.FC<LocationsProps> = ({
 
   const showAllUkraineTag = selectedLocations.length === 0
 
-  const getDisplayName = (entity: any, type: 'region' | 'city' | 'other_ppl' | 'district', parentCity?: { ppl_name: string }) => {
+  const getDisplayName = (entity: any, type: 'region' | 'city' | 'other_ppl' | 'district', parentCity?: { ppl_name: string }): string => {
     switch (type) {
       case 'region':
         return entity.region_name;
@@ -744,9 +1061,15 @@ const Locations: React.FC<LocationsProps> = ({
         // Big cities: City Name (Region Name)
         return `${entity.ppl_name} (${entity.region_name})`;
       case 'district':
+        if (!parentCity) {
+          console.error("getDisplayName: parentCity is required for type 'district'", { entity, type, parentCity });
+          // Return a fallback string indicating the error, or just the district name
+          // Returning just the district name might be less disruptive than showing an error string like "[Missing Parent City]"
+          return `${entity.district_name} ${entity.hierarchy}` || `[Missing Parent City for ${entity.hierarchy}]`
+        }
         // Districts: City Name, District Name (e.g., Київ, Подільский)
         // parentCity is expected for districts
-        return parentCity ? `${parentCity.ppl_name}, ${entity.district_name}` : entity.district_name;
+        return `${parentCity.ppl_name}, ${entity.district_name}`
       case 'other_ppl':
         // Other PPLs: Name (Region, Subregion) or Name (Region)
         const suffix = entity.subregion_name ? `${entity.region_name}, ${entity.subregion_name}` : entity.region_name;
@@ -764,7 +1087,7 @@ const Locations: React.FC<LocationsProps> = ({
       onClick={() => handleSelectLocation(hierarchy, displayName)} // Pass the pre-formatted display name
       className={`p-2 text-sm cursor-pointer hover:bg-gray-100 ${
         selectedLocations.includes(hierarchy) ? 'bg-green-100 hover:bg-green-200' : ''
-      }`}
+      } ${selectedLocations.length >= MAX_LOCATIONS && !selectedLocations.includes(hierarchy) ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       {displayName}
     </div>
@@ -772,26 +1095,66 @@ const Locations: React.FC<LocationsProps> = ({
 
   return (
     <div className="space-y-2 relative" ref={wrapperRef}>
-      {searchError && <p className="mt-1 text-sm text-red-600">{searchError}</p>}
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-
       {/* Search field */}
       <div className="relative">
         <input
           type="text"
           id="location-search"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            if (!isInputFrozen) {
+              setSearchQuery(e.target.value);
+            }
+          }}
           placeholder="Enter location..."
-          onFocus={() => searchResults && setShowResults(true)}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-            searchError ? 'border-red-500' : ''
+          onFocus={() => {
+            if (selectedLocations.length >= MAX_LOCATIONS) {
+              setIsInputFrozen(true);
+              setIsCounterSwinging(true);
+              setTimeout(() => setIsCounterSwinging(false), 500);
+            } else {
+              searchResults && setShowResults(true);
+            }
+          }}
+          className={`mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+            isInputFrozen 
+              ? 'border-red-500 bg-red-50 cursor-not-allowed' 
+              : searchError 
+                ? 'border-red-500' 
+                : 'border-gray-300'
           }`}
+          disabled={isInputFrozen}
         />
         {isLoading && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
           </div>
+        )}
+      </div>
+
+      {searchError && <p className="mt-1 text-sm text-gray-400">{searchError}</p>}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+
+      {/* Location Counter */}
+      <div className={`text-sm font-medium text-gray-400 transition-colors duration-300 flex justify-between items-center`}>
+        <span 
+          className={`inline-block ${isCounterSwinging ? 'animate-pulse text-red-600' : ''}`}
+        >
+          {selectedLocations.length}/{MAX_LOCATIONS} locations picked
+        </span>
+        {selectedLocations.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              onLocationsChange([]);
+              setNameMap({});
+              setIsInputFrozen(false);
+              setIsCounterSwinging(false);
+            }}
+            className="text-sm text-gray-400 hover:text-gray-700 cursor-pointer underline"
+          >
+            clear all &times;
+          </button>
         )}
       </div>
 
@@ -950,7 +1313,6 @@ const PhotoWithFallbacks: React.FC<PhotoWithFallbacksProprs> = ({
       className={className}
       onError={handleError}
       onLoad={handleLoad}
-      style={{ display: isLoading ? 'none' : 'block' }} // Optional: Hide while loading to prevent flicker
     />
   );
 };
@@ -962,7 +1324,7 @@ shallwe_frontend/src/app/components/profile/ProfileEditView.tsx:
 
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateProfile } from '@/lib/shallwe/profile/api/calls' // Import update API call
 import { ProfileUpdateFormState, getProfileUpdateFormStateInitial } from '@/lib/shallwe/profile/formstates/states' // Import NEW update form state and its initializer
@@ -973,8 +1335,9 @@ import { ProfileReadData } from '@/lib/shallwe/profile/api/schema/read' // Impor
 import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError type
 import ProfilePhotoPick from '@/app/components/profile/ProfilePhotoPick' // Assuming this is the correct path
 import Locations from '@/app/components/profile/Locations' // Assuming this is the correct path
-import { ValidationResult } from '@/lib/shallwe/profile/formstates/validators/common'
+import { ValidationResult, validators } from '@/lib/shallwe/profile/formstates/validators/common'
 import { TagsInput } from 'react-tag-input-component'
+import BirthDateSelect from './BirthDateSelect'
 
 // Define the props for the edit view
 interface ProfileEditViewProps {
@@ -992,8 +1355,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
   const [editFormState, setEditFormState] = useState<ProfileUpdateFormState>(initialEditFormState)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [apiError, setApiError] = useState<string | null>(null)
+  const [isFloatingApiErrorDismissed, setIsFloatingApiErrorDismissed] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
+  // Reset dismissal state if apiError changes (e.g., a new error occurs, or error is cleared)
+  useEffect(() => {
+    if (apiError) {
+      setIsFloatingApiErrorDismissed(false); // Reset dismissal if a new error appears
+    }
+  }, [apiError]); // Run effect when apiError changes
 
   const initialLocationNamesMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -1024,6 +1394,43 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
 
     return map;
   }, [initialProfileData]); // Recalculate if initialProfileData changes
+
+
+  const hasChanges = useMemo(() => {
+    const updatePayload = collectProfileUpdateDataFromState(editFormState, initialProfileData);
+    // Check if the collected payload has any properties (changes to send)
+    return Object.keys(updatePayload).length > 0;
+  }, [editFormState, initialProfileData]); // Re-run when form state or initial data changes
+
+
+  const updateSmokingLevelAndClearTypes = (newLevel: ProfileUpdateFormState['about']['smoking_level']) => {
+    setEditFormState(prev => {
+      const updatedAbout = { ...prev.about, smoking_level: newLevel };
+
+      // Check if the new level is null or 1
+      if (newLevel === null || newLevel === 1) {
+        // Reset smoking type booleans to false
+        updatedAbout.smokes_iqos = false;
+        updatedAbout.smokes_vape = false;
+        updatedAbout.smokes_tobacco = false;
+        updatedAbout.smokes_cigs = false;
+      }
+
+      return {
+        ...prev,
+        about: updatedAbout,
+      };
+    });
+
+    // Clear specific field error when user starts typing/modifying
+    if (errors['about.smoking_level']) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors['about.smoking_level'];
+        return newErrors;
+      });
+    }
+  };
 
 
   // Helper to safely update nested state - adapted for ProfileUpdateFormState
@@ -1105,6 +1512,21 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
     'rent_preferences.room_sharing_level', 'rent_preferences.locations',
   ]
 
+  // Define a helper function to run validation and update errors
+  const validateCurrentTagsInput = (fieldName: string, tagsToValidate: string[], validatorKey: string) => {
+    const validationError = validators[validatorKey](tagsToValidate, editFormState);
+    setErrors(prevErrors => {
+      const newErrors = { ...prevErrors };
+      if (validationError !== null) {
+        newErrors[fieldName] = validationError;
+      } else {
+        delete newErrors[fieldName]; // Clear error if validation passes
+      }
+      return newErrors;
+    });
+    return validationError
+  };
+
   const validateEditForm = (): boolean => {
     // Combine all fields that could be validated during an update
     const allFieldsToValidate = [
@@ -1167,11 +1589,27 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
   }
 
   // --- RENDER LOGIC ---
-
   return (
     <div className="space-y-6">
-      {/* API Error Display */}
-      {apiError && (
+      {/* API Error Display - Floating Notification (only if not dismissed) */}
+      {apiError && !isFloatingApiErrorDismissed && (
+        <div className="fixed inset-x-0 bottom-4 flex items-center justify-center pointer-events-none z-50">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg max-w-md w-full mx-4 pointer-events-auto relative">
+            <span className="block sm:inline">API Error: {apiError}</span>
+            <button
+              type="button"
+              onClick={() => setIsFloatingApiErrorDismissed(true)} // Dismiss the floating notification only
+              className="absolute top-1 right-1 text-red-700 hover:text-red-900 focus:outline-none"
+              aria-label="Dismiss floating error"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* API Error Display - Original Inline Version (only if floating was dismissed) */}
+      {apiError && isFloatingApiErrorDismissed && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <span className="block sm:inline">API Error: {apiError}</span>
         </div>
@@ -1214,21 +1652,16 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
         {/* Main Details */}
         <div className="md:col-span-2 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">
-                Birth Date (YYYY-MM-DD)
-              </label>
-              <input
-                type="date"
-                id="birth_date"
-                value={editFormState.about.birth_date ?? ''} // Handle potential null
-                onChange={(e) => updateEditFormState('about', 'birth_date', e.target.value)}
-                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                  errors['about.birth_date'] ? 'border-red-500' : ''
-                }`}
-              />
-              {errors['about.birth_date'] && <p className="mt-1 text-sm text-red-600">{errors['about.birth_date']}</p>}
-            </div>
+
+            {/* Birth Date */}
+            <BirthDateSelect
+              inputId="birth_date"
+              currentValue={editFormState.about.birth_date} // Pass the string value from state
+              onChange={(dateString) => updateEditFormState('about', 'birth_date', dateString)} // Pass the update handler
+              error={errors['about.birth_date']} // Pass the error message
+              className={`${errors['about.birth_date'] ? 'border-red-500' : ''}`} // Pass specific Tailwind classes if needed
+            />
+
             {/* Gender */}
             <div>
               <label className="block text-sm font-medium text-gray-700">Gender</label>
@@ -1329,13 +1762,92 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
               </select>
               {errors['about.drinking_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.drinking_level']}</p>}
             </div>
-            {/* Add other fields similarly... */}
+
+            <div>
+              <label htmlFor="smoking_level_edit" className="block text-sm font-medium text-gray-700">
+                Smoking Level
+              </label>
+              <select
+                id="smoking_level_edit"
+                value={editFormState.about.smoking_level ?? ''} // Handle potential null
+                onChange={(e) => updateSmokingLevelAndClearTypes(e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
+                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                  errors['about.smoking_level'] ? 'border-red-500' : ''
+                }`}
+              >
+                <option value="">Select...</option>
+                <option value="1">Never</option>
+                <option value="2">Rarely</option>
+                <option value="3">Socially</option>
+                <option value="4">Often</option>
+              </select>
+              {errors['about.smoking_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.smoking_level']}</p>}
+            </div>
+
+            {/* Add Smoking Type Checkboxes (Conditional based on smoking_level) - ADD THIS BLOCK */}
+            {editFormState.about.smoking_level !== null && editFormState.about.smoking_level > 1 && (
+              <div className="col-span-2 mt-2"> {/* Use col-span-2 to span full width, add top margin */}
+                <p className="text-sm font-medium text-gray-700 mb-1">Smoking Types:</p> {/* Label for the group */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ml-2"> {/* Grid layout: 1 column on mobile, 2 on small screens, 4 on medium+ screens */}
+                  <div className="flex items-center">
+                    <input
+                      id="smokes_iqos_edit"
+                      type="checkbox"
+                      checked={editFormState.about.smokes_iqos === true}
+                      onChange={(e) => updateEditFormState('about', 'smokes_iqos', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="smokes_iqos_edit" className="ml-2 block text-sm text-gray-700">
+                      IQOS
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="smokes_vape_edit"
+                      type="checkbox"
+                      checked={editFormState.about.smokes_vape === true}
+                      onChange={(e) => updateEditFormState('about', 'smokes_vape', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="smokes_vape_edit" className="ml-2 block text-sm text-gray-700">
+                      Vape
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="smokes_tobacco_edit"
+                      type="checkbox"
+                      checked={editFormState.about.smokes_tobacco === true}
+                      onChange={(e) => updateEditFormState('about', 'smokes_tobacco', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="smokes_tobacco_edit" className="ml-2 block text-sm text-gray-700">
+                      Tobacco
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="smokes_cigs_edit"
+                      type="checkbox"
+                      checked={editFormState.about.smokes_cigs === true}
+                      onChange={(e) => updateEditFormState('about', 'smokes_cigs', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="smokes_cigs_edit" className="ml-2 block text-sm text-gray-700">
+                      Cigarettes
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* End of Smoking Type Checkboxes block */}
           </div>
 
           {/* Rent Preferences */}
           <div className="mt-4 p-4 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Rent Preferences</h3>
             <div className="grid grid-cols-2 gap-4">
+              
               <div>
                 <label htmlFor="min_budget_edit" className="block text-sm font-medium text-gray-700">
                   Min Budget
@@ -1343,14 +1855,20 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 <input
                   type="number"
                   id="min_budget_edit"
-                  value={editFormState.rent_preferences.min_budget ?? ''} // Handle potential null
-                  onChange={(e) => updateEditFormState('rent_preferences', 'min_budget', Number(e.target.value))} // Send null if empty string
+                  value={editFormState.rent_preferences.min_budget}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const cleaned = raw.length > 1 ? raw.replace(/^0+(?=\d)/, '') : raw;
+                    if (cleaned !== raw) e.target.value = cleaned
+                    updateEditFormState('rent_preferences', 'min_budget', Number(cleaned));
+                  }}
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                     errors['rent_preferences.min_budget'] ? 'border-red-500' : ''
                   }`}
                 />
                 {errors['rent_preferences.min_budget'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.min_budget']}</p>}
               </div>
+
               <div>
                 <label htmlFor="max_budget_edit" className="block text-sm font-medium text-gray-700">
                   Max Budget
@@ -1358,27 +1876,32 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 <input
                   type="number"
                   id="max_budget_edit"
-                  value={editFormState.rent_preferences.max_budget ?? ''} // Handle potential null
-                  onChange={(e) => updateEditFormState('rent_preferences', 'max_budget', Number(e.target.value))} // Send null if empty string
+                  value={editFormState.rent_preferences.max_budget}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const cleaned = raw.length > 1 ? raw.replace(/^0+(?=\d)/, '') : raw;
+                    if (cleaned !== raw) e.target.value = cleaned
+                    updateEditFormState('rent_preferences', 'max_budget', Number(cleaned));
+                  }}
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                     errors['rent_preferences.max_budget'] ? 'border-red-500' : ''
                   }`}
                 />
                 {errors['rent_preferences.max_budget'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.max_budget']}</p>}
               </div>
+
               <div>
                 <label htmlFor="min_rent_duration_level_edit" className="block text-sm font-medium text-gray-700">
                   Min Rent Duration Level
                 </label>
                 <select
                   id="min_rent_duration_level_edit"
-                  value={editFormState.rent_preferences.min_rent_duration_level ?? ''} // Handle potential null
+                  value={editFormState.rent_preferences.min_rent_duration_level} // Handle potential null
                   onChange={(e) => updateEditFormState('rent_preferences', 'min_rent_duration_level', Number(e.target.value))} // Send null if empty string
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                     errors['rent_preferences.min_rent_duration_level'] ? 'border-red-500' : ''
                   }`}
                 >
-                  <option value="">Select...</option>
                   <option value="1">Level 1</option>
                   <option value="2">Level 2</option>
                   <option value="3">Level 3</option>
@@ -1393,13 +1916,12 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 </label>
                 <select
                   id="max_rent_duration_level_edit"
-                  value={editFormState.rent_preferences.max_rent_duration_level ?? ''} // Handle potential null
+                  value={editFormState.rent_preferences.max_rent_duration_level} // Handle potential null
                   onChange={(e) => updateEditFormState('rent_preferences', 'max_rent_duration_level', Number(e.target.value))} // Send null if empty string
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                     errors['rent_preferences.max_rent_duration_level'] ? 'border-red-500' : ''
                   }`}
                 >
-                  <option value="">Select...</option>
                   <option value="1">Level 1</option>
                   <option value="2">Level 2</option>
                   <option value="3">Level 3</option>
@@ -1420,7 +1942,6 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     errors['rent_preferences.room_sharing_level'] ? 'border-red-500' : ''
                   }`}
                 >
-                  <option value="">Select...</option>
                   <option value="1">Private Room Only</option>
                   <option value="2">Shared Room Possible</option>
                   <option value="3">Flexible (Any Arrangement)</option>
@@ -1440,7 +1961,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     onLocationsChange={handleLocationsChange}
                     // Pass error state and handler
                     // Ensure the error prop is either a string or undefined, never null
-                    error={errors['rent_preferences.locations'] || apiError || undefined} // CORRECT: Use '|| undefined' to guarantee 'string | undefined' type
+                    error={errors['rent_preferences.locations'] || undefined} // CORRECT: Use '|| undefined' to guarantee 'string | undefined' type
                     onClearError={clearLocationsError}
                 />
                 {errors['rent_preferences.locations'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.locations']}</p>}
@@ -1471,56 +1992,137 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   </select>
                   {errors['about.neighbourliness_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.neighbourliness_level']}</p>}
                 </div>
-                {/* Add more fields like guests_level, parties_level, bedtime_level, neatness_level, pets, etc. */}
+                
+                <div>
+                  <label htmlFor="guests_level_edit" className="block text-sm font-medium text-gray-700">
+                    Guests Level
+                  </label>
+                  <select
+                    id="guests_level_edit"
+                    value={editFormState.about.guests_level ?? ''} // Handle potential null
+                    onChange={(e) => updateEditFormState('about', 'guests_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                      errors['about.guests_level'] ? 'border-red-500' : ''
+                    }`}
+                  >
+                    <option value="">Select...</option>
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                  </select>
+                  {errors['about.guests_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.guests_level']}</p>}
+                </div>
+                <div>
+                  <label htmlFor="parties_level_edit" className="block text-sm font-medium text-gray-700">
+                    Parties Level
+                  </label>
+                  <select
+                    id="parties_level_edit"
+                    value={editFormState.about.parties_level ?? ''} // Handle potential null
+                    onChange={(e) => updateEditFormState('about', 'parties_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                      errors['about.parties_level'] ? 'border-red-500' : ''
+                    }`}
+                  >
+                    <option value="">Select...</option>
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                  </select>
+                  {errors['about.parties_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.parties_level']}</p>}
+                </div>
+                <div>
+                  <label htmlFor="bedtime_level_edit" className="block text-sm font-medium text-gray-700">
+                    Bedtime Level
+                  </label>
+                  <select
+                    id="bedtime_level_edit"
+                    value={editFormState.about.bedtime_level ?? ''} // Handle potential null
+                    onChange={(e) => updateEditFormState('about', 'bedtime_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)} // Send null if empty string, adjust type if needed
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                      errors['about.bedtime_level'] ? 'border-red-500' : ''
+                    }`}
+                  >
+                    <option value="">Select...</option>
+                    <option value="1">Early (e.g., 22:00)</option>
+                    <option value="2">Midnight</option>
+                    <option value="3">Late (e.g., 02:00)</option>
+                    <option value="4">Very Late (e.g., 04:00)</option>
+                  </select>
+                  {errors['about.bedtime_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.bedtime_level']}</p>}
+                </div>
+                <div>
+                  <label htmlFor="neatness_level_edit" className="block text-sm font-medium text-gray-700">
+                    Neatness Level
+                  </label>
+                  <select
+                    id="neatness_level_edit"
+                    value={editFormState.about.neatness_level ?? ''} // Handle potential null
+                    onChange={(e) => updateEditFormState('about', 'neatness_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                      errors['about.neatness_level'] ? 'border-red-500' : ''
+                    }`}
+                  >
+                    <option value="">Select...</option>
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                  </select>
+                  {errors['about.neatness_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.neatness_level']}</p>}
+                </div>
+
                 {/* Pet Checkboxes */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center">
-                      <input
-                        id="has_cats_edit"
-                        type="checkbox"
-                        checked={editFormState.about.has_cats === true}
-                        onChange={(e) => updateEditFormState('about', 'has_cats', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_cats_edit" className="ml-2 block text-sm text-gray-700">
-                        Has Cats
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_dogs_edit"
-                        type="checkbox"
-                        checked={editFormState.about.has_dogs === true}
-                        onChange={(e) => updateEditFormState('about', 'has_dogs', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_dogs_edit" className="ml-2 block text-sm text-gray-700">
-                        Has Dogs
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_reptiles_edit"
-                        type="checkbox"
-                        checked={editFormState.about.has_reptiles === true}
-                        onChange={(e) => updateEditFormState('about', 'has_reptiles', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_reptiles_edit" className="ml-2 block text-sm text-gray-700">
-                        Has Reptiles
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_birds_edit"
-                        type="checkbox"
-                        checked={editFormState.about.has_birds === true}
-                        onChange={(e) => updateEditFormState('about', 'has_birds', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_birds_edit" className="ml-2 block text-sm text-gray-700">
-                        Has Birds
-                      </label>
+                <div className="col-start-1 col-span-2">
+                  <p className="text-sm font-medium text-gray-700 mb-1">I Have Animals:</p> {/* Label for the group */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="flex items-center">
+                        <input
+                          id="has_cats_edit"
+                          type="checkbox"
+                          checked={editFormState.about.has_cats === true}
+                          onChange={(e) => updateEditFormState('about', 'has_cats', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_cats_edit" className="ml-2 block text-sm text-gray-700">
+                          Cats
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_dogs_edit"
+                          type="checkbox"
+                          checked={editFormState.about.has_dogs === true}
+                          onChange={(e) => updateEditFormState('about', 'has_dogs', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_dogs_edit" className="ml-2 block text-sm text-gray-700">
+                          Dogs
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_reptiles_edit"
+                          type="checkbox"
+                          checked={editFormState.about.has_reptiles === true}
+                          onChange={(e) => updateEditFormState('about', 'has_reptiles', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_reptiles_edit" className="ml-2 block text-sm text-gray-700">
+                          Reptiles
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_birds_edit"
+                          type="checkbox"
+                          checked={editFormState.about.has_birds === true}
+                          onChange={(e) => updateEditFormState('about', 'has_birds', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_birds_edit" className="ml-2 block text-sm text-gray-700">
+                          Birds
+                        </label>
+                      </div>
                     </div>
                   </div>
                   {/* other_animals (TagsInput or similar) */}
@@ -1529,8 +2131,65 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       Other Animals (up to 5)
                     </label>
                     <TagsInput
-                      value={editFormState.about.other_animals || []} // Bind to editFormState
-                      onChange={(tags) => updateEditFormState('about', 'other_animals', tags)} // Use updateEditFormState
+                      isEditOnRemove
+                      value={editFormState.about.other_animals} // Bind to editFormState
+                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                        const newTagsCandidate = [...currentTags, newTag];
+                        const validationError = validators['about.other_animals'](newTagsCandidate, editFormState); // Use editFormState
+
+                        // Update the main errors state if validation fails
+                        if (validationError !== null) {
+                          setErrors(prevErrors => ({
+                            ...prevErrors,
+                            'about.other_animals': validationError
+                          }));
+                          return false; // Prevent adding the tag
+                        }
+
+                        // Clear the specific error for this field if validation passes
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.other_animals']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        return true; // Allow adding the tag
+                      }}
+                      onChange={(tags) => {
+                          // Clear the specific error for this field whenever tags change
+                          // This happens after a successful add (when beforeAddValidate passed)
+                          // or a remove action.
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.other_animals']; // Remove the error for this key
+                            return newErrors;
+                          });
+                          updateEditFormState('about', 'other_animals', tags); // Use updateEditFormState
+                        }}
+                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          const inputValue = (e.target as HTMLInputElement).value;
+
+                          if (inputValue) {
+                            const currentTags = editFormState.about.other_animals || []; // Use editFormState
+                            const newTagsCandidate = [...currentTags, inputValue];
+                            validateCurrentTagsInput('about.other_animals', newTagsCandidate, 'about.other_animals'); // Use helper
+                          }
+                          else {
+                            const currentTags = editFormState.about.other_animals || [];
+                            validateCurrentTagsInput('about.other_animals', currentTags, 'about.other_animals'); // Use helper
+                          }
+                        }}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                          const inputElement = e.target as HTMLInputElement
+                          const inputValue = inputElement.value
+                          if (inputValue) {
+                            inputElement.value = '' // Clear the input field if it had an error and was blurred while containing text
+                            setErrors(prevErrors => {
+                              const newErrors = { ...prevErrors };
+                              delete newErrors['about.other_animals']; // Remove the error for this key
+                              return newErrors;
+                            })
+                          }
+                        }}
                       name="other_animals_edit" // Unique name for this instance
                       placeHolder="Type and press enter"
                       // Adapted Tailwind classes for styling, matching the pattern from ProfileSetupPage and other inputs in ProfileEditView
@@ -1549,8 +2208,62 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       Interests (up to 5)
                     </label>
                     <TagsInput
+                      isEditOnRemove
                       value={editFormState.about.interests || []} // Bind to editFormState
-                      onChange={(tags) => updateEditFormState('about', 'interests', tags)} // Use updateEditFormState
+                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                          const newTagsCandidate = [...currentTags, newTag];
+                          const validationError = validators['about.interests'](newTagsCandidate, editFormState); // Use editFormState
+
+                          // Update the main errors state if validation fails
+                          if (validationError !== null) {
+                            setErrors(prevErrors => ({
+                              ...prevErrors,
+                              'about.interests': validationError
+                            }));
+                            return false; // Prevent adding the tag
+                          }
+
+                          // Clear the specific error for this field if validation passes
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.interests']; // Remove the error for this key
+                            return newErrors;
+                          });
+                          return true; // Allow adding the tag
+                        }}
+                      onChange={(tags) => {
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.interests']; // Remove the error for this key
+                            return newErrors;
+                          });
+                          updateEditFormState('about', 'interests', tags); // Use updateEditFormState
+                        }}
+                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          const inputValue = (e.target as HTMLInputElement).value;
+
+                          if (inputValue) {
+                            const currentTags = editFormState.about.interests || []; // Use editFormState
+                            const newTagsCandidate = [...currentTags, inputValue];
+                            validateCurrentTagsInput('about.interests', newTagsCandidate, 'about.interests'); // Use helper
+                          }
+                          else {
+                            const currentTags = editFormState.about.interests || [];
+                            validateCurrentTagsInput('about.interests', currentTags, 'about.interests'); // Use helper
+                          }
+                        }}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                          const inputElement = e.target as HTMLInputElement
+                          const inputValue = inputElement.value
+                          if (inputValue) {
+                            inputElement.value = '' // Clear the input field if it had an error and was blurred while containing text
+                            setErrors(prevErrors => {
+                              const newErrors = { ...prevErrors };
+                              delete newErrors['about.interests']; // Remove the error for this key
+                              return newErrors;
+                            })
+                          }
+                        }}
                       name="interests_edit" // Unique name for this instance
                       placeHolder="Type and press enter"
                       // Adapted Tailwind classes for styling
@@ -1562,6 +2275,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     {/* Error display */}
                     {errors['about.interests'] && <p className="mt-1 text-sm text-red-600">{errors['about.interests']}</p>}
                   </div>
+
                   {/* bio (textarea) */}
                   <div className="col-span-2">
                     <label htmlFor="bio_edit" className="block text-sm font-medium text-gray-700">
@@ -1576,10 +2290,12 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                         errors['about.bio'] ? 'border-red-500' : ''
                       }`}
                     />
-                    {errors['about.bio'] && <p className="mt-1 text-sm text-red-600">{errors['about.bio']}</p>}
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className={`text-xs mt-1 ${
+                      editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'text-red-600' : 'text-gray-500' // Change color based on limit
+                    }`}>
                       {editFormState.about.bio ? editFormState.about.bio.length : 0} / 1024 characters
                     </p>
+                    {errors['about.bio'] && <p className="mt-1 text-sm text-red-600">{errors['about.bio']}</p>}
                   </div>
               </div>
             </div>
@@ -1600,13 +2316,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
         </button>
         <button
           type="button"
-          onClick={handleSave} // Call the save handler
-          disabled={isSaving}
+          onClick={handleSave}
+          disabled={!hasChanges || isSaving} // Disable if no changes OR if currently saving
           className={`px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white ${
-            isSaving ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
+            !hasChanges || isSaving // Condition for disabled state
+              ? 'bg-gray-400 cursor-not-allowed' // Styles when disabled
+              : 'bg-green-600 hover:bg-green-700' // Styles when enabled
           } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
         >
-          {isSaving ? 'Saving...' : 'Save Changes'}
+          {isSaving ? 'Saving...' : 'Save Changes'} {/* Button text can indicate saving */}
         </button>
       </div>
     </div>
@@ -1656,6 +2374,7 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRawFile, setSelectedRawFile] = useState<File | null>(null);
   const [finalCroppedFile, setFinalCroppedFile] = useState<File | null>(null);
+  const [committedCroppedFile, setCommittedCroppedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -1758,6 +2477,9 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
       // Validator passed for the raw file, proceed to load preview
       const reader = new FileReader()
       reader.onload = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
         setImageSrc(reader.result as string)
         // Reset crop position when a new image is loaded
         setCrop({ x: 0, y: 0 })
@@ -1857,18 +2579,13 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
 
       // Check the result of the facecheck API call
       if (facecheckResult.success) {
-        // Facecheck passed, set the final file state
         setFinalCroppedFile(croppedFile)
-        // Pass the final cropped file back to the parent
+        setCommittedCroppedFile(croppedFile) // <-- NEW: remember the last valid crop
         onCropComplete(croppedFile)
-        // Clear any previous errors related to the photo now that facecheck passed
         onClearError()
       } else {
-        // Facecheck failed (e.g., no face detected), show API error
-        // The API spec might return a different structure, adjust based on actual response
-        // Assuming facecheckResult.error exists if success is false
         onError(facecheckResult.error || 'Facecheck failed. Please ensure your photo contains a clear face.')
-        setFinalCroppedFile(null) // Clear the final file state as it's invalid
+        setFinalCroppedFile(null)
       }
     } catch (error) {
       console.error('Error during facecheck:', error)
@@ -1899,7 +2616,10 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
     setZoom(1)
     setCroppedAreaPixels(null)
     setSelectedRawFile(null)
-    setFinalCroppedFile(null)
+    // setFinalCroppedFile(null)
+    if (committedCroppedFile) {
+      setFinalCroppedFile(committedCroppedFile)
+    } 
     if (fileInputRef.current) {
       fileInputRef.current.value = '' // Reset file input
     }
@@ -1932,18 +2652,24 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
         <label className="block text-sm font-medium text-gray-700">
           Photo (JPG, PNG, HEIC, HEIF, max 20MB, will be cropped to square)
         </label>
+
+        {/* hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/jpg,image/png,image/heic,image/heif"
           onChange={onFileChange}
-          className="mt-1 block w-full text-sm text-gray-500
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-md file:border-0
-            file:text-sm file:font-semibold
-            file:bg-blue-50 file:text-blue-700
-            hover:file:bg-blue-100"
+          className="hidden"
         />
+
+        {/* custom trigger button */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="mt-1 inline-flex items-center rounded-md bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+        >
+          Choose File
+        </button>
       </div>
 
       {/* Preview Area - Shows raw file preview, cropped preview, or placeholder */}
@@ -2053,6 +2779,65 @@ import { ProfileReadData } from '@/lib/shallwe/profile/api/schema/read' // Impor
 import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError type
 import { ProfileEditView } from '../components/profile/ProfileEditView'
 import PhotoWithFallbacks from '../components/profile/PhotoWithFallbacks'
+import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
+
+
+interface DisplayLocation {
+  type: 'region' | 'city' | 'district' | 'other_ppl';
+  displayName: string;
+}
+
+
+export const prepareLocationsForDisplay = (locationsObject: LocationsReadFields): DisplayLocation[] => {
+  const displayItems: DisplayLocation[] = [];
+
+  // Process Regions
+  if (locationsObject.regions) {
+    locationsObject.regions.forEach(region => {
+      displayItems.push({
+        type: 'region',
+        displayName: region.region_name,
+      });
+    });
+  }
+
+  // Process Cities and their Districts (applying the rule)
+  if (locationsObject.cities) {
+    locationsObject.cities.forEach(city => {
+      const districtHierarchies = city.districts || [];
+      if (districtHierarchies.length > 0) {
+        // Rule: If city has districts, add only the districts
+        districtHierarchies.forEach(district => {
+          displayItems.push({
+            type: 'district',
+            displayName: `${city.ppl_name}, ${district.district_name}`, // e.g., "Kyiv, Holosiivskyi"
+          });
+        });
+      } else {
+        // Rule: If city has no districts, add the city
+        displayItems.push({
+          type: 'city',
+          displayName: `${city.ppl_name} (${city.region_name})`, // e.g., "Lviv (Lvivska)"
+        });
+      }
+    });
+  }
+
+  // Process Other PPLs
+  if (locationsObject.other_ppls) {
+    locationsObject.other_ppls.forEach(otherPpl => {
+      const suffix = otherPpl.subregion_name
+        ? `${otherPpl.region_name}, ${otherPpl.subregion_name}`
+        : otherPpl.region_name;
+      displayItems.push({
+        type: 'other_ppl',
+        displayName: `${otherPpl.ppl_name} (${suffix})`, // e.g., "Yasno (Ivano-Frankivska, Nizhynskyi)"
+      });
+    });
+  }
+
+  return displayItems;
+};
 
 
 export default function SettingsPage() {
@@ -2066,8 +2851,14 @@ export default function SettingsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
 
-  const defaultProfileImage = "/img/profile/default192.webp"
-  const [defaultImageFailed, setDefaultImageFailed] = useState(false)
+  const formatSmokingTypes = (smokesIqos: boolean | null, smokesVape: boolean | null, smokesTobacco: boolean | null, smokesCigs: boolean | null): string => {
+    const types: string[] = [];
+    if (smokesIqos) types.push('IQOS');
+    if (smokesVape) types.push('Vape');
+    if (smokesTobacco) types.push('Tobacco');
+    if (smokesCigs) types.push('Cigarettes');
+    return types.join(', ');
+  }
 
   const handleEditClick = () => {
     setIsEditing(true)
@@ -2083,7 +2874,6 @@ export default function SettingsPage() {
     setIsEditing(false) // Set isEditing back to false on cancel
     setApiError(null) // Clear any errors set during editing
   }
-
 
   const fetchProfile = async () => {
     try {
@@ -2367,6 +3157,20 @@ export default function SettingsPage() {
                     <p className="text-sm text-gray-500">Smoking Level</p>
                     <p className="font-medium">{formatLevel(profileData.about.smoking_level, 'smoking')}</p>
                   </div>
+                  {/* Add Smoking Type List */}
+                  {profileData.about.smoking_level !== null && profileData.about.smoking_level > 1 && (
+                    <div>
+                      <p className="text-sm text-gray-500">Smoking Types</p>
+                      <p className="font-medium text-gray-900"> {/* Standard text color, not indigo */}
+                        {formatSmokingTypes(
+                          profileData.about.smokes_iqos,
+                          profileData.about.smokes_vape,
+                          profileData.about.smokes_tobacco,
+                          profileData.about.smokes_cigs
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Rent Preferences */}
@@ -2397,29 +3201,27 @@ export default function SettingsPage() {
                   <div className="mt-2">
                       <p className="text-sm text-gray-500">Locations</p>
                       <div className="flex flex-wrap gap-1 mt-1">
-                          {profileData.rent_preferences.locations &&
-                          (profileData.rent_preferences.locations.regions?.length > 0 ||
-                            profileData.rent_preferences.locations.cities?.length > 0 ||
-                            profileData.rent_preferences.locations.other_ppls?.length > 0) ? (
-                              <>
-                                  {profileData.rent_preferences.locations.regions?.map((region, index) => (
-                                      <span key={`region-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                          {region.region_name}
-                                      </span>
-                                  ))}
-                                  {profileData.rent_preferences.locations.cities?.map((city, index) => (
-                                      <span key={`city-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                          {city.ppl_name}, {city.region_name}
-                                      </span>
-                                  ))}
-                                  {profileData.rent_preferences.locations.other_ppls?.map((otherPpl, index) => (
-                                      <span key={`other_ppl-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                          {otherPpl.ppl_name}{otherPpl.subregion_name ? `, ${otherPpl.subregion_name}` : ''}, {otherPpl.region_name}
-                                      </span>
-                                  ))}
-                              </>
-                          ) : (
+                          {profileData.rent_preferences.locations ? (
+                            // Call the function to get the processed array
+                            prepareLocationsForDisplay(profileData.rent_preferences.locations).length > 0 ? (
+                              // Map over the processed array
+                              prepareLocationsForDisplay(profileData.rent_preferences.locations).map(
+                                (item: DisplayLocation, index: number) => (
+                                  <span
+                                    key={`${item.type}-${index}`} // Use type and index for a more specific key
+                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                                  >
+                                    {item.displayName} {/* Render the pre-formatted display name */}
+                                  </span>
+                                )
+                              )
+                            ) : (
+                              // Or show default if the processed array is empty
                               <p className="text-gray-600">Вся Україна (Default)</p>
+                            )
+                          ) : (
+                            // Handle case where profileData.rent_preferences.locations is null/undefined
+                            <p className="text-gray-600">Вся Україна (Default)</p>
                           )}
                       </div>
                   </div>
@@ -2449,21 +3251,17 @@ export default function SettingsPage() {
                       <p className="text-sm text-gray-500">Neatness Level</p>
                       <p className="font-medium">{formatLevel(profileData.about.neatness_level, 'neatness')}</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Has Cats</p>
-                      <p className="font-medium">{formatBoolean(profileData.about.has_cats)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Has Dogs</p>
-                      <p className="font-medium">{formatBoolean(profileData.about.has_dogs)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Has Reptiles</p>
-                      <p className="font-medium">{formatBoolean(profileData.about.has_reptiles)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Has Birds</p>
-                      <p className="font-medium">{formatBoolean(profileData.about.has_birds)}</p>
+                    {/* Pet Checkboxes - Display as a list */}
+                    <div className="col-span-2"> {/* Use col-span-2 to make it full width */}
+                      <p className="text-sm text-gray-500">Animals</p>
+                      <p className="font-medium text-gray-900"> {/* Standard text color */}
+                        {[
+                          profileData.about.has_cats && 'Cats',
+                          profileData.about.has_dogs && 'Dogs',
+                          profileData.about.has_reptiles && 'Reptiles',
+                          profileData.about.has_birds && 'Birds',
+                        ].filter(Boolean).join(', ') || 'None'} {/* Filter out falsy values and join, default to 'None' */}
+                      </p>
                     </div>
                     <div className="col-span-2">
                       <p className="text-sm text-gray-500">Other Animals</p>
@@ -2475,7 +3273,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="col-span-2">
                       <p className="text-sm text-gray-500">Bio</p>
-                      <p className="font-medium">{profileData.about.bio || 'Not specified'}</p>
+                      <p className="font-medium break-words">{profileData.about.bio || 'Not specified'}</p>
                     </div>
                   </div>
                 </div>
@@ -2569,21 +3367,24 @@ shallwe_frontend/src/app/setup/page.tsx:
 'use client'
 
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { TagsInput } from "react-tag-input-component"
 
-import { createProfile } from '@/lib/shallwe/profile/api/calls'
-import { ProfileCreateFormState, ProfileCreateFormStateInitial } from '@/lib/shallwe/profile/formstates/states' 
-import { collectProfileCreateDataFromState } from '@/lib/shallwe/profile/formstates/collectors/create'
-import { validateProfileCreateFields } from '@/lib/shallwe/profile/formstates/validators/create'
-import { ValidationResult } from '@/lib/shallwe/profile/formstates/validators/common'
-import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
-import { ApiError } from '@/lib/shallwe/common/api/calls'
-
 import ProfilePhotoPick from '../components/profile/ProfilePhotoPick'
 import Locations from '../components/profile/Locations'
+
+import { env } from '@/config/env'
+import { getDocumentCookie } from '@/lib/common/cookie'
+import { ProfileCreateFormState, profileCreateFormStateInitial } from '@/lib/shallwe/profile/formstates/states' 
+import { collectProfileCreateDataFromState } from '@/lib/shallwe/profile/formstates/collectors/create'
+import { validateProfileCreateFields } from '@/lib/shallwe/profile/formstates/validators/create'
+import { ValidationResult, validators } from '@/lib/shallwe/profile/formstates/validators/common'
+import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
+import { createProfile } from '@/lib/shallwe/profile/api/calls'
+import { ApiError } from '@/lib/shallwe/common/api/calls'
+import BirthDateSelect from '../components/profile/BirthDateSelect'
 
 
 // Dividing visual flow in steps for better UX
@@ -2620,23 +3421,89 @@ const STEP_2_FIELDS_VALIDATE = [
 
 export default function ProfileSetupPage() {
   const [currentStep, setCurrentStep] = useState(0)
-  const [formState, setFormState] = useState<ProfileCreateFormState>(ProfileCreateFormStateInitial)
+  const [formState, setFormState] = useState<ProfileCreateFormState>(profileCreateFormStateInitial)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [generalError, setGeneralError] = useState<string | null>(null)
   const [apiError, setApiError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const [isAboutAccordionOpen, setIsAboutAccordionOpen] = useState(false)
   const [locationsApiError, setLocationsApiError] = useState<string | null>(null)
+
+
+  // Skip to Step N (DEV test feature)
+  useEffect(() => {
+    if (env.NEXT_PUBLIC_SHALLWE_ENV_MODE === 'DEV') {
+      const skipCookieName = 'shallwe_test_profile_create_skip_to_step'
+
+      const skipToStepValue = getDocumentCookie(skipCookieName)
+      console.log(`ProfileSetupPage: Found cookie '${skipCookieName}': ${skipToStepValue}`)
+
+      if (skipToStepValue) {
+        const targetStep = parseInt(skipToStepValue, 10)
+        if (!isNaN(targetStep) && targetStep >= 0 && targetStep <= 2) {
+          console.log(`ProfileSetupPage: QA Cookie requests skipping to step ${targetStep}.`)
+          setCurrentStep(targetStep)
+        }
+        else {
+          console.warn(`ProfileSetupPage: Invalid step number '${skipToStepValue}' found in cookie '${skipCookieName}'. Ignoring.`) // Optional: Log warning
+        }
+      }
+    }
+  }, [])
+
+
+  // Define a helper function to run validation and update errors
+  const validateCurrentTagsInput = (fieldName: string, tagsToValidate: string[], validatorKey: string) => {
+    const validationError = validators[validatorKey](tagsToValidate, formState);
+    setErrors(prevErrors => {
+      const newErrors = { ...prevErrors };
+      if (validationError !== null) {
+        newErrors[fieldName] = validationError;
+      } else {
+        delete newErrors[fieldName]; // Clear error if validation passes
+      }
+      return newErrors;
+    });
+    return validationError
+  };
+
+
+  const updateSmokingLevelAndClearTypes = (newLevel: ProfileCreateFormState['about']['smoking_level']) => {
+    setGeneralError(null);
+    setFormState(prev => {
+      const updatedAbout = { ...prev.about, smoking_level: newLevel };
+
+      // Check if the new level is null or 1
+      if (newLevel === null || newLevel === 1) {
+        // Reset smoking type booleans to false
+        updatedAbout.smokes_iqos = false;
+        updatedAbout.smokes_vape = false;
+        updatedAbout.smokes_tobacco = false;
+        updatedAbout.smokes_cigs = false;
+      }
+
+      return {
+        ...prev,
+        about: updatedAbout,
+      };
+    });
+
+    // Clear specific field error when user starts typing/modifying
+    if (errors['about.smoking_level']) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors['about.smoking_level'];
+        return newErrors;
+      });
+    }
+  };
   
 
   // Update the photo handler to interact with the PhotoCropper component
   const handlePhotoCropped = (croppedFile: File) => {
     updateFormState('profile', 'photo', croppedFile)
-    // Clear the error state for profile.photo when the photo state is updated
-    // This happens implicitly when validateCurrentStep/validateAllFields runs next,
-    // but we can clear it explicitly here if desired, or let validation handle it.
-    // The key is that if the state is valid, the error should disappear on next validation run.
   }
 
   // Callback for PhotoCropper to set error in the main page's state
@@ -2667,6 +3534,7 @@ export default function ProfileSetupPage() {
   const updateFormState = <S extends keyof ProfileCreateFormState, F extends keyof ProfileCreateFormState[S]>(
     section: S, field: F, value: ProfileCreateFormState[S][F]
   ) => {
+    setGeneralError(null)
     setFormState(prev => ({
       ...prev,
       [section]: {
@@ -2707,16 +3575,17 @@ export default function ProfileSetupPage() {
   }
 
 
-  const validateAllFields = (): boolean => {
+  const validateAllFields = (): ValidationResult => {
     // Validate all fields for final submission
     const allFields = [...STEP_0_FIELDS_TO_VALIDATE, ...STEP_1_FIELDS_TO_VALIDATE, ...STEP_2_FIELDS_VALIDATE]
     const validation: ValidationResult = validateProfileCreateFields(formState, allFields)
     setErrors(validation.errors)
-    return validation.isValid
+    return validation
   }
 
 
   const nextStep = () => {
+    setGeneralError(null)
     if (validateCurrentStep()) {
       if (currentStep < STEPS.length - 1) {
         setCurrentStep(prev => prev + 1)
@@ -2726,6 +3595,7 @@ export default function ProfileSetupPage() {
 
 
   const prevStep = () => {
+    setGeneralError(null)
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1)
     }
@@ -2733,58 +3603,63 @@ export default function ProfileSetupPage() {
 
 
   const handleSubmit = async () => {
-    if (!validateAllFields()) {
-      console.log("Final validation failed, cannot submit.")
-      return // Do not proceed if final validation fails
+    setGeneralError(null)
+    setIsLoading(true)
+
+    const validationResult = validateAllFields()
+    if (!validationResult.isValid) {
+      console.log("Final validation failed, cannot submit.");
+      // Set a user-facing error message
+      const prevStepErrors = Object.keys(validationResult.errors).filter(
+        fieldName => !STEP_2_FIELDS_VALIDATE.includes(fieldName)
+      );
+
+      if (prevStepErrors.length > 0) {
+        const prevStepsInvalidFields = prevStepErrors.join(", ");
+        setGeneralError(`Some previous fields weren't correct, please check again: ${prevStepsInvalidFields}.`);
+      }
+
+      setIsLoading(false); // Stop loading state as submission is halted
+      return; // Do not proceed if final validation fails
     }
 
-    setIsLoading(true)
     setApiError(null)
     setErrors({}) // Clear previous API errors (and client-side validation errors)
 
     try {
-      const profileDataToSend: ProfileCreateData = collectProfileCreateDataFromState(formState)
-      console.log("Collected Profile Data for API:", profileDataToSend) // Debug log
-
-      // Call the updated createProfile API function with the structured data object
-      // The API call itself will handle converting this object into FormData using formatMultipartFormData
-      await createProfile(profileDataToSend)
-      console.log("Profile created successfully!")
-      // On success, redirect to settings page
-      router.push('/settings')
-    }
-
-    catch (error) {
-      console.error("Error creating profile:", error)
-      setIsLoading(false)
+      const profileDataToSend: ProfileCreateData = collectProfileCreateDataFromState(formState);
+      console.log("Collected Profile Data for API:", profileDataToSend); // Debug log
+      await createProfile(profileDataToSend);
+      console.log("Profile created successfully!");
+      router.push('/settings');
+    } catch (error) {
+      console.error("Error creating profile:", error);
+      // Handle API errors here, potentially setting 'generalError' or 'apiError'
+      let errorMessage = "An unexpected error occurred.";
       if (error && typeof error === 'object' && 'details' in error) {
-        const err = error as ApiError
-        console.log("API Error Details:", err.details)
-        // Example structure from API spec: {error: {profile: {name: ["error_msg"]}, non_field_errors: ["error_msg"]}}
+        const err = error as ApiError;
+        console.log("API Error Details:", err.details);
         if (err.details && typeof err.details === 'object' && 'error' in err.details) {
-          const apiErrors = err.details.error
+          const apiErrors = err.details.error;
           if (typeof apiErrors === 'object') {
-            setApiError(JSON.stringify(apiErrors))
+            // You might want to format this object into a more user-friendly string
+            errorMessage = JSON.stringify(apiErrors);
+          } else if (typeof apiErrors === 'string') {
+            errorMessage = apiErrors;
+          } else {
+             errorMessage = "Received an unexpected error format from the server.";
           }
-          else if (typeof apiErrors === 'string') {
-            setApiError(apiErrors) // If it's a simple string error
-          }
+        } else {
+          errorMessage = err.message || errorMessage;
         }
-        else {
-          setApiError(err.message || "An unknown error occurred during profile creation.")
-        }
-      } 
-      else if (error instanceof Error) {
-        setApiError(error.message)
-      } 
-      else {
-        setApiError("An unexpected error occurred.")
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
+      setGeneralError(errorMessage); // Use the general error state for API errors too, or keep separate 'apiError'
+    } finally {
+      setIsLoading(false); // Always stop loading state in 'finally'
     }
-    finally {
-      setIsLoading(false)
-    }
-  }
+  };
 
 
   // --- STEP RENDER OPTIONS ---
@@ -2834,21 +3709,13 @@ export default function ProfileSetupPage() {
             <h2 className="text-xl font-semibold">About You</h2>
 
             {/* Required fields (birth_date, gender, is_couple, has_children) remain outside the accordion */}
-            <div>
-              <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">
-                Birth Date (YYYY-MM-DD)
-              </label>
-              <input
-                type="date"
-                id="birth_date"
-                value={formState.about.birth_date ?? ''}
-                onChange={(e) => updateFormState('about', 'birth_date', e.target.value || null)}
-                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                  errors['about.birth_date'] ? 'border-red-500' : ''
-                }`}
-              />
-              {errors['about.birth_date'] && <p className="mt-1 text-sm text-red-600">{errors['about.birth_date']}</p>}
-            </div>
+            <BirthDateSelect
+              inputId="birth_date"
+              currentValue={formState.about.birth_date} // Pass the string value from state
+              onChange={(dateString) => updateFormState('about', 'birth_date', dateString)} // Pass the update handler
+              error={errors['about.birth_date']} // Pass the error message
+              className={`${errors['about.birth_date'] ? 'border-red-500' : ''}`} // Pass specific Tailwind classes if needed
+            />
 
             {/* Gender */}
             <div>
@@ -2994,7 +3861,7 @@ export default function ProfileSetupPage() {
                     <select
                       id="smoking_level"
                       value={formState.about.smoking_level ?? ''}
-                      onChange={(e) => updateFormState('about', 'smoking_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
+                      onChange={(e) => updateSmokingLevelAndClearTypes(e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
                       className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                         errors['about.smoking_level'] ? 'border-red-500' : ''
                       }`}
@@ -3010,55 +3877,58 @@ export default function ProfileSetupPage() {
 
                   {/* Smoking Type Checkboxes (Conditional based on smoking_level) */}
                   {formState.about.smoking_level !== null && formState.about.smoking_level > 1 && (
-                    <div className="space-y-2 ml-4">
-                      <div className="flex items-center">
-                        <input
-                          id="smokes_iqos"
-                          type="checkbox"
-                          checked={formState.about.smokes_iqos === true}
-                          onChange={(e) => updateFormState('about', 'smokes_iqos', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="smokes_iqos" className="ml-2 block text-sm text-gray-700">
-                          IQOS
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="smokes_vape"
-                          type="checkbox"
-                          checked={formState.about.smokes_vape === true}
-                          onChange={(e) => updateFormState('about', 'smokes_vape', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="smokes_vape" className="ml-2 block text-sm text-gray-700">
-                          Vape
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="smokes_tobacco"
-                          type="checkbox"
-                          checked={formState.about.smokes_tobacco === true}
-                          onChange={(e) => updateFormState('about', 'smokes_tobacco', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="smokes_tobacco" className="ml-2 block text-sm text-gray-700">
-                          Tobacco
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="smokes_cigs"
-                          type="checkbox"
-                          checked={formState.about.smokes_cigs === true}
-                          onChange={(e) => updateFormState('about', 'smokes_cigs', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="smokes_cigs" className="ml-2 block text-sm text-gray-700">
-                          Cigarettes
-                        </label>
-                      </div>
+                    <div className="col-span-2 mt-2"> {/* Use col-span-2 to span full width, add top margin */}
+                      <p className="text-sm font-medium text-gray-700 mb-1">Smoking Types:</p> {/* Label for the group */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2"> {/* Grid layout: 1 column on mobile, 2 on small screens, 4 on medium+ screens */}
+                        <div className="flex items-center">
+                          <input
+                            id="smokes_iqos"
+                            type="checkbox"
+                            checked={formState.about.smokes_iqos === true}
+                            onChange={(e) => updateFormState('about', 'smokes_iqos', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor="smokes_iqos" className="ml-2 block text-sm text-gray-700">
+                            IQOS
+                          </label>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            id="smokes_vape"
+                            type="checkbox"
+                            checked={formState.about.smokes_vape === true}
+                            onChange={(e) => updateFormState('about', 'smokes_vape', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor="smokes_vape" className="ml-2 block text-sm text-gray-700">
+                            Vape
+                          </label>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            id="smokes_tobacco"
+                            type="checkbox"
+                            checked={formState.about.smokes_tobacco === true}
+                            onChange={(e) => updateFormState('about', 'smokes_tobacco', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor="smokes_tobacco" className="ml-2 block text-sm text-gray-700">
+                            Tobacco
+                          </label>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            id="smokes_cigs"
+                            type="checkbox"
+                            checked={formState.about.smokes_cigs === true}
+                            onChange={(e) => updateFormState('about', 'smokes_cigs', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor="smokes_cigs" className="ml-2 block text-sm text-gray-700">
+                            Cigarettes
+                          </label>
+                        </div>
+                        </div>
                     </div>
                   )}
 
@@ -3169,54 +4039,57 @@ export default function ProfileSetupPage() {
                   </div>
 
                   {/* Pet Checkboxes */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center">
-                      <input
-                        id="has_cats"
-                        type="checkbox"
-                        checked={formState.about.has_cats === true}
-                        onChange={(e) => updateFormState('about', 'has_cats', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_cats" className="ml-2 block text-sm text-gray-700">
-                        Has Cats
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_dogs"
-                        type="checkbox"
-                        checked={formState.about.has_dogs === true}
-                        onChange={(e) => updateFormState('about', 'has_dogs', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_dogs" className="ml-2 block text-sm text-gray-700">
-                        Has Dogs
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_reptiles"
-                        type="checkbox"
-                        checked={formState.about.has_reptiles === true}
-                        onChange={(e) => updateFormState('about', 'has_reptiles', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_reptiles" className="ml-2 block text-sm text-gray-700">
-                        Has Reptiles
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_birds"
-                        type="checkbox"
-                        checked={formState.about.has_birds === true}
-                        onChange={(e) => updateFormState('about', 'has_birds', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_birds" className="ml-2 block text-sm text-gray-700">
-                        Has Birds
-                      </label>
+                  <div className="col-span-2 mt-2">
+                    <p className="text-sm font-medium text-gray-700 mb-1">I Have Animals:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="col-start-1 flex items-center">
+                        <input
+                          id="has_cats"
+                          type="checkbox"
+                          checked={formState.about.has_cats === true}
+                          onChange={(e) => updateFormState('about', 'has_cats', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_cats" className="ml-2 block text-sm text-gray-700">
+                          Has Cats
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_dogs"
+                          type="checkbox"
+                          checked={formState.about.has_dogs === true}
+                          onChange={(e) => updateFormState('about', 'has_dogs', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_dogs" className="ml-2 block text-sm text-gray-700">
+                          Has Dogs
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_reptiles"
+                          type="checkbox"
+                          checked={formState.about.has_reptiles === true}
+                          onChange={(e) => updateFormState('about', 'has_reptiles', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_reptiles" className="ml-2 block text-sm text-gray-700">
+                          Has Reptiles
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_birds"
+                          type="checkbox"
+                          checked={formState.about.has_birds === true}
+                          onChange={(e) => updateFormState('about', 'has_birds', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_birds" className="ml-2 block text-sm text-gray-700">
+                          Has Birds
+                        </label>
+                      </div>
                     </div>
                   </div>
 
@@ -3226,8 +4099,64 @@ export default function ProfileSetupPage() {
                       Other Animals (up to 5)
                     </label>
                     <TagsInput
+                      isEditOnRemove
                       value={formState.about.other_animals || []}
-                      onChange={(tags) => updateFormState('about', 'other_animals', tags)}
+                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                        const newTagsCandidate = [...currentTags, newTag];
+                        const validationError = validators['about.other_animals'](newTagsCandidate, formState);
+                        // Update the main errors state if validation fails
+                        if (validationError !== null) {
+                          setErrors(prevErrors => ({
+                            ...prevErrors,
+                            'about.other_animals': validationError
+                          }));
+                          return false; // Prevent adding the tag
+                        }
+
+                        // Clear the specific error for this field if validation passes
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.other_animals']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        return true; // Allow adding the tag
+                      }}
+                      onChange={(tags: string[]) => {
+                        // Clear the specific error for this field whenever tags change
+                        // This happens after a successful add (when beforeAddValidate passed)
+                        // or a remove action.
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.other_animals']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        updateFormState('about', 'other_animals', tags);
+                      }}
+                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        const inputValue = (e.target as HTMLInputElement).value;
+
+                        if (inputValue) {
+                          const currentTags = formState.about.other_animals || []; // Use current state
+                          const newTagsCandidate = [...currentTags, inputValue];
+                          validateCurrentTagsInput('about.other_animals', newTagsCandidate, 'about.other_animals');
+                        }
+                        else {
+                          const currentTags = formState.about.other_animals || [];
+                          validateCurrentTagsInput('about.other_animals', currentTags, 'about.other_animals');
+                        }
+                      }}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                        const inputElement = e.target as HTMLInputElement
+                        const inputValue = inputElement.value
+                        if (inputValue) {
+                          inputElement.value = ''
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.other_animals']; // Remove the error for this key
+                            return newErrors;
+                          })
+                        }
+                      }}
                       name="other_animals"
                       placeHolder="Type and press enter"
                       classNames={{
@@ -3244,8 +4173,61 @@ export default function ProfileSetupPage() {
                       Interests (up to 5)
                     </label>
                     <TagsInput
+                      isEditOnRemove
                       value={formState.about.interests || []}
-                      onChange={(tags) => updateFormState('about', 'interests', tags)}
+                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                        const newTagsCandidate = [...currentTags, newTag];
+                        const validationError = validators['about.interests'](newTagsCandidate, formState);
+                        // Update the main errors state if validation fails
+                        if (validationError !== null) {
+                          setErrors(prevErrors => ({
+                            ...prevErrors,
+                            'about.interests': validationError
+                          }));
+                          return false; // Prevent adding the tag
+                        }
+
+                        // Clear the specific error for this field if validation passes
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.interests']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        return true; // Allow adding the tag
+                      }}
+                      onChange={(tags) => {
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.interests']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        updateFormState('about', 'interests', tags)
+                      }}
+                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        const inputValue = (e.target as HTMLInputElement).value;
+
+                        if (inputValue) {
+                          const currentTags = formState.about.interests || []; // Use current state
+                          const newTagsCandidate = [...currentTags, inputValue];
+                          validateCurrentTagsInput('about.interests', newTagsCandidate, 'about.interests');
+                        }
+                        else {
+                          const currentTags = formState.about.interests || [];
+                          validateCurrentTagsInput('about.interests', currentTags, 'about.interests');
+                        }
+                      }}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                        const inputElement = e.target as HTMLInputElement
+                        const inputValue = inputElement.value
+                        if (inputValue) {
+                          inputElement.value = ''
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.interests']; // Remove the error for this key
+                            return newErrors;
+                          })
+                        }
+                      }}
                       name="interests"
                       placeHolder="Type and press enter"
                       classNames={{
@@ -3253,7 +4235,7 @@ export default function ProfileSetupPage() {
                         input: "mt-0 block w-full p-0 text-sm focus:outline-none",
                       }}
                     />
-                    {errors['about.interests'] && <p className="mt-1 text-sm text-red-600">{errors['about.other_animals']}</p>}
+                    {errors['about.interests'] && <p className="mt-1 text-sm text-red-600">{errors['about.interests']}</p>}
                   </div>
 
                   {/* bio (textarea) */}
@@ -3271,12 +4253,12 @@ export default function ProfileSetupPage() {
                         (formState.about.bio && formState.about.bio.length > 1024 ? 'border-red-500' : 'border-gray-300') // Check char limit
                       }`}
                     />
-                    {errors['about.bio'] && <p className="mt-1 text-sm text-red-600">{errors['about.bio']}</p>}
                     <p className={`text-xs mt-1 ${
                       formState.about.bio && formState.about.bio.length > 1024 ? 'text-red-600' : 'text-gray-500' // Change color based on limit
                     }`}>
                       {formState.about.bio ? formState.about.bio.length : 0} / 1024 characters
                     </p>
+                    {errors['about.bio'] && <p className="mt-1 text-sm text-red-600">{errors['about.bio']}</p>}
                   </div>
                 </div>
               )}
@@ -3468,6 +4450,13 @@ export default function ProfileSetupPage() {
           </nav>
         </div>
 
+        {/* General Error Display (for validation or API errors) */}
+        {generalError && ( // Or {apiError && ...} if you keep them separate
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span className="block sm:inline">Error: {generalError}</span> {/* Or "API Error: {apiError}" */}
+          </div>
+        )}
+
         {/* API Error Display */}
         {apiError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
@@ -3549,6 +4538,7 @@ import Header from '@/app/components/layout/Header'
 import Footer from '@/app/components/layout/Footer'
 
 import { MSWInitializer } from '@/app/components/mock/MSWInit'
+import { env } from '@/config/env'
 
 
 const inter = Inter({ subsets: ['latin'] })
@@ -3561,7 +4551,7 @@ export const metadata: Metadata = {
 
 
 export default function RootLayout({children,}: {children: React.ReactNode}) {
-  const useMocks = process.env.NEXT_PUBLIC_SHALLWE_MOCK_API === 'true'
+  const useMocks = env.NEXT_PUBLIC_SHALLWE_MOCK_API
 
   return (
     <html lang="en">
@@ -3737,40 +4727,69 @@ shallwe_frontend/src/config/env.ts:
 import { z } from "zod"
 
 
-// Schema and minimal validation
-const rawSchema = z.object({
+const booleanStringSchema = z.string()
+  .refine(
+    (value) => value === "true" || value === "false",
+    { message: "Must be exactly 'true' or 'false'" }
+  )
+  .transform((value) => value === "true")
+
+
+const oAuthCliendIdStringSchema = z.string()
+  .min(28)
+  .refine(
+    (value) => value.endsWith(".apps.googleusercontent.com"),
+    { message: "Must be a valid Google OAuth client ID ending with .apps.googleusercontent.com" }
+  )
+
+
+// Env schema and minimal validation
+const envSchema = z.object({
+  NEXT_PUBLIC_SHALLWE_ENV_MODE: z.string(),
   NEXT_PUBLIC_SHALLWE_API_BASE_URL_EXTERNAL: z.url(),
   NEXT_PUBLIC_SHALLWE_API_BASE_URL_INTERNAL: z.url(),
   NEXT_PUBLIC_SHALLWE_OAUTH_REDIRECT_URI: z.url(),
-  NEXT_PUBLIC_SHALLWE_OAUTH_CLIENT_ID: z.string()
-    .min(28)
-    .refine(
-      (value) => value.endsWith(".apps.googleusercontent.com"),
-      { message: "Must be a valid Google OAuth client ID ending with .apps.googleusercontent.com" }
-    ),
-  NEXT_PUBLIC_SHALLWE_SKIP_MIDDLEWARE: z.string()
-    .refine(
-      (value) => value === "true" || value === "false",
-      { message: "Must be exactly 'true' or 'false'" }
-    ),
+  NEXT_PUBLIC_SHALLWE_OAUTH_CLIENT_ID: oAuthCliendIdStringSchema,
+  NEXT_PUBLIC_SHALLWE_SKIP_MIDDLEWARE: booleanStringSchema,
+  NEXT_PUBLIC_SHALLWE_MOCK_API: booleanStringSchema,
+  NEXT_PUBLIC_SHALLWE_MIDDLEWARE_COOKIES_SECURE: booleanStringSchema
 })
 
 
 // Linking the exact keys (not ".parse(process.env)" because won't be linked in the browser)
-export const env = rawSchema.parse({
+export const env = envSchema.parse({
+  NEXT_PUBLIC_SHALLWE_ENV_MODE: process.env.NEXT_PUBLIC_SHALLWE_ENV_MODE,
   NEXT_PUBLIC_SHALLWE_API_BASE_URL_EXTERNAL: process.env.NEXT_PUBLIC_SHALLWE_API_BASE_URL_EXTERNAL,
   NEXT_PUBLIC_SHALLWE_API_BASE_URL_INTERNAL: process.env.NEXT_PUBLIC_SHALLWE_API_BASE_URL_INTERNAL,
   NEXT_PUBLIC_SHALLWE_OAUTH_REDIRECT_URI: process.env.NEXT_PUBLIC_SHALLWE_OAUTH_REDIRECT_URI,
   NEXT_PUBLIC_SHALLWE_OAUTH_CLIENT_ID: process.env.NEXT_PUBLIC_SHALLWE_OAUTH_CLIENT_ID,
   NEXT_PUBLIC_SHALLWE_SKIP_MIDDLEWARE: process.env.NEXT_PUBLIC_SHALLWE_SKIP_MIDDLEWARE,
+  NEXT_PUBLIC_SHALLWE_MOCK_API: process.env.NEXT_PUBLIC_SHALLWE_MOCK_API,
+  NEXT_PUBLIC_SHALLWE_MIDDLEWARE_COOKIES_SECURE: process.env.NEXT_PUBLIC_SHALLWE_MIDDLEWARE_COOKIES_SECURE
 })
 
 
 // Declare expected vars for TS (not enforcing)
 declare global {
   namespace NodeJS {
-    interface ProcessEnv extends z.infer<typeof rawSchema> {}
+    interface ProcessEnv extends z.infer<typeof envSchema> {}
   }
+}
+
+_____________________________
+
+shallwe_frontend/src/lib/common/cookie.ts:
+
+export const getDocumentCookie = (name: string): string | undefined => {
+  if (typeof document === 'undefined') {
+    console.warn(`${getDocumentCookie.name}: 'document' is not available (likely running on the server).`)
+    return undefined
+  }
+
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  
+  if (parts.length === 2) return parts.pop()?.split(';').shift()
 }
 
 _____________________________
@@ -3791,18 +4810,16 @@ export const getProfileStatus = async (serverCookies?: string): Promise<ProfileS
   catch (error) {  // Catch expected (403/404), re-throw others
     const apiError = error as ApiError
 
-    if (apiError.details && 'status' in apiError.details) {
-      if (apiError.details.status === 403) {
+    if ('status' in apiError) {
+      if (apiError.status === 403) {
         return { status: 403 }  // Unauthorized
       }
-      else if (apiError.details.status === 404) {
+      else if (apiError.status === 404) {
         return { status: 404 }  // Authorized, but no profile
       }
-      throw error
+      else throw error  // Unexpected status - uknown error
     }
-    else {  // If details don't contain status, it's an unexpected issue
-      throw error
-    }
+    else throw error  // No status - uknown error
   }
 }
 
@@ -3850,24 +4867,14 @@ _____________________________
 shallwe_frontend/src/lib/shallwe/common/api/calls.ts:
 
 import { env } from '@/config/env'
+import { getDocumentCookie } from '@/lib/common/cookie'
 
 
 // --- HELPERS ---
 export interface ApiError {
   message: string
+  status?: number
   details?: any
-}
-
-
-export const getCookie = (name: string): string | undefined => {
-  if (typeof document === 'undefined') return undefined // Guard for server-side execution
-
-  const value = ` ${document.cookie}`
-  const parts = value.split(` ${name}=`)
-
-  if (parts.length === 2) return parts.pop()?.split('').shift()
-
-  return undefined
 }
 
 
@@ -3889,7 +4896,7 @@ export const baseApiCall = async (
   let csrfToken: string | undefined = undefined
 
   if (!serverCookies && typeof window !== 'undefined') {
-    csrfToken = getCookie('csrftoken')
+    csrfToken = getDocumentCookie('csrftoken')
   }
 
   if (csrfToken) {
@@ -3940,14 +4947,10 @@ export const baseApiCall = async (
 
       const apiError: ApiError = {
         message: errorData.message || `HTTP Error: ${response.status}`,
+        status: response.status,
         details: errorData,
       }
       throw apiError
-    }
-
-    // Handle 204 No Content
-    if (response.status === 204) {
-      return null
     }
 
     return response.text().then(text => text ? JSON.parse(text) : null)  // Avoid error when body is empty
@@ -3994,13 +4997,24 @@ _____________________________
 
 shallwe_frontend/src/lib/shallwe/locations/api/calls.ts:
 
-import { baseApiCall } from "@/lib/shallwe/common/api/calls"
+import { ApiError, baseApiCall } from "@/lib/shallwe/common/api/calls"
+import { emptyLocationsReadData, LocationsReadFields } from "./schema"
 
 
 // Search locations
-export const searchLocations = async (query: string): Promise<any> => {
+export const searchLocations = async (query: string): Promise<LocationsReadFields> => {
   const params = new URLSearchParams({ query })
-  return baseApiCall(`locations/search/?${params}`)
+  // try {
+    return baseApiCall(`locations/search/?${params}`) as Promise<LocationsReadFields>
+//   }
+//   catch (error) {
+//     console.log((error as ApiError).status)
+//     const apiError = error as ApiError
+//     if ('status' in apiError && apiError.status === 404) {
+//       return Promise.resolve(emptyLocationsReadData)
+//     }
+//     else throw error
+//   }
 }
 
 _____________________________
@@ -4051,6 +5065,13 @@ export interface LocationsReadFields {
   other_ppls: OtherPplReadFields[]
 }
 
+
+export const emptyLocationsReadData: LocationsReadFields = {
+  regions: [],
+  cities: [],
+  other_ppls: []
+}
+
 _____________________________
 
 shallwe_frontend/src/lib/shallwe/photo/api/calls.ts:
@@ -4073,7 +5094,7 @@ _____________________________
 
 shallwe_frontend/src/lib/shallwe/photo/formstates/validators.ts:
 
-export const MAX_IMAGE_SIZE = 20 * 1024 * 1024  // 20 MB
+export const MAX_PHOTO_FILE_SIZE = 20 * 1024 * 1024  // 20 MB
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif']
 
 
@@ -4081,7 +5102,7 @@ export const validateProfilePhotoFile = (value: File) => {
   if (!ALLOWED_IMAGE_TYPES.includes(value!.type.toLowerCase())) {
     return 'Photo must be JPG, JPEG, PNG, HEIC, or HEIF.'
   }
-  if (value!.size > MAX_IMAGE_SIZE) return 'Photo size must be less than 20MB.'
+  if (value!.size > MAX_PHOTO_FILE_SIZE) return 'Photo file size must be under 20MB.'
   return null
 }
 
@@ -4205,14 +5226,13 @@ _____________________________
 shallwe_frontend/src/lib/shallwe/profile/api/calls.ts:
 
 import { baseApiCall } from "@/lib/shallwe/common/api/calls"
-import { ProfileReadData } from "./schema/read"
 import { ProfileCreateData } from "./schema/create"
 import { ProfileUpdateData } from "./schema/update"
 import { formatMultipartFormData } from "./multipart"
 
 
 // Read profile
-export const getProfile = async (): Promise<ProfileReadData> => {
+export const getProfile = async (): Promise<any> => {
   return baseApiCall('profile/me/')
 }
 
@@ -4231,6 +5251,7 @@ export const createProfile = async (profileData: ProfileCreateData): Promise<any
 // Update profile
 export const updateProfile = async (profileData: ProfileUpdateData): Promise<any> => {
   const formData = formatMultipartFormData(profileData)
+  formData.entries().forEach((pair) => console.log(pair[0], ':', pair[1]))
 
   return baseApiCall('profile/me/', {
     method: 'PATCH',
@@ -4255,10 +5276,15 @@ import { ProfileCreateData } from "./schema/create"
 import { ProfileUpdateData } from "./schema/update"
 
 
-// This parses our JSON-like contract format into final multipart format that API expects
+/** Converts JSON-like data object into the multipart format that backend expects
+* 
+*   Rules:
+*   - group__field -> simple field key
+*   - group__field[] -> list field key
+*   - string 'null' for nulls
+*/
 export const formatMultipartFormData = (data: ProfileCreateData | ProfileUpdateData): FormData => {
   const formData = new FormData()
-
 
   const parseParamGroup = (groupName: keyof (ProfileCreateData | ProfileUpdateData)) => {
     const groupData: Record<string, any> | undefined = data[groupName]
@@ -4266,18 +5292,21 @@ export const formatMultipartFormData = (data: ProfileCreateData | ProfileUpdateD
     if (!groupData) return
 
     Object.entries(groupData).forEach(([key, value]) => {
-      const formKey = `${groupName}[${key}]`
-      const appendValue = (value: any) => formData.append(formKey, value)
+      const baseKey = `${groupName}__${key}`
+      const appendValue = (value: any, key?: string) => formData.append(key ? key : baseKey, value)
       
       if (value !== undefined) {
         if (value === null) appendValue('null')  // Make nulls backend-friendly
         else if (value instanceof File) appendValue(value)  // Handle Files as is
-        else if (Array.isArray(value)) value.forEach(item => appendValue(item))  // Flatten arrays
+        else if (Array.isArray(value)) {
+          const listKey = `${baseKey}[]`
+          if (value.length === 0) appendValue('', listKey)  // Handle empty lists -> backend expects [] marker
+          else value.forEach(item => appendValue(item, listKey))
+        }
         else appendValue(value.toString())  // Stringify the rest
       }
     })
   }
-
 
   (Object.keys(data) as Array<keyof (ProfileCreateData | ProfileUpdateData)>).forEach(groupName => {
     parseParamGroup(groupName)
@@ -4365,7 +5394,16 @@ export const extractHierarchyStrings = (locationsObject: LocationsReadFields): s
     hierarchies.push(...locationsObject.regions.map(r => r.hierarchy));
   }
   if (locationsObject.cities) {
-    hierarchies.push(...locationsObject.cities.flatMap(c => [c.hierarchy, ...(c.districts?.map(d => d.hierarchy) || [])]));
+    locationsObject.cities.forEach(c => {
+      const districtHierarchies = c.districts?.map(d => d.hierarchy) || [];
+      if (districtHierarchies.length > 0) {
+        // Rule: If a city has selected districts, only add the district hierarchies
+        hierarchies.push(...districtHierarchies);
+      } else {
+        // Rule: If a city has no selected districts, add the city's own hierarchy
+        hierarchies.push(c.hierarchy);
+      }
+    });
   }
   if (locationsObject.other_ppls) {
     hierarchies.push(...locationsObject.other_ppls.map(op => op.hierarchy));
@@ -4528,13 +5566,13 @@ export const createStringListValidator = (config: StringListValidationConfig): P
     
     if (config.minLength || config.maxLength || config.pattern) {
       for (const item of value!) {
+        if (config.pattern && !config.pattern.test(item)) {
+          return config.patternError || `Some of ${config.itemName.toLowerCase()} have invalid format.`
+        }
         if (config.minLength && config.maxLength) {
           if (item.length < config.minLength || item.length > config.maxLength) {
             return `Each ${config.itemName.toLowerCase()} must be between ${config.minLength} and ${config.maxLength} characters.`
           }
-        }
-        if (config.pattern && !config.pattern.test(item)) {
-          return config.patternError || `Some of ${config.itemName.toLowerCase()} have invalid format.`
         }
       }
     }
@@ -4581,11 +5619,14 @@ export const validators: Record<string, ProfileFieldValidator> = {
   },
 
   'about.smoking_level': (value: number | null, formData: ProfileCreateFormState) => {
-    if (value !== null && value !== undefined && value > 1) {
+    if (value !== null && value !== undefined) {
       const hasSmokingType = formData.about.smokes_iqos || formData.about.smokes_vape || 
                              formData.about.smokes_tobacco || formData.about.smokes_cigs
-      if (!hasSmokingType) {
+      if (!hasSmokingType && value > 1) {
         return 'If smoking level is greater than 1, at least one smoking type must be selected.'
+      }
+      if (hasSmokingType && value <= 1) {
+        return 'If smoking level is less than or equal to 1, none of smoking types can be selected.'
       }
     }
     return null
@@ -4774,6 +5815,8 @@ export const validateProfileUpdateFields = (
 
   // Validate individual fields
   for (const fieldPath of fieldsToValidate) {
+    if (fieldPath === 'profile.photo' && formState.profile.photo === null) continue
+
     const validator = validators[fieldPath]
     if (validator) {
       const value = getNestedValue(formState, fieldPath)
@@ -4826,7 +5869,7 @@ export interface ProfileCreateFormState {
 
 
 // Initial State
-export const ProfileCreateFormStateInitial: ProfileCreateFormState = {
+export const profileCreateFormStateInitial: ProfileCreateFormState = {
   profile: {
     name: null,
     photo: null
@@ -4834,8 +5877,8 @@ export const ProfileCreateFormStateInitial: ProfileCreateFormState = {
   about: {
     birth_date: null,
     gender: null,
-    is_couple: null,
-    has_children: null,
+    is_couple: false,
+    has_children: false,
     occupation_type: null,
     drinking_level: null,
     smoking_level: null,
@@ -4886,7 +5929,7 @@ export interface ProfileUpdateFormState {
 export const getProfileUpdateFormStateInitial = (initialProfileData: ProfileReadData): ProfileUpdateFormState => {
  // Initialize editFormState from initialProfileData
   // Required fields are pre-populated from profileData
-  const ProfileUpdateFormStateInitial: ProfileUpdateFormState = {
+  const profileUpdateFormStateInitial: ProfileUpdateFormState = {
     profile: {
       name: initialProfileData.profile.name,
       photo: null, // Initialize photo to null, meaning "no change intended". The cropper will show the existing photo URL.
@@ -4913,8 +5956,8 @@ export const getProfileUpdateFormStateInitial = (initialProfileData: ProfileRead
       has_dogs: initialProfileData.about.has_dogs,
       has_reptiles: initialProfileData.about.has_reptiles,
       has_birds: initialProfileData.about.has_birds,
-      other_animals: initialProfileData.about.other_animals || [],
-      interests: initialProfileData.about.interests || [],
+      other_animals: initialProfileData.about.other_animals,
+      interests: initialProfileData.about.interests,
       bio: initialProfileData.about.bio,
     },
     rent_preferences: {
@@ -4927,7 +5970,7 @@ export const getProfileUpdateFormStateInitial = (initialProfileData: ProfileRead
     }
   }
 
-  return ProfileUpdateFormStateInitial
+  return profileUpdateFormStateInitial
 }
 
 _____________________________
@@ -4944,6 +5987,7 @@ _____________________________
 shallwe_frontend/src/mocks/handlers.ts:
 
 import { http, HttpResponse } from 'msw'
+import { getDocumentCookie } from '@/lib/common/cookie'
 
 
 // --- Mock data structures ---
@@ -4978,6 +6022,10 @@ const mockUserProfile = {
             {
               hierarchy: "UA019999900101",
               district_name: "Подільський"
+            },
+            {
+              hierarchy: "UA019999900102",
+              district_name: "Швейцарський"
             }
           ]
         },
@@ -5164,6 +6212,22 @@ export const handlers = [
   http.patch(`${mockApiUrl}/profile/me/`, async ({ request }) => {
     console.log("Mock: Received update profile request")
 
+    const forceApiErrorCookieName = 'shallwe_test_profile_update_force_api_error'
+    const forceApiErrorValue = getDocumentCookie(forceApiErrorCookieName)
+    console.log(`Mock: cookie '${forceApiErrorCookieName}' is '${forceApiErrorValue}'`)
+
+    if (forceApiErrorValue === 'true') {
+      console.log(`Mock: Forcing API Error as per '${forceApiErrorCookieName}' cookie.`);
+      return HttpResponse.json(
+        {
+          error: {
+            non_field_errors: ["Forced QA Error (via cookie): Profile update failed due to server issue."],
+          }
+        },
+        { status: 400 }
+      )
+    }
+
     const formData = await request.formData()
     const formDataRepr = getMultipartRepresentation(formData)
     console.log('Mock: Received profile data:', formDataRepr)
@@ -5233,6 +6297,142 @@ export const handlers = [
 
 _____________________________
 
+shallwe_frontend/src/middleware.ts:
+
+/*
+Since frontend has a specified step-by-step flow, middleware controls that user only accesses the pages they are
+meant to access based on that logic. The frontend should hit middleware per each page load to assure this.
+*/
+
+import { NextRequest, NextResponse } from 'next/server'
+import { env } from '@/config/env'
+import { getProfileStatus } from '@/lib/shallwe/access/api/calls'
+
+
+const apiBaseUrl = env.NEXT_PUBLIC_SHALLWE_API_BASE_URL_EXTERNAL
+const isMiddlewareSkipped = env.NEXT_PUBLIC_SHALLWE_SKIP_MIDDLEWARE
+
+const MAX_RETRIES = 3
+const ATTEMPT_TIMEOUT_MS = 2500
+const BACKOFF_MS = 200
+
+
+const withTimeout = <T,>(p: Promise<T>, ms: number) =>
+  Promise.race<T>([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
+  ])
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+
+async function tryFetchProfileStatus(cookie?: string): Promise<number> {
+  let lastErr: unknown
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    try {
+      const r = await withTimeout(getProfileStatus(cookie), ATTEMPT_TIMEOUT_MS)
+      return r.status as number
+    } catch (e) {
+      lastErr = e
+      if (i < MAX_RETRIES - 1) await sleep(BACKOFF_MS)
+    }
+  }
+  throw lastErr ?? new Error('profile-status failed')
+}
+
+
+const redirectRules: Record<number, Record<string, string | null>> = {
+  // Where to redirect based on access code and current page
+  403: {
+    '/': null,
+    default: '/',
+  },
+  404: {
+    '/setup': null,
+    default: '/setup',
+  },
+  200: {
+    '/': '/settings',
+    '/setup': '/settings',
+    default: null,
+  },
+}
+
+
+const redirectAdmin = (request: NextRequest): NextResponse => {
+    const newUrl = request.nextUrl.clone()
+    const backendUrl = new URL(apiBaseUrl)
+
+    newUrl.protocol = backendUrl.protocol
+    newUrl.hostname = backendUrl.hostname
+    newUrl.port = backendUrl.port
+    newUrl.searchParams.delete('next')
+
+    console.log(`Redirecting admin request from ${request.nextUrl.href} to ${newUrl.href}`)
+    return NextResponse.redirect(newUrl)
+}
+
+
+const redirectPages = async (request: NextRequest): Promise<NextResponse> => {
+  try {
+    const cookie = request.headers.get('cookie')
+    const profileStatus = await tryFetchProfileStatus(cookie || undefined)
+
+    console.log(`Profile status check API call returned: ${profileStatus}`)
+
+    const statusRedirectRules = redirectRules[profileStatus]
+    if (!statusRedirectRules) {
+      console.error(`Unexpected status ${profileStatus} from profile-status API`)
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+
+    const supposedRedirect = statusRedirectRules[request.nextUrl.pathname]
+    const redirectTo = (
+      supposedRedirect === undefined ?
+      statusRedirectRules.default : supposedRedirect
+    ) ?? null
+
+    if (redirectTo) {
+      return NextResponse.redirect(new URL(redirectTo, request.url))
+    }
+
+    return NextResponse.next()  // No redirect needed, allow to proceed
+  }
+  catch (error) {
+    console.error(`Error calling profile-status API in middleware:`, error)
+    // If not on landing, go to landing; otherwise allow landing to render.
+    if (request.nextUrl.pathname !== '/') {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+    return NextResponse.next()
+  }
+}
+
+
+export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const { pathname } = request.nextUrl
+
+  if (
+    pathname === '/' ||
+    pathname === '/setup' ||
+    pathname === '/settings' ||
+    pathname.startsWith('/admin')
+  ) {
+    
+    if (isMiddlewareSkipped) {
+      console.log('Middleware is skipped based on environment variable.')
+      return NextResponse.next()
+    }
+
+    if (pathname.startsWith('/admin')) return redirectAdmin(request)
+    else return redirectPages(request)
+  }
+  
+  return NextResponse.next()
+}
+
+_____________________________
+
 shallwe_frontend/.gitignore:
 
 # dependencies
@@ -5280,16 +6480,19 @@ _____________________________
 
 shallwe_frontend/eslint.config.mjs:
 
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { dirname } from "path"
+import { fileURLToPath } from "url"
+import { FlatCompat } from "@eslint/eslintrc"
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
-});
+})
+
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
@@ -5302,95 +6505,10 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
-];
-
-export default eslintConfig;
-
-_____________________________
-
-shallwe_frontend/middleware.ts:
-
-import { NextRequest, NextResponse } from 'next/server'
-import { env } from '@/config/env'
-import { getProfileStatus } from '@/lib/shallwe/access/api/calls'
+]
 
 
-const apiBaseUrl = env.NEXT_PUBLIC_SHALLWE_API_BASE_URL_EXTERNAL
-const skipMiddleware = env.NEXT_PUBLIC_SHALLWE_SKIP_MIDDLEWARE === 'true'
-
-
-export async function middleware(request: NextRequest) {
-  
-  // --- Skip everything if set ---
-  if (skipMiddleware) {
-    return NextResponse.next()
-  }
-
-  // --- Admin redirect logic ---
-  const url = request.nextUrl.clone() // Clone the URL for potential admin redirection
-
-  if (url.pathname.startsWith('/admin')) {
-    const apiUrl = new URL(apiBaseUrl)
-
-    url.protocol = apiUrl.protocol
-    url.hostname = apiUrl.hostname
-    url.port = apiUrl.port
-
-    // Remove the ?next=... query parameter if present (common for auth redirects)
-    url.searchParams.delete('next')
-
-    // Perform the redirect to the admin panel on the backend server
-    console.log(`Redirecting admin request from ${request.nextUrl.href} to ${url.href}`)
-    return NextResponse.redirect(url)
-  }
-
-  // --- Main site redirect logic ---
-
-  const cookie = request.headers.get('cookie')
-
-  // Check with access endpoint to determine correct page for this user
-  try {
-    const profileStatus = (await getProfileStatus(cookie || undefined)).status
-
-    console.log(`Profile status check API call returned: ${profileStatus}`)
-
-    // Determine the next action based on the API response status code
-    if (profileStatus === 403 && request.nextUrl.pathname !== '/') {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
-
-    if (profileStatus === 404 && request.nextUrl.pathname !== '/setup') {
-      return NextResponse.redirect(new URL('/setup', request.url));
-    }
-
-    if (profileStatus === 200) {
-      if (request.nextUrl.pathname === '/') {
-        return NextResponse.redirect(new URL('/settings', request.url));
-      }
-      if (request.nextUrl.pathname === '/setup') {
-        return NextResponse.redirect(new URL('/settings', request.url));
-      }
-    }
-
-    else {
-      console.error(`Unexpected status ${profileStatus} from profile-status API`)
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-  }
-
-  // Handle unexpected errors
-  catch (error) {
-    console.error('Error calling profile-status API in middleware:', error)
-    return NextResponse.redirect(new URL('/', request.url))
-  }
-
-  return NextResponse.next()  // No redirect triggered - just proceed
-}
-
-
-export const config = {
-    matcher: ['/', '/setup', '/settings', '/contacts', '/search', '/admin/:path*'],
-}
+export default eslintConfig
 
 _____________________________
 
@@ -5419,6 +6537,7 @@ shallwe_frontend/package.json:
     "lint": "eslint"
   },
   "dependencies": {
+    "date-fns": "^4.1.0",
     "msw": "^2.11.3",
     "next": "15.5.4",
     "react": "19.1.0",
@@ -5502,7 +6621,7 @@ shallwe_frontend/tsconfig.json:
 
 _____________________________
 
-tools/compose_project_snapshot.js:
+tools/compose_project_snapshot.cjs:
 
 #!/usr/bin/env node
 // Compose a single snapshot file of the project (respects .gitignore files, including nested ones)
@@ -5510,7 +6629,6 @@ tools/compose_project_snapshot.js:
 
 const fs = require('fs').promises;
 const path = require('path');
-const { existsSync } = require('fs');
 const Ignore = require('ignore');
 
 const MAX_FILE_BYTES = 1024 * 1024; // 1 MB - still used as a fallback for very large text files
@@ -5746,15 +6864,17 @@ _____________________________
 .env.example:
 
 #          Mode
-NEXT_PUBLIC_SHALLWE_ENV_MODE=                # DEV, QA, STAGE or PROD
+NEXT_PUBLIC_SHALLWE_ENV_MODE=                   # DEV, QA, STAGE or PROD
 #          Oauth
-NEXT_PUBLIC_SHALLWE_OAUTH_CLIENT_ID=         # OAuth Client ID (get: Google Console)
-NEXT_PUBLIC_SHALLWE_OAUTH_REDIRECT_URI=      # # Public landing address (http(s):// + IP:port (locally) or domain address)
+NEXT_PUBLIC_SHALLWE_OAUTH_CLIENT_ID=            # OAuth Client ID (get: Google Console)
+NEXT_PUBLIC_SHALLWE_OAUTH_REDIRECT_URI=         # Public landing address (http(s):// + IP:port (locally) or domain address)
 #          Network
-NEXT_PUBLIC_SHALLWE_API_BASE_URL_EXTERNAL=   # Public backend address (http(s):// + IP:port or domain address)
-NEXT_PUBLIC_SHALLWE_API_BASE_URL_INTERNAL=   # Local backend address (local URL:port if co-hosted, otherwise same as external)
-#          Behaviour
-NEXT_PUBLIC_SHALLWE_SKIP_MIDDLEWARE=         # Whether to skip routing rules for test (true/false)
+NEXT_PUBLIC_SHALLWE_API_BASE_URL_EXTERNAL=      # Public backend address (http(s):// + IP:port or domain address)
+NEXT_PUBLIC_SHALLWE_API_BASE_URL_INTERNAL=      # Local backend address (local URL:port if co-hosted, otherwise same as external)
+#          Middleware
+NEXT_PUBLIC_SHALLWE_SKIP_MIDDLEWARE=            # Whether to skip routing rules for test (true/false)
+NEXT_PUBLIC_SHALLWE_MOCK_API=                   # Whether to mock api responses for test (true/false)
+NEXT_PUBLIC_SHALLWE_MIDDLEWARE_COOKIES_SECURE=  # Whether to use secure cookies for middleware purposes (true/false)
 
 _____________________________
 
@@ -5820,6 +6940,143 @@ _____________________________
 
 README.md:
 
-Shallwe demo frontend (WIP)
+# Shallwe Frontend (demo)
+
+> ⚠️ Work in Progress. This repo is one part of a bigger codebase. The frontend was built mainly to make the demo *clickable* and understandable without digging into backend code. Some parts were vibe-coded (mostly CSS and Tailwind) to save time — this wasn’t meant as a design project.
+
+> Usage: Evaluation-Only (see LICENSE)
+
+---
+
+📜 Background
+
+This is the demo UI for **Shallwe**, a Ukrainian flatmate-matching platform prototype focused on compatibility rather than listings. The backend is Django REST (see separate repo); this is the **Next.js app** that visualizes it.
+
+- Status: working mock demo; still WIP in visuals and minor refactors.
+- Purpose: show how the app flows and how the data validation works, with real routing and mocked API calls for local usage.
+
+---
+
+✅ What’s implemented (and works)
+
+- **Auth & Middleware Routing** — real logic that redirects users depending on access/profile state; runs against `/access` endpoints (mocked locally, real later).
+- **Landing page** — minimal intro and entry point for auth.
+- **Setup flow** — multi-step form for initial profile creation.
+- **Profile view & edit** — full edit mode with field-level validation, typed state, and update handling.
+- **Photo cropper** — interactive crop and preview with fallback image handling and mock AI moderation call.
+- **Location selector** — search and select based on Ukraine’s KATOTTG dataset:
+  - regions, cities, and other populated places are distinct;
+  - city districts are nested under their city entries.
+- **Form validation** — mirrors backend logic (validators and type guards).
+- **MSW mocks** — mock service worker simulating backend responses for local/demo mode.
+- **Typed API layer** — each feature module (auth, profile, locations, photo, etc.) has its own calls and schemas.
+
+Not included: search, contacts, and chats (were part of future roadmap).
+
+---
+
+🏗 Architecture (short)
+
+- Framework: **Next.js 14 (App Router)** + **TypeScript** + **TailwindCSS**.
+- Data layer: under `src/lib/shallwe/*`, mirrors backend API schemas and calls.
+- Validation & form state: separated collectors, validators, and states under each module (profile, photo, rent preferences, etc.).
+- Middleware: real redirect logic tied to auth/profile state, identical to how backend would respond.
+- Mocking: **MSW (Mock Service Worker)** runs in the browser for local API simulation.
+- Render logic: simple component hierarchy — landing → setup → profile (view/edit).
+- Design: intentionally functional, not styled for production polish.
+
+---
+
+🔌 Backend/API reference
+- [SwaggerHub Spec](https://app.swaggerhub.com/apis/S3MCHANNEL/shallwe-api/0.6.1)
+
+Slighly outdated backend version in API spec - though, no fields or validation rules have changed since
+
+---
+
+🦯 How to run locally (standalone)
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Copy environment example**
+   ```bash
+   cp .env.example .env
+   ```
+   Read the comments to provide correct values
+
+3. **Run the app (mock mode)**
+   ```bash
+   npm run dev
+   ```
+   The MSW worker starts automatically and intercepts API calls.
+
+4. **Open the demo**
+   ```
+   http://localhost:3000
+   ```
+   You can go through landing → setup → profile → settings/edit and explore how validation and routing behave.
+
+---
+
+🌐 Deployment
+
+- Planned: **Vercel (free tier)** for the public demo.
+- Current: local-only with MSW mocks.
+- Once backend stage API (AWS) is live, switching to real mode is a single env variable change.
+
+---
+
+🤕 Testing
+
+- Manual QA via local mock interactions (form filling, validation, redirects, cropping, etc.).
+- No automated tests yet (planned for validators and mocks).
+
+---
+
+🛠 Tech note (short)
+
+- Stack: **Next.js**, **TypeScript**, **TailwindCSS**, **MSW**.
+- Approach: keep frontend light, predictable, and typed; skip unnecessary libraries.
+- UI/UX: minimal, purely functional; CSS work left for later refactor.
+- Linting: ESLint & Prettier enabled.
+
+---
+
+📊 Plans and constraints
+
+- **Plans:**
+  - Refactor component layout and shared form states.
+  - Integrate live backend once available.
+  - Add simple landing/about screens.
+  - Deploy to Vercel.
+
+- **Constraints:**
+  - Mock-only mode for now.
+  - No design system or CI yet.
+  - Focused on clarity and correctness, not styling.
+
+---
+
+🔐 License and usage
+
+This repository is provided for **evaluation purposes only (read-only)**.
+
+All rights reserved.
+
+- You may: clone, read, run locally, and evaluate as part of recruiting/technical review.
+- You may not: modify, distribute, or use the code in any product or derivative work.
+
+Copyright © the project author.
+
+---
+
+🙋‍♂️ Contact
+
+Feel free to reach out for a quick walkthrough or architecture chat.
+
+LinkedIn: [Serhii Soldatov](https://www.linkedin.com/in/serhii-soldatov)
 
 _____________________________

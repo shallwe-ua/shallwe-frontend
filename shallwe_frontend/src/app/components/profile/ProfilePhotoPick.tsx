@@ -37,6 +37,7 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRawFile, setSelectedRawFile] = useState<File | null>(null);
   const [finalCroppedFile, setFinalCroppedFile] = useState<File | null>(null);
+  const [committedCroppedFile, setCommittedCroppedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -139,6 +140,9 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
       // Validator passed for the raw file, proceed to load preview
       const reader = new FileReader()
       reader.onload = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
         setImageSrc(reader.result as string)
         // Reset crop position when a new image is loaded
         setCrop({ x: 0, y: 0 })
@@ -238,18 +242,13 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
 
       // Check the result of the facecheck API call
       if (facecheckResult.success) {
-        // Facecheck passed, set the final file state
         setFinalCroppedFile(croppedFile)
-        // Pass the final cropped file back to the parent
+        setCommittedCroppedFile(croppedFile) // <-- NEW: remember the last valid crop
         onCropComplete(croppedFile)
-        // Clear any previous errors related to the photo now that facecheck passed
         onClearError()
       } else {
-        // Facecheck failed (e.g., no face detected), show API error
-        // The API spec might return a different structure, adjust based on actual response
-        // Assuming facecheckResult.error exists if success is false
         onError(facecheckResult.error || 'Facecheck failed. Please ensure your photo contains a clear face.')
-        setFinalCroppedFile(null) // Clear the final file state as it's invalid
+        setFinalCroppedFile(null)
       }
     } catch (error) {
       console.error('Error during facecheck:', error)
@@ -280,7 +279,10 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
     setZoom(1)
     setCroppedAreaPixels(null)
     setSelectedRawFile(null)
-    setFinalCroppedFile(null)
+    // setFinalCroppedFile(null)
+    if (committedCroppedFile) {
+      setFinalCroppedFile(committedCroppedFile)
+    } 
     if (fileInputRef.current) {
       fileInputRef.current.value = '' // Reset file input
     }
@@ -313,18 +315,24 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
         <label className="block text-sm font-medium text-gray-700">
           Photo (JPG, PNG, HEIC, HEIF, max 20MB, will be cropped to square)
         </label>
+
+        {/* hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/jpg,image/png,image/heic,image/heif"
           onChange={onFileChange}
-          className="mt-1 block w-full text-sm text-gray-500
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-md file:border-0
-            file:text-sm file:font-semibold
-            file:bg-blue-50 file:text-blue-700
-            hover:file:bg-blue-100"
+          className="hidden"
         />
+
+        {/* custom trigger button */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="mt-1 inline-flex items-center rounded-md bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+        >
+          Choose File
+        </button>
       </div>
 
       {/* Preview Area - Shows raw file preview, cropped preview, or placeholder */}

@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw'
+import { getDocumentCookie } from '@/lib/common/cookie'
 
 
 // --- Mock data structures ---
@@ -33,6 +34,10 @@ const mockUserProfile = {
             {
               hierarchy: "UA019999900101",
               district_name: "Подільський"
+            },
+            {
+              hierarchy: "UA019999900102",
+              district_name: "Швейцарський"
             }
           ]
         },
@@ -218,6 +223,22 @@ export const handlers = [
   // Update profile
   http.patch(`${mockApiUrl}/profile/me/`, async ({ request }) => {
     console.log("Mock: Received update profile request")
+
+    const forceApiErrorCookieName = 'shallwe_test_profile_update_force_api_error'
+    const forceApiErrorValue = getDocumentCookie(forceApiErrorCookieName)
+    console.log(`Mock: cookie '${forceApiErrorCookieName}' is '${forceApiErrorValue}'`)
+
+    if (forceApiErrorValue === 'true') {
+      console.log(`Mock: Forcing API Error as per '${forceApiErrorCookieName}' cookie.`);
+      return HttpResponse.json(
+        {
+          error: {
+            non_field_errors: ["Forced QA Error (via cookie): Profile update failed due to server issue."],
+          }
+        },
+        { status: 400 }
+      )
+    }
 
     const formData = await request.formData()
     const formDataRepr = getMultipartRepresentation(formData)

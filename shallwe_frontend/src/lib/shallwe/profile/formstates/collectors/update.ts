@@ -10,7 +10,16 @@ export const extractHierarchyStrings = (locationsObject: LocationsReadFields): s
     hierarchies.push(...locationsObject.regions.map(r => r.hierarchy));
   }
   if (locationsObject.cities) {
-    hierarchies.push(...locationsObject.cities.flatMap(c => [c.hierarchy, ...(c.districts?.map(d => d.hierarchy) || [])]));
+    locationsObject.cities.forEach(c => {
+      const districtHierarchies = c.districts?.map(d => d.hierarchy) || [];
+      if (districtHierarchies.length > 0) {
+        // Rule: If a city has selected districts, only add the district hierarchies
+        hierarchies.push(...districtHierarchies);
+      } else {
+        // Rule: If a city has no selected districts, add the city's own hierarchy
+        hierarchies.push(c.hierarchy);
+      }
+    });
   }
   if (locationsObject.other_ppls) {
     hierarchies.push(...locationsObject.other_ppls.map(op => op.hierarchy));

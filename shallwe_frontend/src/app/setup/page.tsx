@@ -1,21 +1,24 @@
 'use client'
 
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { TagsInput } from "react-tag-input-component"
 
-import { createProfile } from '@/lib/shallwe/profile/api/calls'
-import { ProfileCreateFormState, ProfileCreateFormStateInitial } from '@/lib/shallwe/profile/formstates/states' 
-import { collectProfileCreateDataFromState } from '@/lib/shallwe/profile/formstates/collectors/create'
-import { validateProfileCreateFields } from '@/lib/shallwe/profile/formstates/validators/create'
-import { ValidationResult } from '@/lib/shallwe/profile/formstates/validators/common'
-import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
-import { ApiError } from '@/lib/shallwe/common/api/calls'
-
 import ProfilePhotoPick from '../components/profile/ProfilePhotoPick'
 import Locations from '../components/profile/Locations'
+
+import { env } from '@/config/env'
+import { getDocumentCookie } from '@/lib/common/cookie'
+import { ProfileCreateFormState, profileCreateFormStateInitial } from '@/lib/shallwe/profile/formstates/states' 
+import { collectProfileCreateDataFromState } from '@/lib/shallwe/profile/formstates/collectors/create'
+import { validateProfileCreateFields } from '@/lib/shallwe/profile/formstates/validators/create'
+import { ValidationResult, validators } from '@/lib/shallwe/profile/formstates/validators/common'
+import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
+import { createProfile } from '@/lib/shallwe/profile/api/calls'
+import { ApiError } from '@/lib/shallwe/common/api/calls'
+import BirthDateSelect from '../components/profile/BirthDateSelect'
 
 
 // Dividing visual flow in steps for better UX
@@ -52,23 +55,89 @@ const STEP_2_FIELDS_VALIDATE = [
 
 export default function ProfileSetupPage() {
   const [currentStep, setCurrentStep] = useState(0)
-  const [formState, setFormState] = useState<ProfileCreateFormState>(ProfileCreateFormStateInitial)
+  const [formState, setFormState] = useState<ProfileCreateFormState>(profileCreateFormStateInitial)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [generalError, setGeneralError] = useState<string | null>(null)
   const [apiError, setApiError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const [isAboutAccordionOpen, setIsAboutAccordionOpen] = useState(false)
   const [locationsApiError, setLocationsApiError] = useState<string | null>(null)
+
+
+  // Skip to Step N (DEV test feature)
+  useEffect(() => {
+    if (env.NEXT_PUBLIC_SHALLWE_ENV_MODE === 'DEV') {
+      const skipCookieName = 'shallwe_test_profile_create_skip_to_step'
+
+      const skipToStepValue = getDocumentCookie(skipCookieName)
+      console.log(`ProfileSetupPage: Found cookie '${skipCookieName}': ${skipToStepValue}`)
+
+      if (skipToStepValue) {
+        const targetStep = parseInt(skipToStepValue, 10)
+        if (!isNaN(targetStep) && targetStep >= 0 && targetStep <= 2) {
+          console.log(`ProfileSetupPage: QA Cookie requests skipping to step ${targetStep}.`)
+          setCurrentStep(targetStep)
+        }
+        else {
+          console.warn(`ProfileSetupPage: Invalid step number '${skipToStepValue}' found in cookie '${skipCookieName}'. Ignoring.`) // Optional: Log warning
+        }
+      }
+    }
+  }, [])
+
+
+  // Define a helper function to run validation and update errors
+  const validateCurrentTagsInput = (fieldName: string, tagsToValidate: string[], validatorKey: string) => {
+    const validationError = validators[validatorKey](tagsToValidate, formState);
+    setErrors(prevErrors => {
+      const newErrors = { ...prevErrors };
+      if (validationError !== null) {
+        newErrors[fieldName] = validationError;
+      } else {
+        delete newErrors[fieldName]; // Clear error if validation passes
+      }
+      return newErrors;
+    });
+    return validationError
+  };
+
+
+  const updateSmokingLevelAndClearTypes = (newLevel: ProfileCreateFormState['about']['smoking_level']) => {
+    setGeneralError(null);
+    setFormState(prev => {
+      const updatedAbout = { ...prev.about, smoking_level: newLevel };
+
+      // Check if the new level is null or 1
+      if (newLevel === null || newLevel === 1) {
+        // Reset smoking type booleans to false
+        updatedAbout.smokes_iqos = false;
+        updatedAbout.smokes_vape = false;
+        updatedAbout.smokes_tobacco = false;
+        updatedAbout.smokes_cigs = false;
+      }
+
+      return {
+        ...prev,
+        about: updatedAbout,
+      };
+    });
+
+    // Clear specific field error when user starts typing/modifying
+    if (errors['about.smoking_level']) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors['about.smoking_level'];
+        return newErrors;
+      });
+    }
+  };
   
 
   // Update the photo handler to interact with the PhotoCropper component
   const handlePhotoCropped = (croppedFile: File) => {
     updateFormState('profile', 'photo', croppedFile)
-    // Clear the error state for profile.photo when the photo state is updated
-    // This happens implicitly when validateCurrentStep/validateAllFields runs next,
-    // but we can clear it explicitly here if desired, or let validation handle it.
-    // The key is that if the state is valid, the error should disappear on next validation run.
   }
 
   // Callback for PhotoCropper to set error in the main page's state
@@ -99,6 +168,7 @@ export default function ProfileSetupPage() {
   const updateFormState = <S extends keyof ProfileCreateFormState, F extends keyof ProfileCreateFormState[S]>(
     section: S, field: F, value: ProfileCreateFormState[S][F]
   ) => {
+    setGeneralError(null)
     setFormState(prev => ({
       ...prev,
       [section]: {
@@ -139,16 +209,17 @@ export default function ProfileSetupPage() {
   }
 
 
-  const validateAllFields = (): boolean => {
+  const validateAllFields = (): ValidationResult => {
     // Validate all fields for final submission
     const allFields = [...STEP_0_FIELDS_TO_VALIDATE, ...STEP_1_FIELDS_TO_VALIDATE, ...STEP_2_FIELDS_VALIDATE]
     const validation: ValidationResult = validateProfileCreateFields(formState, allFields)
     setErrors(validation.errors)
-    return validation.isValid
+    return validation
   }
 
 
   const nextStep = () => {
+    setGeneralError(null)
     if (validateCurrentStep()) {
       if (currentStep < STEPS.length - 1) {
         setCurrentStep(prev => prev + 1)
@@ -158,6 +229,7 @@ export default function ProfileSetupPage() {
 
 
   const prevStep = () => {
+    setGeneralError(null)
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1)
     }
@@ -165,58 +237,63 @@ export default function ProfileSetupPage() {
 
 
   const handleSubmit = async () => {
-    if (!validateAllFields()) {
-      console.log("Final validation failed, cannot submit.")
-      return // Do not proceed if final validation fails
+    setGeneralError(null)
+    setIsLoading(true)
+
+    const validationResult = validateAllFields()
+    if (!validationResult.isValid) {
+      console.log("Final validation failed, cannot submit.");
+      // Set a user-facing error message
+      const prevStepErrors = Object.keys(validationResult.errors).filter(
+        fieldName => !STEP_2_FIELDS_VALIDATE.includes(fieldName)
+      );
+
+      if (prevStepErrors.length > 0) {
+        const prevStepsInvalidFields = prevStepErrors.join(", ");
+        setGeneralError(`Some previous fields weren't correct, please check again: ${prevStepsInvalidFields}.`);
+      }
+
+      setIsLoading(false); // Stop loading state as submission is halted
+      return; // Do not proceed if final validation fails
     }
 
-    setIsLoading(true)
     setApiError(null)
     setErrors({}) // Clear previous API errors (and client-side validation errors)
 
     try {
-      const profileDataToSend: ProfileCreateData = collectProfileCreateDataFromState(formState)
-      console.log("Collected Profile Data for API:", profileDataToSend) // Debug log
-
-      // Call the updated createProfile API function with the structured data object
-      // The API call itself will handle converting this object into FormData using formatMultipartFormData
-      await createProfile(profileDataToSend)
-      console.log("Profile created successfully!")
-      // On success, redirect to settings page
-      router.push('/settings')
-    }
-
-    catch (error) {
-      console.error("Error creating profile:", error)
-      setIsLoading(false)
+      const profileDataToSend: ProfileCreateData = collectProfileCreateDataFromState(formState);
+      console.log("Collected Profile Data for API:", profileDataToSend); // Debug log
+      await createProfile(profileDataToSend);
+      console.log("Profile created successfully!");
+      router.push('/settings');
+    } catch (error) {
+      console.error("Error creating profile:", error);
+      // Handle API errors here, potentially setting 'generalError' or 'apiError'
+      let errorMessage = "An unexpected error occurred.";
       if (error && typeof error === 'object' && 'details' in error) {
-        const err = error as ApiError
-        console.log("API Error Details:", err.details)
-        // Example structure from API spec: {error: {profile: {name: ["error_msg"]}, non_field_errors: ["error_msg"]}}
+        const err = error as ApiError;
+        console.log("API Error Details:", err.details);
         if (err.details && typeof err.details === 'object' && 'error' in err.details) {
-          const apiErrors = err.details.error
+          const apiErrors = err.details.error;
           if (typeof apiErrors === 'object') {
-            setApiError(JSON.stringify(apiErrors))
+            // You might want to format this object into a more user-friendly string
+            errorMessage = JSON.stringify(apiErrors);
+          } else if (typeof apiErrors === 'string') {
+            errorMessage = apiErrors;
+          } else {
+             errorMessage = "Received an unexpected error format from the server.";
           }
-          else if (typeof apiErrors === 'string') {
-            setApiError(apiErrors) // If it's a simple string error
-          }
+        } else {
+          errorMessage = err.message || errorMessage;
         }
-        else {
-          setApiError(err.message || "An unknown error occurred during profile creation.")
-        }
-      } 
-      else if (error instanceof Error) {
-        setApiError(error.message)
-      } 
-      else {
-        setApiError("An unexpected error occurred.")
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
+      setGeneralError(errorMessage); // Use the general error state for API errors too, or keep separate 'apiError'
+    } finally {
+      setIsLoading(false); // Always stop loading state in 'finally'
     }
-    finally {
-      setIsLoading(false)
-    }
-  }
+  };
 
 
   // --- STEP RENDER OPTIONS ---
@@ -266,21 +343,13 @@ export default function ProfileSetupPage() {
             <h2 className="text-xl font-semibold">About You</h2>
 
             {/* Required fields (birth_date, gender, is_couple, has_children) remain outside the accordion */}
-            <div>
-              <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">
-                Birth Date (YYYY-MM-DD)
-              </label>
-              <input
-                type="date"
-                id="birth_date"
-                value={formState.about.birth_date ?? ''}
-                onChange={(e) => updateFormState('about', 'birth_date', e.target.value || null)}
-                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                  errors['about.birth_date'] ? 'border-red-500' : ''
-                }`}
-              />
-              {errors['about.birth_date'] && <p className="mt-1 text-sm text-red-600">{errors['about.birth_date']}</p>}
-            </div>
+            <BirthDateSelect
+              inputId="birth_date"
+              currentValue={formState.about.birth_date} // Pass the string value from state
+              onChange={(dateString) => updateFormState('about', 'birth_date', dateString)} // Pass the update handler
+              error={errors['about.birth_date']} // Pass the error message
+              className={`${errors['about.birth_date'] ? 'border-red-500' : ''}`} // Pass specific Tailwind classes if needed
+            />
 
             {/* Gender */}
             <div>
@@ -426,7 +495,7 @@ export default function ProfileSetupPage() {
                     <select
                       id="smoking_level"
                       value={formState.about.smoking_level ?? ''}
-                      onChange={(e) => updateFormState('about', 'smoking_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
+                      onChange={(e) => updateSmokingLevelAndClearTypes(e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
                       className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                         errors['about.smoking_level'] ? 'border-red-500' : ''
                       }`}
@@ -442,55 +511,58 @@ export default function ProfileSetupPage() {
 
                   {/* Smoking Type Checkboxes (Conditional based on smoking_level) */}
                   {formState.about.smoking_level !== null && formState.about.smoking_level > 1 && (
-                    <div className="space-y-2 ml-4">
-                      <div className="flex items-center">
-                        <input
-                          id="smokes_iqos"
-                          type="checkbox"
-                          checked={formState.about.smokes_iqos === true}
-                          onChange={(e) => updateFormState('about', 'smokes_iqos', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="smokes_iqos" className="ml-2 block text-sm text-gray-700">
-                          IQOS
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="smokes_vape"
-                          type="checkbox"
-                          checked={formState.about.smokes_vape === true}
-                          onChange={(e) => updateFormState('about', 'smokes_vape', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="smokes_vape" className="ml-2 block text-sm text-gray-700">
-                          Vape
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="smokes_tobacco"
-                          type="checkbox"
-                          checked={formState.about.smokes_tobacco === true}
-                          onChange={(e) => updateFormState('about', 'smokes_tobacco', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="smokes_tobacco" className="ml-2 block text-sm text-gray-700">
-                          Tobacco
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="smokes_cigs"
-                          type="checkbox"
-                          checked={formState.about.smokes_cigs === true}
-                          onChange={(e) => updateFormState('about', 'smokes_cigs', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="smokes_cigs" className="ml-2 block text-sm text-gray-700">
-                          Cigarettes
-                        </label>
-                      </div>
+                    <div className="col-span-2 mt-2"> {/* Use col-span-2 to span full width, add top margin */}
+                      <p className="text-sm font-medium text-gray-700 mb-1">Smoking Types:</p> {/* Label for the group */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2"> {/* Grid layout: 1 column on mobile, 2 on small screens, 4 on medium+ screens */}
+                        <div className="flex items-center">
+                          <input
+                            id="smokes_iqos"
+                            type="checkbox"
+                            checked={formState.about.smokes_iqos === true}
+                            onChange={(e) => updateFormState('about', 'smokes_iqos', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor="smokes_iqos" className="ml-2 block text-sm text-gray-700">
+                            IQOS
+                          </label>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            id="smokes_vape"
+                            type="checkbox"
+                            checked={formState.about.smokes_vape === true}
+                            onChange={(e) => updateFormState('about', 'smokes_vape', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor="smokes_vape" className="ml-2 block text-sm text-gray-700">
+                            Vape
+                          </label>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            id="smokes_tobacco"
+                            type="checkbox"
+                            checked={formState.about.smokes_tobacco === true}
+                            onChange={(e) => updateFormState('about', 'smokes_tobacco', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor="smokes_tobacco" className="ml-2 block text-sm text-gray-700">
+                            Tobacco
+                          </label>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            id="smokes_cigs"
+                            type="checkbox"
+                            checked={formState.about.smokes_cigs === true}
+                            onChange={(e) => updateFormState('about', 'smokes_cigs', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor="smokes_cigs" className="ml-2 block text-sm text-gray-700">
+                            Cigarettes
+                          </label>
+                        </div>
+                        </div>
                     </div>
                   )}
 
@@ -601,54 +673,57 @@ export default function ProfileSetupPage() {
                   </div>
 
                   {/* Pet Checkboxes */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center">
-                      <input
-                        id="has_cats"
-                        type="checkbox"
-                        checked={formState.about.has_cats === true}
-                        onChange={(e) => updateFormState('about', 'has_cats', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_cats" className="ml-2 block text-sm text-gray-700">
-                        Has Cats
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_dogs"
-                        type="checkbox"
-                        checked={formState.about.has_dogs === true}
-                        onChange={(e) => updateFormState('about', 'has_dogs', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_dogs" className="ml-2 block text-sm text-gray-700">
-                        Has Dogs
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_reptiles"
-                        type="checkbox"
-                        checked={formState.about.has_reptiles === true}
-                        onChange={(e) => updateFormState('about', 'has_reptiles', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_reptiles" className="ml-2 block text-sm text-gray-700">
-                        Has Reptiles
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_birds"
-                        type="checkbox"
-                        checked={formState.about.has_birds === true}
-                        onChange={(e) => updateFormState('about', 'has_birds', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_birds" className="ml-2 block text-sm text-gray-700">
-                        Has Birds
-                      </label>
+                  <div className="col-span-2 mt-2">
+                    <p className="text-sm font-medium text-gray-700 mb-1">I Have Animals:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="col-start-1 flex items-center">
+                        <input
+                          id="has_cats"
+                          type="checkbox"
+                          checked={formState.about.has_cats === true}
+                          onChange={(e) => updateFormState('about', 'has_cats', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_cats" className="ml-2 block text-sm text-gray-700">
+                          Has Cats
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_dogs"
+                          type="checkbox"
+                          checked={formState.about.has_dogs === true}
+                          onChange={(e) => updateFormState('about', 'has_dogs', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_dogs" className="ml-2 block text-sm text-gray-700">
+                          Has Dogs
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_reptiles"
+                          type="checkbox"
+                          checked={formState.about.has_reptiles === true}
+                          onChange={(e) => updateFormState('about', 'has_reptiles', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_reptiles" className="ml-2 block text-sm text-gray-700">
+                          Has Reptiles
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_birds"
+                          type="checkbox"
+                          checked={formState.about.has_birds === true}
+                          onChange={(e) => updateFormState('about', 'has_birds', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_birds" className="ml-2 block text-sm text-gray-700">
+                          Has Birds
+                        </label>
+                      </div>
                     </div>
                   </div>
 
@@ -658,8 +733,64 @@ export default function ProfileSetupPage() {
                       Other Animals (up to 5)
                     </label>
                     <TagsInput
+                      isEditOnRemove
                       value={formState.about.other_animals || []}
-                      onChange={(tags) => updateFormState('about', 'other_animals', tags)}
+                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                        const newTagsCandidate = [...currentTags, newTag];
+                        const validationError = validators['about.other_animals'](newTagsCandidate, formState);
+                        // Update the main errors state if validation fails
+                        if (validationError !== null) {
+                          setErrors(prevErrors => ({
+                            ...prevErrors,
+                            'about.other_animals': validationError
+                          }));
+                          return false; // Prevent adding the tag
+                        }
+
+                        // Clear the specific error for this field if validation passes
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.other_animals']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        return true; // Allow adding the tag
+                      }}
+                      onChange={(tags: string[]) => {
+                        // Clear the specific error for this field whenever tags change
+                        // This happens after a successful add (when beforeAddValidate passed)
+                        // or a remove action.
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.other_animals']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        updateFormState('about', 'other_animals', tags);
+                      }}
+                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        const inputValue = (e.target as HTMLInputElement).value;
+
+                        if (inputValue) {
+                          const currentTags = formState.about.other_animals || []; // Use current state
+                          const newTagsCandidate = [...currentTags, inputValue];
+                          validateCurrentTagsInput('about.other_animals', newTagsCandidate, 'about.other_animals');
+                        }
+                        else {
+                          const currentTags = formState.about.other_animals || [];
+                          validateCurrentTagsInput('about.other_animals', currentTags, 'about.other_animals');
+                        }
+                      }}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                        const inputElement = e.target as HTMLInputElement
+                        const inputValue = inputElement.value
+                        if (inputValue) {
+                          inputElement.value = ''
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.other_animals']; // Remove the error for this key
+                            return newErrors;
+                          })
+                        }
+                      }}
                       name="other_animals"
                       placeHolder="Type and press enter"
                       classNames={{
@@ -676,8 +807,61 @@ export default function ProfileSetupPage() {
                       Interests (up to 5)
                     </label>
                     <TagsInput
+                      isEditOnRemove
                       value={formState.about.interests || []}
-                      onChange={(tags) => updateFormState('about', 'interests', tags)}
+                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                        const newTagsCandidate = [...currentTags, newTag];
+                        const validationError = validators['about.interests'](newTagsCandidate, formState);
+                        // Update the main errors state if validation fails
+                        if (validationError !== null) {
+                          setErrors(prevErrors => ({
+                            ...prevErrors,
+                            'about.interests': validationError
+                          }));
+                          return false; // Prevent adding the tag
+                        }
+
+                        // Clear the specific error for this field if validation passes
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.interests']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        return true; // Allow adding the tag
+                      }}
+                      onChange={(tags) => {
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.interests']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        updateFormState('about', 'interests', tags)
+                      }}
+                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        const inputValue = (e.target as HTMLInputElement).value;
+
+                        if (inputValue) {
+                          const currentTags = formState.about.interests || []; // Use current state
+                          const newTagsCandidate = [...currentTags, inputValue];
+                          validateCurrentTagsInput('about.interests', newTagsCandidate, 'about.interests');
+                        }
+                        else {
+                          const currentTags = formState.about.interests || [];
+                          validateCurrentTagsInput('about.interests', currentTags, 'about.interests');
+                        }
+                      }}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                        const inputElement = e.target as HTMLInputElement
+                        const inputValue = inputElement.value
+                        if (inputValue) {
+                          inputElement.value = ''
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.interests']; // Remove the error for this key
+                            return newErrors;
+                          })
+                        }
+                      }}
                       name="interests"
                       placeHolder="Type and press enter"
                       classNames={{
@@ -685,7 +869,7 @@ export default function ProfileSetupPage() {
                         input: "mt-0 block w-full p-0 text-sm focus:outline-none",
                       }}
                     />
-                    {errors['about.interests'] && <p className="mt-1 text-sm text-red-600">{errors['about.other_animals']}</p>}
+                    {errors['about.interests'] && <p className="mt-1 text-sm text-red-600">{errors['about.interests']}</p>}
                   </div>
 
                   {/* bio (textarea) */}
@@ -703,12 +887,12 @@ export default function ProfileSetupPage() {
                         (formState.about.bio && formState.about.bio.length > 1024 ? 'border-red-500' : 'border-gray-300') // Check char limit
                       }`}
                     />
-                    {errors['about.bio'] && <p className="mt-1 text-sm text-red-600">{errors['about.bio']}</p>}
                     <p className={`text-xs mt-1 ${
                       formState.about.bio && formState.about.bio.length > 1024 ? 'text-red-600' : 'text-gray-500' // Change color based on limit
                     }`}>
                       {formState.about.bio ? formState.about.bio.length : 0} / 1024 characters
                     </p>
+                    {errors['about.bio'] && <p className="mt-1 text-sm text-red-600">{errors['about.bio']}</p>}
                   </div>
                 </div>
               )}
@@ -899,6 +1083,13 @@ export default function ProfileSetupPage() {
             </ol>
           </nav>
         </div>
+
+        {/* General Error Display (for validation or API errors) */}
+        {generalError && ( // Or {apiError && ...} if you keep them separate
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span className="block sm:inline">Error: {generalError}</span> {/* Or "API Error: {apiError}" */}
+          </div>
+        )}
 
         {/* API Error Display */}
         {apiError && (

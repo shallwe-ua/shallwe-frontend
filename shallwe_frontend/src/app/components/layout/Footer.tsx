@@ -5,7 +5,7 @@ const Footer = () => {
         <div className="md:flex md:items-center md:justify-between">
           <div className="flex justify-center md:justify-start">
             <p className="text-center md:text-left text-sm text-gray-500">
-              &copy {new Date().getFullYear()} Shallwe. All rights reserved.
+              &copy; {new Date().getFullYear()} Shallwe. All rights reserved.
             </p>
           </div>
           <div className="mt-4 md:mt-0 flex justify-center space-x-6 md:order-2">

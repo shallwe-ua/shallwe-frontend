@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateProfile } from '@/lib/shallwe/profile/api/calls' // Import update API call
 import { ProfileUpdateFormState, getProfileUpdateFormStateInitial } from '@/lib/shallwe/profile/formstates/states' // Import NEW update form state and its initializer
@@ -11,8 +11,9 @@ import { ProfileReadData } from '@/lib/shallwe/profile/api/schema/read' // Impor
 import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError type
 import ProfilePhotoPick from '@/app/components/profile/ProfilePhotoPick' // Assuming this is the correct path
 import Locations from '@/app/components/profile/Locations' // Assuming this is the correct path
-import { ValidationResult } from '@/lib/shallwe/profile/formstates/validators/common'
+import { ValidationResult, validators } from '@/lib/shallwe/profile/formstates/validators/common'
 import { TagsInput } from 'react-tag-input-component'
+import BirthDateSelect from './BirthDateSelect'
 
 // Define the props for the edit view
 interface ProfileEditViewProps {
@@ -30,8 +31,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
   const [editFormState, setEditFormState] = useState<ProfileUpdateFormState>(initialEditFormState)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [apiError, setApiError] = useState<string | null>(null)
+  const [isFloatingApiErrorDismissed, setIsFloatingApiErrorDismissed] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
+  // Reset dismissal state if apiError changes (e.g., a new error occurs, or error is cleared)
+  useEffect(() => {
+    if (apiError) {
+      setIsFloatingApiErrorDismissed(false); // Reset dismissal if a new error appears
+    }
+  }, [apiError]); // Run effect when apiError changes
 
   const initialLocationNamesMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -62,6 +70,43 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
 
     return map;
   }, [initialProfileData]); // Recalculate if initialProfileData changes
+
+
+  const hasChanges = useMemo(() => {
+    const updatePayload = collectProfileUpdateDataFromState(editFormState, initialProfileData);
+    // Check if the collected payload has any properties (changes to send)
+    return Object.keys(updatePayload).length > 0;
+  }, [editFormState, initialProfileData]); // Re-run when form state or initial data changes
+
+
+  const updateSmokingLevelAndClearTypes = (newLevel: ProfileUpdateFormState['about']['smoking_level']) => {
+    setEditFormState(prev => {
+      const updatedAbout = { ...prev.about, smoking_level: newLevel };
+
+      // Check if the new level is null or 1
+      if (newLevel === null || newLevel === 1) {
+        // Reset smoking type booleans to false
+        updatedAbout.smokes_iqos = false;
+        updatedAbout.smokes_vape = false;
+        updatedAbout.smokes_tobacco = false;
+        updatedAbout.smokes_cigs = false;
+      }
+
+      return {
+        ...prev,
+        about: updatedAbout,
+      };
+    });
+
+    // Clear specific field error when user starts typing/modifying
+    if (errors['about.smoking_level']) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors['about.smoking_level'];
+        return newErrors;
+      });
+    }
+  };
 
 
   // Helper to safely update nested state - adapted for ProfileUpdateFormState
@@ -143,6 +188,21 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
     'rent_preferences.room_sharing_level', 'rent_preferences.locations',
   ]
 
+  // Define a helper function to run validation and update errors
+  const validateCurrentTagsInput = (fieldName: string, tagsToValidate: string[], validatorKey: string) => {
+    const validationError = validators[validatorKey](tagsToValidate, editFormState);
+    setErrors(prevErrors => {
+      const newErrors = { ...prevErrors };
+      if (validationError !== null) {
+        newErrors[fieldName] = validationError;
+      } else {
+        delete newErrors[fieldName]; // Clear error if validation passes
+      }
+      return newErrors;
+    });
+    return validationError
+  };
+
   const validateEditForm = (): boolean => {
     // Combine all fields that could be validated during an update
     const allFieldsToValidate = [
@@ -205,11 +265,27 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
   }
 
   // --- RENDER LOGIC ---
-
   return (
     <div className="space-y-6">
-      {/* API Error Display */}
-      {apiError && (
+      {/* API Error Display - Floating Notification (only if not dismissed) */}
+      {apiError && !isFloatingApiErrorDismissed && (
+        <div className="fixed inset-x-0 bottom-4 flex items-center justify-center pointer-events-none z-50">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg max-w-md w-full mx-4 pointer-events-auto relative">
+            <span className="block sm:inline">API Error: {apiError}</span>
+            <button
+              type="button"
+              onClick={() => setIsFloatingApiErrorDismissed(true)} // Dismiss the floating notification only
+              className="absolute top-1 right-1 text-red-700 hover:text-red-900 focus:outline-none"
+              aria-label="Dismiss floating error"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* API Error Display - Original Inline Version (only if floating was dismissed) */}
+      {apiError && isFloatingApiErrorDismissed && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <span className="block sm:inline">API Error: {apiError}</span>
         </div>
@@ -252,21 +328,16 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
         {/* Main Details */}
         <div className="md:col-span-2 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">
-                Birth Date (YYYY-MM-DD)
-              </label>
-              <input
-                type="date"
-                id="birth_date"
-                value={editFormState.about.birth_date ?? ''} // Handle potential null
-                onChange={(e) => updateEditFormState('about', 'birth_date', e.target.value)}
-                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                  errors['about.birth_date'] ? 'border-red-500' : ''
-                }`}
-              />
-              {errors['about.birth_date'] && <p className="mt-1 text-sm text-red-600">{errors['about.birth_date']}</p>}
-            </div>
+
+            {/* Birth Date */}
+            <BirthDateSelect
+              inputId="birth_date"
+              currentValue={editFormState.about.birth_date} // Pass the string value from state
+              onChange={(dateString) => updateEditFormState('about', 'birth_date', dateString)} // Pass the update handler
+              error={errors['about.birth_date']} // Pass the error message
+              className={`${errors['about.birth_date'] ? 'border-red-500' : ''}`} // Pass specific Tailwind classes if needed
+            />
+
             {/* Gender */}
             <div>
               <label className="block text-sm font-medium text-gray-700">Gender</label>
@@ -367,13 +438,92 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
               </select>
               {errors['about.drinking_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.drinking_level']}</p>}
             </div>
-            {/* Add other fields similarly... */}
+
+            <div>
+              <label htmlFor="smoking_level_edit" className="block text-sm font-medium text-gray-700">
+                Smoking Level
+              </label>
+              <select
+                id="smoking_level_edit"
+                value={editFormState.about.smoking_level ?? ''} // Handle potential null
+                onChange={(e) => updateSmokingLevelAndClearTypes(e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
+                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                  errors['about.smoking_level'] ? 'border-red-500' : ''
+                }`}
+              >
+                <option value="">Select...</option>
+                <option value="1">Never</option>
+                <option value="2">Rarely</option>
+                <option value="3">Socially</option>
+                <option value="4">Often</option>
+              </select>
+              {errors['about.smoking_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.smoking_level']}</p>}
+            </div>
+
+            {/* Add Smoking Type Checkboxes (Conditional based on smoking_level) - ADD THIS BLOCK */}
+            {editFormState.about.smoking_level !== null && editFormState.about.smoking_level > 1 && (
+              <div className="col-span-2 mt-2"> {/* Use col-span-2 to span full width, add top margin */}
+                <p className="text-sm font-medium text-gray-700 mb-1">Smoking Types:</p> {/* Label for the group */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ml-2"> {/* Grid layout: 1 column on mobile, 2 on small screens, 4 on medium+ screens */}
+                  <div className="flex items-center">
+                    <input
+                      id="smokes_iqos_edit"
+                      type="checkbox"
+                      checked={editFormState.about.smokes_iqos === true}
+                      onChange={(e) => updateEditFormState('about', 'smokes_iqos', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="smokes_iqos_edit" className="ml-2 block text-sm text-gray-700">
+                      IQOS
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="smokes_vape_edit"
+                      type="checkbox"
+                      checked={editFormState.about.smokes_vape === true}
+                      onChange={(e) => updateEditFormState('about', 'smokes_vape', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="smokes_vape_edit" className="ml-2 block text-sm text-gray-700">
+                      Vape
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="smokes_tobacco_edit"
+                      type="checkbox"
+                      checked={editFormState.about.smokes_tobacco === true}
+                      onChange={(e) => updateEditFormState('about', 'smokes_tobacco', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="smokes_tobacco_edit" className="ml-2 block text-sm text-gray-700">
+                      Tobacco
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="smokes_cigs_edit"
+                      type="checkbox"
+                      checked={editFormState.about.smokes_cigs === true}
+                      onChange={(e) => updateEditFormState('about', 'smokes_cigs', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="smokes_cigs_edit" className="ml-2 block text-sm text-gray-700">
+                      Cigarettes
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* End of Smoking Type Checkboxes block */}
           </div>
 
           {/* Rent Preferences */}
           <div className="mt-4 p-4 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Rent Preferences</h3>
             <div className="grid grid-cols-2 gap-4">
+              
               <div>
                 <label htmlFor="min_budget_edit" className="block text-sm font-medium text-gray-700">
                   Min Budget
@@ -381,14 +531,20 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 <input
                   type="number"
                   id="min_budget_edit"
-                  value={editFormState.rent_preferences.min_budget ?? ''} // Handle potential null
-                  onChange={(e) => updateEditFormState('rent_preferences', 'min_budget', Number(e.target.value))} // Send null if empty string
+                  value={editFormState.rent_preferences.min_budget}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const cleaned = raw.length > 1 ? raw.replace(/^0+(?=\d)/, '') : raw;
+                    if (cleaned !== raw) e.target.value = cleaned
+                    updateEditFormState('rent_preferences', 'min_budget', Number(cleaned));
+                  }}
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                     errors['rent_preferences.min_budget'] ? 'border-red-500' : ''
                   }`}
                 />
                 {errors['rent_preferences.min_budget'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.min_budget']}</p>}
               </div>
+
               <div>
                 <label htmlFor="max_budget_edit" className="block text-sm font-medium text-gray-700">
                   Max Budget
@@ -396,27 +552,32 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 <input
                   type="number"
                   id="max_budget_edit"
-                  value={editFormState.rent_preferences.max_budget ?? ''} // Handle potential null
-                  onChange={(e) => updateEditFormState('rent_preferences', 'max_budget', Number(e.target.value))} // Send null if empty string
+                  value={editFormState.rent_preferences.max_budget}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const cleaned = raw.length > 1 ? raw.replace(/^0+(?=\d)/, '') : raw;
+                    if (cleaned !== raw) e.target.value = cleaned
+                    updateEditFormState('rent_preferences', 'max_budget', Number(cleaned));
+                  }}
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                     errors['rent_preferences.max_budget'] ? 'border-red-500' : ''
                   }`}
                 />
                 {errors['rent_preferences.max_budget'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.max_budget']}</p>}
               </div>
+
               <div>
                 <label htmlFor="min_rent_duration_level_edit" className="block text-sm font-medium text-gray-700">
                   Min Rent Duration Level
                 </label>
                 <select
                   id="min_rent_duration_level_edit"
-                  value={editFormState.rent_preferences.min_rent_duration_level ?? ''} // Handle potential null
+                  value={editFormState.rent_preferences.min_rent_duration_level} // Handle potential null
                   onChange={(e) => updateEditFormState('rent_preferences', 'min_rent_duration_level', Number(e.target.value))} // Send null if empty string
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                     errors['rent_preferences.min_rent_duration_level'] ? 'border-red-500' : ''
                   }`}
                 >
-                  <option value="">Select...</option>
                   <option value="1">Level 1</option>
                   <option value="2">Level 2</option>
                   <option value="3">Level 3</option>
@@ -431,13 +592,12 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 </label>
                 <select
                   id="max_rent_duration_level_edit"
-                  value={editFormState.rent_preferences.max_rent_duration_level ?? ''} // Handle potential null
+                  value={editFormState.rent_preferences.max_rent_duration_level} // Handle potential null
                   onChange={(e) => updateEditFormState('rent_preferences', 'max_rent_duration_level', Number(e.target.value))} // Send null if empty string
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                     errors['rent_preferences.max_rent_duration_level'] ? 'border-red-500' : ''
                   }`}
                 >
-                  <option value="">Select...</option>
                   <option value="1">Level 1</option>
                   <option value="2">Level 2</option>
                   <option value="3">Level 3</option>
@@ -458,7 +618,6 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     errors['rent_preferences.room_sharing_level'] ? 'border-red-500' : ''
                   }`}
                 >
-                  <option value="">Select...</option>
                   <option value="1">Private Room Only</option>
                   <option value="2">Shared Room Possible</option>
                   <option value="3">Flexible (Any Arrangement)</option>
@@ -478,7 +637,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     onLocationsChange={handleLocationsChange}
                     // Pass error state and handler
                     // Ensure the error prop is either a string or undefined, never null
-                    error={errors['rent_preferences.locations'] || apiError || undefined} // CORRECT: Use '|| undefined' to guarantee 'string | undefined' type
+                    error={errors['rent_preferences.locations'] || undefined} // CORRECT: Use '|| undefined' to guarantee 'string | undefined' type
                     onClearError={clearLocationsError}
                 />
                 {errors['rent_preferences.locations'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.locations']}</p>}
@@ -509,56 +668,137 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   </select>
                   {errors['about.neighbourliness_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.neighbourliness_level']}</p>}
                 </div>
-                {/* Add more fields like guests_level, parties_level, bedtime_level, neatness_level, pets, etc. */}
+                
+                <div>
+                  <label htmlFor="guests_level_edit" className="block text-sm font-medium text-gray-700">
+                    Guests Level
+                  </label>
+                  <select
+                    id="guests_level_edit"
+                    value={editFormState.about.guests_level ?? ''} // Handle potential null
+                    onChange={(e) => updateEditFormState('about', 'guests_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                      errors['about.guests_level'] ? 'border-red-500' : ''
+                    }`}
+                  >
+                    <option value="">Select...</option>
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                  </select>
+                  {errors['about.guests_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.guests_level']}</p>}
+                </div>
+                <div>
+                  <label htmlFor="parties_level_edit" className="block text-sm font-medium text-gray-700">
+                    Parties Level
+                  </label>
+                  <select
+                    id="parties_level_edit"
+                    value={editFormState.about.parties_level ?? ''} // Handle potential null
+                    onChange={(e) => updateEditFormState('about', 'parties_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                      errors['about.parties_level'] ? 'border-red-500' : ''
+                    }`}
+                  >
+                    <option value="">Select...</option>
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                  </select>
+                  {errors['about.parties_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.parties_level']}</p>}
+                </div>
+                <div>
+                  <label htmlFor="bedtime_level_edit" className="block text-sm font-medium text-gray-700">
+                    Bedtime Level
+                  </label>
+                  <select
+                    id="bedtime_level_edit"
+                    value={editFormState.about.bedtime_level ?? ''} // Handle potential null
+                    onChange={(e) => updateEditFormState('about', 'bedtime_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)} // Send null if empty string, adjust type if needed
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                      errors['about.bedtime_level'] ? 'border-red-500' : ''
+                    }`}
+                  >
+                    <option value="">Select...</option>
+                    <option value="1">Early (e.g., 22:00)</option>
+                    <option value="2">Midnight</option>
+                    <option value="3">Late (e.g., 02:00)</option>
+                    <option value="4">Very Late (e.g., 04:00)</option>
+                  </select>
+                  {errors['about.bedtime_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.bedtime_level']}</p>}
+                </div>
+                <div>
+                  <label htmlFor="neatness_level_edit" className="block text-sm font-medium text-gray-700">
+                    Neatness Level
+                  </label>
+                  <select
+                    id="neatness_level_edit"
+                    value={editFormState.about.neatness_level ?? ''} // Handle potential null
+                    onChange={(e) => updateEditFormState('about', 'neatness_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                      errors['about.neatness_level'] ? 'border-red-500' : ''
+                    }`}
+                  >
+                    <option value="">Select...</option>
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                  </select>
+                  {errors['about.neatness_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.neatness_level']}</p>}
+                </div>
+
                 {/* Pet Checkboxes */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center">
-                      <input
-                        id="has_cats_edit"
-                        type="checkbox"
-                        checked={editFormState.about.has_cats === true}
-                        onChange={(e) => updateEditFormState('about', 'has_cats', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_cats_edit" className="ml-2 block text-sm text-gray-700">
-                        Has Cats
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_dogs_edit"
-                        type="checkbox"
-                        checked={editFormState.about.has_dogs === true}
-                        onChange={(e) => updateEditFormState('about', 'has_dogs', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_dogs_edit" className="ml-2 block text-sm text-gray-700">
-                        Has Dogs
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_reptiles_edit"
-                        type="checkbox"
-                        checked={editFormState.about.has_reptiles === true}
-                        onChange={(e) => updateEditFormState('about', 'has_reptiles', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_reptiles_edit" className="ml-2 block text-sm text-gray-700">
-                        Has Reptiles
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        id="has_birds_edit"
-                        type="checkbox"
-                        checked={editFormState.about.has_birds === true}
-                        onChange={(e) => updateEditFormState('about', 'has_birds', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor="has_birds_edit" className="ml-2 block text-sm text-gray-700">
-                        Has Birds
-                      </label>
+                <div className="col-start-1 col-span-2">
+                  <p className="text-sm font-medium text-gray-700 mb-1">I Have Animals:</p> {/* Label for the group */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="flex items-center">
+                        <input
+                          id="has_cats_edit"
+                          type="checkbox"
+                          checked={editFormState.about.has_cats === true}
+                          onChange={(e) => updateEditFormState('about', 'has_cats', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_cats_edit" className="ml-2 block text-sm text-gray-700">
+                          Cats
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_dogs_edit"
+                          type="checkbox"
+                          checked={editFormState.about.has_dogs === true}
+                          onChange={(e) => updateEditFormState('about', 'has_dogs', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_dogs_edit" className="ml-2 block text-sm text-gray-700">
+                          Dogs
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_reptiles_edit"
+                          type="checkbox"
+                          checked={editFormState.about.has_reptiles === true}
+                          onChange={(e) => updateEditFormState('about', 'has_reptiles', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_reptiles_edit" className="ml-2 block text-sm text-gray-700">
+                          Reptiles
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          id="has_birds_edit"
+                          type="checkbox"
+                          checked={editFormState.about.has_birds === true}
+                          onChange={(e) => updateEditFormState('about', 'has_birds', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor="has_birds_edit" className="ml-2 block text-sm text-gray-700">
+                          Birds
+                        </label>
+                      </div>
                     </div>
                   </div>
                   {/* other_animals (TagsInput or similar) */}
@@ -567,8 +807,65 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       Other Animals (up to 5)
                     </label>
                     <TagsInput
-                      value={editFormState.about.other_animals || []} // Bind to editFormState
-                      onChange={(tags) => updateEditFormState('about', 'other_animals', tags)} // Use updateEditFormState
+                      isEditOnRemove
+                      value={editFormState.about.other_animals} // Bind to editFormState
+                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                        const newTagsCandidate = [...currentTags, newTag];
+                        const validationError = validators['about.other_animals'](newTagsCandidate, editFormState); // Use editFormState
+
+                        // Update the main errors state if validation fails
+                        if (validationError !== null) {
+                          setErrors(prevErrors => ({
+                            ...prevErrors,
+                            'about.other_animals': validationError
+                          }));
+                          return false; // Prevent adding the tag
+                        }
+
+                        // Clear the specific error for this field if validation passes
+                        setErrors(prevErrors => {
+                          const newErrors = { ...prevErrors };
+                          delete newErrors['about.other_animals']; // Remove the error for this key
+                          return newErrors;
+                        });
+                        return true; // Allow adding the tag
+                      }}
+                      onChange={(tags) => {
+                          // Clear the specific error for this field whenever tags change
+                          // This happens after a successful add (when beforeAddValidate passed)
+                          // or a remove action.
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.other_animals']; // Remove the error for this key
+                            return newErrors;
+                          });
+                          updateEditFormState('about', 'other_animals', tags); // Use updateEditFormState
+                        }}
+                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          const inputValue = (e.target as HTMLInputElement).value;
+
+                          if (inputValue) {
+                            const currentTags = editFormState.about.other_animals || []; // Use editFormState
+                            const newTagsCandidate = [...currentTags, inputValue];
+                            validateCurrentTagsInput('about.other_animals', newTagsCandidate, 'about.other_animals'); // Use helper
+                          }
+                          else {
+                            const currentTags = editFormState.about.other_animals || [];
+                            validateCurrentTagsInput('about.other_animals', currentTags, 'about.other_animals'); // Use helper
+                          }
+                        }}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                          const inputElement = e.target as HTMLInputElement
+                          const inputValue = inputElement.value
+                          if (inputValue) {
+                            inputElement.value = '' // Clear the input field if it had an error and was blurred while containing text
+                            setErrors(prevErrors => {
+                              const newErrors = { ...prevErrors };
+                              delete newErrors['about.other_animals']; // Remove the error for this key
+                              return newErrors;
+                            })
+                          }
+                        }}
                       name="other_animals_edit" // Unique name for this instance
                       placeHolder="Type and press enter"
                       // Adapted Tailwind classes for styling, matching the pattern from ProfileSetupPage and other inputs in ProfileEditView
@@ -587,8 +884,62 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       Interests (up to 5)
                     </label>
                     <TagsInput
+                      isEditOnRemove
                       value={editFormState.about.interests || []} // Bind to editFormState
-                      onChange={(tags) => updateEditFormState('about', 'interests', tags)} // Use updateEditFormState
+                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                          const newTagsCandidate = [...currentTags, newTag];
+                          const validationError = validators['about.interests'](newTagsCandidate, editFormState); // Use editFormState
+
+                          // Update the main errors state if validation fails
+                          if (validationError !== null) {
+                            setErrors(prevErrors => ({
+                              ...prevErrors,
+                              'about.interests': validationError
+                            }));
+                            return false; // Prevent adding the tag
+                          }
+
+                          // Clear the specific error for this field if validation passes
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.interests']; // Remove the error for this key
+                            return newErrors;
+                          });
+                          return true; // Allow adding the tag
+                        }}
+                      onChange={(tags) => {
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.interests']; // Remove the error for this key
+                            return newErrors;
+                          });
+                          updateEditFormState('about', 'interests', tags); // Use updateEditFormState
+                        }}
+                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          const inputValue = (e.target as HTMLInputElement).value;
+
+                          if (inputValue) {
+                            const currentTags = editFormState.about.interests || []; // Use editFormState
+                            const newTagsCandidate = [...currentTags, inputValue];
+                            validateCurrentTagsInput('about.interests', newTagsCandidate, 'about.interests'); // Use helper
+                          }
+                          else {
+                            const currentTags = editFormState.about.interests || [];
+                            validateCurrentTagsInput('about.interests', currentTags, 'about.interests'); // Use helper
+                          }
+                        }}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                          const inputElement = e.target as HTMLInputElement
+                          const inputValue = inputElement.value
+                          if (inputValue) {
+                            inputElement.value = '' // Clear the input field if it had an error and was blurred while containing text
+                            setErrors(prevErrors => {
+                              const newErrors = { ...prevErrors };
+                              delete newErrors['about.interests']; // Remove the error for this key
+                              return newErrors;
+                            })
+                          }
+                        }}
                       name="interests_edit" // Unique name for this instance
                       placeHolder="Type and press enter"
                       // Adapted Tailwind classes for styling
@@ -600,6 +951,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     {/* Error display */}
                     {errors['about.interests'] && <p className="mt-1 text-sm text-red-600">{errors['about.interests']}</p>}
                   </div>
+
                   {/* bio (textarea) */}
                   <div className="col-span-2">
                     <label htmlFor="bio_edit" className="block text-sm font-medium text-gray-700">
@@ -614,10 +966,12 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                         errors['about.bio'] ? 'border-red-500' : ''
                       }`}
                     />
-                    {errors['about.bio'] && <p className="mt-1 text-sm text-red-600">{errors['about.bio']}</p>}
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className={`text-xs mt-1 ${
+                      editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'text-red-600' : 'text-gray-500' // Change color based on limit
+                    }`}>
                       {editFormState.about.bio ? editFormState.about.bio.length : 0} / 1024 characters
                     </p>
+                    {errors['about.bio'] && <p className="mt-1 text-sm text-red-600">{errors['about.bio']}</p>}
                   </div>
               </div>
             </div>
@@ -638,13 +992,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
         </button>
         <button
           type="button"
-          onClick={handleSave} // Call the save handler
-          disabled={isSaving}
+          onClick={handleSave}
+          disabled={!hasChanges || isSaving} // Disable if no changes OR if currently saving
           className={`px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white ${
-            isSaving ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
+            !hasChanges || isSaving // Condition for disabled state
+              ? 'bg-gray-400 cursor-not-allowed' // Styles when disabled
+              : 'bg-green-600 hover:bg-green-700' // Styles when enabled
           } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
         >
-          {isSaving ? 'Saving...' : 'Save Changes'}
+          {isSaving ? 'Saving...' : 'Save Changes'} {/* Button text can indicate saving */}
         </button>
       </div>
     </div>

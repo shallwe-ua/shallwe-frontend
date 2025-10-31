@@ -4,7 +4,6 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const { existsSync } = require('fs');
 const Ignore = require('ignore');
 
 const MAX_FILE_BYTES = 1024 * 1024; // 1 MB - still used as a fallback for very large text files

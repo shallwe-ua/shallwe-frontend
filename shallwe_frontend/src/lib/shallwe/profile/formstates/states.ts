@@ -26,7 +26,7 @@ export interface ProfileCreateFormState {
 
 
 // Initial State
-export const ProfileCreateFormStateInitial: ProfileCreateFormState = {
+export const profileCreateFormStateInitial: ProfileCreateFormState = {
   profile: {
     name: null,
     photo: null
@@ -34,8 +34,8 @@ export const ProfileCreateFormStateInitial: ProfileCreateFormState = {
   about: {
     birth_date: null,
     gender: null,
-    is_couple: null,
-    has_children: null,
+    is_couple: false,
+    has_children: false,
     occupation_type: null,
     drinking_level: null,
     smoking_level: null,
@@ -86,7 +86,7 @@ export interface ProfileUpdateFormState {
 export const getProfileUpdateFormStateInitial = (initialProfileData: ProfileReadData): ProfileUpdateFormState => {
  // Initialize editFormState from initialProfileData
   // Required fields are pre-populated from profileData
-  const ProfileUpdateFormStateInitial: ProfileUpdateFormState = {
+  const profileUpdateFormStateInitial: ProfileUpdateFormState = {
     profile: {
       name: initialProfileData.profile.name,
       photo: null, // Initialize photo to null, meaning "no change intended". The cropper will show the existing photo URL.
@@ -113,8 +113,8 @@ export const getProfileUpdateFormStateInitial = (initialProfileData: ProfileRead
       has_dogs: initialProfileData.about.has_dogs,
       has_reptiles: initialProfileData.about.has_reptiles,
       has_birds: initialProfileData.about.has_birds,
-      other_animals: initialProfileData.about.other_animals || [],
-      interests: initialProfileData.about.interests || [],
+      other_animals: initialProfileData.about.other_animals,
+      interests: initialProfileData.about.interests,
       bio: initialProfileData.about.bio,
     },
     rent_preferences: {
@@ -127,5 +127,5 @@ export const getProfileUpdateFormStateInitial = (initialProfileData: ProfileRead
     }
   }
 
-  return ProfileUpdateFormStateInitial
+  return profileUpdateFormStateInitial
 }

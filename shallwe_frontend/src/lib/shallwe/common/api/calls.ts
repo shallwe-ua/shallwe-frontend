@@ -1,22 +1,12 @@
 import { env } from '@/config/env'
+import { getDocumentCookie } from '@/lib/common/cookie'
 
 
 // --- HELPERS ---
 export interface ApiError {
   message: string
+  status?: number
   details?: any
-}
-
-
-export const getCookie = (name: string): string | undefined => {
-  if (typeof document === 'undefined') return undefined // Guard for server-side execution
-
-  const value = ` ${document.cookie}`
-  const parts = value.split(` ${name}=`)
-
-  if (parts.length === 2) return parts.pop()?.split('').shift()
-
-  return undefined
 }
 
 
@@ -38,7 +28,7 @@ export const baseApiCall = async (
   let csrfToken: string | undefined = undefined
 
   if (!serverCookies && typeof window !== 'undefined') {
-    csrfToken = getCookie('csrftoken')
+    csrfToken = getDocumentCookie('csrftoken')
   }
 
   if (csrfToken) {
@@ -89,14 +79,10 @@ export const baseApiCall = async (
 
       const apiError: ApiError = {
         message: errorData.message || `HTTP Error: ${response.status}`,
+        status: response.status,
         details: errorData,
       }
       throw apiError
-    }
-
-    // Handle 204 No Content
-    if (response.status === 204) {
-      return null
     }
 
     return response.text().then(text => text ? JSON.parse(text) : null)  // Avoid error when body is empty

@@ -10,6 +10,8 @@ export const validateProfileUpdateFields = (
 
   // Validate individual fields
   for (const fieldPath of fieldsToValidate) {
+    if (fieldPath === 'profile.photo' && formState.profile.photo === null) continue
+
     const validator = validators[fieldPath]
     if (validator) {
       const value = getNestedValue(formState, fieldPath)

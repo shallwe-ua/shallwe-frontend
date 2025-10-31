@@ -1,12 +1,11 @@
 import { baseApiCall } from "@/lib/shallwe/common/api/calls"
-import { ProfileReadData } from "./schema/read"
 import { ProfileCreateData } from "./schema/create"
 import { ProfileUpdateData } from "./schema/update"
 import { formatMultipartFormData } from "./multipart"
 
 
 // Read profile
-export const getProfile = async (): Promise<ProfileReadData> => {
+export const getProfile = async (): Promise<any> => {
   return baseApiCall('profile/me/')
 }
 
@@ -25,6 +24,7 @@ export const createProfile = async (profileData: ProfileCreateData): Promise<any
 // Update profile
 export const updateProfile = async (profileData: ProfileUpdateData): Promise<any> => {
   const formData = formatMultipartFormData(profileData)
+  formData.entries().forEach((pair) => console.log(pair[0], ':', pair[1]))
 
   return baseApiCall('profile/me/', {
     method: 'PATCH',

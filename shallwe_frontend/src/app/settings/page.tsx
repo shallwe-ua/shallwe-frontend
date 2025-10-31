@@ -10,6 +10,65 @@ import { ProfileReadData } from '@/lib/shallwe/profile/api/schema/read' // Impor
 import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError type
 import { ProfileEditView } from '../components/profile/ProfileEditView'
 import PhotoWithFallbacks from '../components/profile/PhotoWithFallbacks'
+import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
+
+
+interface DisplayLocation {
+  type: 'region' | 'city' | 'district' | 'other_ppl';
+  displayName: string;
+}
+
+
+export const prepareLocationsForDisplay = (locationsObject: LocationsReadFields): DisplayLocation[] => {
+  const displayItems: DisplayLocation[] = [];
+
+  // Process Regions
+  if (locationsObject.regions) {
+    locationsObject.regions.forEach(region => {
+      displayItems.push({
+        type: 'region',
+        displayName: region.region_name,
+      });
+    });
+  }
+
+  // Process Cities and their Districts (applying the rule)
+  if (locationsObject.cities) {
+    locationsObject.cities.forEach(city => {
+      const districtHierarchies = city.districts || [];
+      if (districtHierarchies.length > 0) {
+        // Rule: If city has districts, add only the districts
+        districtHierarchies.forEach(district => {
+          displayItems.push({
+            type: 'district',
+            displayName: `${city.ppl_name}, ${district.district_name}`, // e.g., "Kyiv, Holosiivskyi"
+          });
+        });
+      } else {
+        // Rule: If city has no districts, add the city
+        displayItems.push({
+          type: 'city',
+          displayName: `${city.ppl_name} (${city.region_name})`, // e.g., "Lviv (Lvivska)"
+        });
+      }
+    });
+  }
+
+  // Process Other PPLs
+  if (locationsObject.other_ppls) {
+    locationsObject.other_ppls.forEach(otherPpl => {
+      const suffix = otherPpl.subregion_name
+        ? `${otherPpl.region_name}, ${otherPpl.subregion_name}`
+        : otherPpl.region_name;
+      displayItems.push({
+        type: 'other_ppl',
+        displayName: `${otherPpl.ppl_name} (${suffix})`, // e.g., "Yasno (Ivano-Frankivska, Nizhynskyi)"
+      });
+    });
+  }
+
+  return displayItems;
+};
 
 
 export default function SettingsPage() {
@@ -23,8 +82,14 @@ export default function SettingsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
 
-  const defaultProfileImage = "/img/profile/default192.webp"
-  const [defaultImageFailed, setDefaultImageFailed] = useState(false)
+  const formatSmokingTypes = (smokesIqos: boolean | null, smokesVape: boolean | null, smokesTobacco: boolean | null, smokesCigs: boolean | null): string => {
+    const types: string[] = [];
+    if (smokesIqos) types.push('IQOS');
+    if (smokesVape) types.push('Vape');
+    if (smokesTobacco) types.push('Tobacco');
+    if (smokesCigs) types.push('Cigarettes');
+    return types.join(', ');
+  }
 
   const handleEditClick = () => {
     setIsEditing(true)
@@ -40,7 +105,6 @@ export default function SettingsPage() {
     setIsEditing(false) // Set isEditing back to false on cancel
     setApiError(null) // Clear any errors set during editing
   }
-
 
   const fetchProfile = async () => {
     try {
@@ -324,6 +388,20 @@ export default function SettingsPage() {
                     <p className="text-sm text-gray-500">Smoking Level</p>
                     <p className="font-medium">{formatLevel(profileData.about.smoking_level, 'smoking')}</p>
                   </div>
+                  {/* Add Smoking Type List */}
+                  {profileData.about.smoking_level !== null && profileData.about.smoking_level > 1 && (
+                    <div>
+                      <p className="text-sm text-gray-500">Smoking Types</p>
+                      <p className="font-medium text-gray-900"> {/* Standard text color, not indigo */}
+                        {formatSmokingTypes(
+                          profileData.about.smokes_iqos,
+                          profileData.about.smokes_vape,
+                          profileData.about.smokes_tobacco,
+                          profileData.about.smokes_cigs
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Rent Preferences */}
@@ -354,29 +432,27 @@ export default function SettingsPage() {
                   <div className="mt-2">
                       <p className="text-sm text-gray-500">Locations</p>
                       <div className="flex flex-wrap gap-1 mt-1">
-                          {profileData.rent_preferences.locations &&
-                          (profileData.rent_preferences.locations.regions?.length > 0 ||
-                            profileData.rent_preferences.locations.cities?.length > 0 ||
-                            profileData.rent_preferences.locations.other_ppls?.length > 0) ? (
-                              <>
-                                  {profileData.rent_preferences.locations.regions?.map((region, index) => (
-                                      <span key={`region-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                          {region.region_name}
-                                      </span>
-                                  ))}
-                                  {profileData.rent_preferences.locations.cities?.map((city, index) => (
-                                      <span key={`city-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                          {city.ppl_name}, {city.region_name}
-                                      </span>
-                                  ))}
-                                  {profileData.rent_preferences.locations.other_ppls?.map((otherPpl, index) => (
-                                      <span key={`other_ppl-${index}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                          {otherPpl.ppl_name}{otherPpl.subregion_name ? `, ${otherPpl.subregion_name}` : ''}, {otherPpl.region_name}
-                                      </span>
-                                  ))}
-                              </>
-                          ) : (
+                          {profileData.rent_preferences.locations ? (
+                            // Call the function to get the processed array
+                            prepareLocationsForDisplay(profileData.rent_preferences.locations).length > 0 ? (
+                              // Map over the processed array
+                              prepareLocationsForDisplay(profileData.rent_preferences.locations).map(
+                                (item: DisplayLocation, index: number) => (
+                                  <span
+                                    key={`${item.type}-${index}`} // Use type and index for a more specific key
+                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                                  >
+                                    {item.displayName} {/* Render the pre-formatted display name */}
+                                  </span>
+                                )
+                              )
+                            ) : (
+                              // Or show default if the processed array is empty
                               <p className="text-gray-600">Вся Україна (Default)</p>
+                            )
+                          ) : (
+                            // Handle case where profileData.rent_preferences.locations is null/undefined
+                            <p className="text-gray-600">Вся Україна (Default)</p>
                           )}
                       </div>
                   </div>
@@ -406,21 +482,17 @@ export default function SettingsPage() {
                       <p className="text-sm text-gray-500">Neatness Level</p>
                       <p className="font-medium">{formatLevel(profileData.about.neatness_level, 'neatness')}</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Has Cats</p>
-                      <p className="font-medium">{formatBoolean(profileData.about.has_cats)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Has Dogs</p>
-                      <p className="font-medium">{formatBoolean(profileData.about.has_dogs)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Has Reptiles</p>
-                      <p className="font-medium">{formatBoolean(profileData.about.has_reptiles)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Has Birds</p>
-                      <p className="font-medium">{formatBoolean(profileData.about.has_birds)}</p>
+                    {/* Pet Checkboxes - Display as a list */}
+                    <div className="col-span-2"> {/* Use col-span-2 to make it full width */}
+                      <p className="text-sm text-gray-500">Animals</p>
+                      <p className="font-medium text-gray-900"> {/* Standard text color */}
+                        {[
+                          profileData.about.has_cats && 'Cats',
+                          profileData.about.has_dogs && 'Dogs',
+                          profileData.about.has_reptiles && 'Reptiles',
+                          profileData.about.has_birds && 'Birds',
+                        ].filter(Boolean).join(', ') || 'None'} {/* Filter out falsy values and join, default to 'None' */}
+                      </p>
                     </div>
                     <div className="col-span-2">
                       <p className="text-sm text-gray-500">Other Animals</p>
@@ -432,7 +504,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="col-span-2">
                       <p className="text-sm text-gray-500">Bio</p>
-                      <p className="font-medium">{profileData.about.bio || 'Not specified'}</p>
+                      <p className="font-medium break-words">{profileData.about.bio || 'Not specified'}</p>
                     </div>
                   </div>
                 </div>

@@ -41,3 +41,10 @@ export interface LocationsReadFields {
   cities: CityReadFields[]
   other_ppls: OtherPplReadFields[]
 }
+
+
+export const emptyLocationsReadData: LocationsReadFields = {
+  regions: [],
+  cities: [],
+  other_ppls: []
+}

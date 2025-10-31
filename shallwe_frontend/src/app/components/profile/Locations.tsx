@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { searchLocations } from '@/lib/shallwe/locations/api/calls'
 import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
-
+import { ApiError } from '@/lib/shallwe/common/api/calls'
 
 interface LocationsProps {
   selectedLocations: string[]
@@ -11,6 +11,7 @@ interface LocationsProps {
   onClearError: () => void
 }
 
+const MAX_LOCATIONS = 30;
 
 const Locations: React.FC<LocationsProps> = ({
   selectedLocations,
@@ -25,6 +26,8 @@ const Locations: React.FC<LocationsProps> = ({
   const [searchError, setSearchError] = useState<string | null>(null)
   const [showResults, setShowResults] = useState(false)
   const [nameMap, setNameMap] = useState<Record<string, string>>(initialLocationNames || {})
+  const [isInputFrozen, setIsInputFrozen] = useState(false);
+  const [isCounterSwinging, setIsCounterSwinging] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -33,6 +36,8 @@ const Locations: React.FC<LocationsProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowResults(false)
+        setIsInputFrozen(false);
+        setIsCounterSwinging(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -44,6 +49,13 @@ const Locations: React.FC<LocationsProps> = ({
   }
 
   const handleSelectLocation = (selectedHierarchy: string, displayName: string) => {
+    if (selectedLocations.length >= MAX_LOCATIONS && !selectedLocations.includes(selectedHierarchy)) {
+      setIsInputFrozen(true);
+      setIsCounterSwinging(true);
+      setTimeout(() => setIsCounterSwinging(false), 500); // Swing animation duration
+      return;
+    }
+
     onClearError()
     setSearchError(null)
 
@@ -61,12 +73,21 @@ const Locations: React.FC<LocationsProps> = ({
     }
 
     onLocationsChange(newLocations)
+    // Only unfreeze if we're below the limit
+    if (newLocations.length < MAX_LOCATIONS) {
+      setIsInputFrozen(false);
+      setIsCounterSwinging(false);
+    }
   }
 
   const handleRemoveLocation = (hierarchyToRemove: string) => {
     onClearError()
     const newLocations = selectedLocations.filter((h) => h !== hierarchyToRemove)
     onLocationsChange(newLocations)
+    
+    // Unfreeze input when removing a location since we're now below the limit
+    setIsInputFrozen(false);
+    setIsCounterSwinging(false);
   }
 
   const debouncedSearch = useCallback(
@@ -87,7 +108,11 @@ const Locations: React.FC<LocationsProps> = ({
         } catch (err) {
           console.error('Error searching locations:', err)
           setSearchResults(null)
-          setSearchError('Failed to search locations. Please try again.')
+          const apiError = err as ApiError
+          if ('status' in apiError && apiError.status === 404) {
+            setSearchError('No locations matching this query. Please check the spelling.')
+          }
+          else setSearchError(`Error trying to search locations: ${apiError.message}`)
         } finally {
           setIsLoading(false)
         }
@@ -112,7 +137,7 @@ const Locations: React.FC<LocationsProps> = ({
 
   const showAllUkraineTag = selectedLocations.length === 0
 
-  const getDisplayName = (entity: any, type: 'region' | 'city' | 'other_ppl' | 'district', parentCity?: { ppl_name: string }) => {
+  const getDisplayName = (entity: any, type: 'region' | 'city' | 'other_ppl' | 'district', parentCity?: { ppl_name: string }): string => {
     switch (type) {
       case 'region':
         return entity.region_name;
@@ -120,9 +145,15 @@ const Locations: React.FC<LocationsProps> = ({
         // Big cities: City Name (Region Name)
         return `${entity.ppl_name} (${entity.region_name})`;
       case 'district':
+        if (!parentCity) {
+          console.error("getDisplayName: parentCity is required for type 'district'", { entity, type, parentCity });
+          // Return a fallback string indicating the error, or just the district name
+          // Returning just the district name might be less disruptive than showing an error string like "[Missing Parent City]"
+          return `${entity.district_name} ${entity.hierarchy}` || `[Missing Parent City for ${entity.hierarchy}]`
+        }
         // Districts: City Name, District Name (e.g., Київ, Подільский)
         // parentCity is expected for districts
-        return parentCity ? `${parentCity.ppl_name}, ${entity.district_name}` : entity.district_name;
+        return `${parentCity.ppl_name}, ${entity.district_name}`
       case 'other_ppl':
         // Other PPLs: Name (Region, Subregion) or Name (Region)
         const suffix = entity.subregion_name ? `${entity.region_name}, ${entity.subregion_name}` : entity.region_name;
@@ -140,7 +171,7 @@ const Locations: React.FC<LocationsProps> = ({
       onClick={() => handleSelectLocation(hierarchy, displayName)} // Pass the pre-formatted display name
       className={`p-2 text-sm cursor-pointer hover:bg-gray-100 ${
         selectedLocations.includes(hierarchy) ? 'bg-green-100 hover:bg-green-200' : ''
-      }`}
+      } ${selectedLocations.length >= MAX_LOCATIONS && !selectedLocations.includes(hierarchy) ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       {displayName}
     </div>
@@ -148,26 +179,66 @@ const Locations: React.FC<LocationsProps> = ({
 
   return (
     <div className="space-y-2 relative" ref={wrapperRef}>
-      {searchError && <p className="mt-1 text-sm text-red-600">{searchError}</p>}
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-
       {/* Search field */}
       <div className="relative">
         <input
           type="text"
           id="location-search"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            if (!isInputFrozen) {
+              setSearchQuery(e.target.value);
+            }
+          }}
           placeholder="Enter location..."
-          onFocus={() => searchResults && setShowResults(true)}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-            searchError ? 'border-red-500' : ''
+          onFocus={() => {
+            if (selectedLocations.length >= MAX_LOCATIONS) {
+              setIsInputFrozen(true);
+              setIsCounterSwinging(true);
+              setTimeout(() => setIsCounterSwinging(false), 500);
+            } else {
+              searchResults && setShowResults(true);
+            }
+          }}
+          className={`mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+            isInputFrozen 
+              ? 'border-red-500 bg-red-50 cursor-not-allowed' 
+              : searchError 
+                ? 'border-red-500' 
+                : 'border-gray-300'
           }`}
+          disabled={isInputFrozen}
         />
         {isLoading && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
           </div>
+        )}
+      </div>
+
+      {searchError && <p className="mt-1 text-sm text-gray-400">{searchError}</p>}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+
+      {/* Location Counter */}
+      <div className={`text-sm font-medium text-gray-400 transition-colors duration-300 flex justify-between items-center`}>
+        <span 
+          className={`inline-block ${isCounterSwinging ? 'animate-pulse text-red-600' : ''}`}
+        >
+          {selectedLocations.length}/{MAX_LOCATIONS} locations picked
+        </span>
+        {selectedLocations.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              onLocationsChange([]);
+              setNameMap({});
+              setIsInputFrozen(false);
+              setIsCounterSwinging(false);
+            }}
+            className="text-sm text-gray-400 hover:text-gray-700 cursor-pointer underline"
+          >
+            clear all &times;
+          </button>
         )}
       </div>
 

@@ -63,13 +63,13 @@ export const createStringListValidator = (config: StringListValidationConfig): P
     
     if (config.minLength || config.maxLength || config.pattern) {
       for (const item of value!) {
+        if (config.pattern && !config.pattern.test(item)) {
+          return config.patternError || `Some of ${config.itemName.toLowerCase()} have invalid format.`
+        }
         if (config.minLength && config.maxLength) {
           if (item.length < config.minLength || item.length > config.maxLength) {
             return `Each ${config.itemName.toLowerCase()} must be between ${config.minLength} and ${config.maxLength} characters.`
           }
-        }
-        if (config.pattern && !config.pattern.test(item)) {
-          return config.patternError || `Some of ${config.itemName.toLowerCase()} have invalid format.`
         }
       }
     }
@@ -116,11 +116,14 @@ export const validators: Record<string, ProfileFieldValidator> = {
   },
 
   'about.smoking_level': (value: number | null, formData: ProfileCreateFormState) => {
-    if (value !== null && value !== undefined && value > 1) {
+    if (value !== null && value !== undefined) {
       const hasSmokingType = formData.about.smokes_iqos || formData.about.smokes_vape || 
                              formData.about.smokes_tobacco || formData.about.smokes_cigs
-      if (!hasSmokingType) {
+      if (!hasSmokingType && value > 1) {
         return 'If smoking level is greater than 1, at least one smoking type must be selected.'
+      }
+      if (hasSmokingType && value <= 1) {
+        return 'If smoking level is less than or equal to 1, none of smoking types can be selected.'
       }
     }
     return null

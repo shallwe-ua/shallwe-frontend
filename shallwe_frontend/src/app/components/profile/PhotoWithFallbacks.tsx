@@ -68,7 +68,6 @@ const PhotoWithFallbacks: React.FC<PhotoWithFallbacksProprs> = ({
       className={className}
       onError={handleError}
       onLoad={handleLoad}
-      style={{ display: isLoading ? 'none' : 'block' }} // Optional: Hide while loading to prevent flicker
     />
   );
 };
