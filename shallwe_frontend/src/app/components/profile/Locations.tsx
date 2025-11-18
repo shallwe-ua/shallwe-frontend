@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { searchLocations } from '@/lib/shallwe/locations/api/calls'
-import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
+import { LocationsReadFields, GenericLocationReadFields } from '@/lib/shallwe/locations/api/schema'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 
 interface LocationsProps {
@@ -137,10 +137,10 @@ const Locations: React.FC<LocationsProps> = ({
 
   const showAllUkraineTag = selectedLocations.length === 0
 
-  const getDisplayName = (entity: any, type: 'region' | 'city' | 'other_ppl' | 'district', parentCity?: { ppl_name: string }): string => {
+  const getDisplayName = (entity: GenericLocationReadFields, type: 'region' | 'city' | 'other_ppl' | 'district', parentCity?: { ppl_name: string }): string => {
     switch (type) {
       case 'region':
-        return entity.region_name;
+        return entity.region_name ?? '';
       case 'city':
         // Big cities: City Name (Region Name)
         return `${entity.ppl_name} (${entity.region_name})`;

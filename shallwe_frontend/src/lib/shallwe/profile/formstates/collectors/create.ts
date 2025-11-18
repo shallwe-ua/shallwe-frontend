@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ProfileCreateData } from "../../api/schema/create"
 import { ProfileCreateFormState } from "../states"
 

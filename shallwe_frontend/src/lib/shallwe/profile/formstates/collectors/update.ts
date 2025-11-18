@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { LocationsReadFields } from "@/lib/shallwe/locations/api/schema";
 import { ProfileReadData } from "../../api/schema/read";
 import { ProfileUpdateData } from "../../api/schema/update";

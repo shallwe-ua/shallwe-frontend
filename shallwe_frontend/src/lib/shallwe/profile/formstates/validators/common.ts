@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { validateProfilePhotoFile } from "@/lib/shallwe/photo/formstates/validators"
 import { ProfileCreateFormState } from "../states"
 

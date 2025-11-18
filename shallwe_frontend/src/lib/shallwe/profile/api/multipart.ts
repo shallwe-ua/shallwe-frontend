@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ProfileCreateData } from "./schema/create"
 import { ProfileUpdateData } from "./schema/update"
 

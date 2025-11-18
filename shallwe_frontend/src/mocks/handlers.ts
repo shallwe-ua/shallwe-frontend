@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { http, HttpResponse } from 'msw'
 import { getDocumentCookie } from '@/lib/common/cookie'
 

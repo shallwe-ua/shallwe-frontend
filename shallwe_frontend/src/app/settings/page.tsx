@@ -278,7 +278,7 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-gradient-to-br from-background-white to-primary-blue flex flex-col items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8 space-y-6">
           <h1 className="text-2xl font-bold text-center text-black">Profile Not Found</h1>
-          <p className="text-center text-gray-600">We couldn't load your profile data.</p>
+          <p className="text-center text-gray-600">We could not load your profile data.</p>
           {apiError && <p className="text-center text-red-600">{apiError}</p>}
           <button
             onClick={() => router.push('/')} // Fallback redirect button

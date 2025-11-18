@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ProfileCreateData } from "../api/schema/create"
 import { ProfileReadData } from "../api/schema/read"
 import { extractHierarchyStrings } from "./collectors/update"

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace, @typescript-eslint/no-empty-object-type */
 import { z } from "zod"
 
 

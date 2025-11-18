@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { baseApiCall } from "@/lib/shallwe/common/api/calls"
 
 
