@@ -97,7 +97,7 @@ export default function LandingPage() {
     }
 
     handleHomeLoad()
-  }, [])
+  }, [handleBackendAuth])
 
   return (
     <div className="relative min-h-screen pb-16 pt-20 flex items-start">
@@ -105,18 +105,21 @@ export default function LandingPage() {
         <div className="bg-orb bg-orb--blue" style={{ top: '-120px', left: '-80px' }} />
         <div className="bg-orb bg-orb--peach" style={{ bottom: '-160px', right: '-60px' }} />
           <div className="pointer-events-none absolute inset-0">
-            {houseRain.map((house, idx) => (
-              <div
-                key={idx}
-                className={`bg-house ${house.color === 'blue' ? 'bg-house--blue' : 'bg-house--peach'}`}
-                style={{
-                  top: house.startY,
-                  left: house.startX,
-                  animationDelay: house.delay,
-                  ['--house-duration' as any]: house.duration,
-                }}
-              />
-            ))}
+            {houseRain.map((house, idx) => {
+              const style: React.CSSProperties & { ['--house-duration']?: string } = {
+                top: house.startY,
+                left: house.startX,
+                animationDelay: house.delay,
+                '--house-duration': house.duration,
+              }
+              return (
+                <div
+                  key={idx}
+                  className={`bg-house ${house.color === 'blue' ? 'bg-house--blue' : 'bg-house--peach'}`}
+                  style={style}
+                />
+              )
+            })}
           </div>
         </div>
 
@@ -159,7 +162,7 @@ export default function LandingPage() {
   )
 }
 
-const houseRain = Array.from({ length: 36 }).map((_, i) => {
+const houseRain = Array.from({ length: 36 }).map(() => {
   const color = Math.random() > 0.5 ? 'blue' : 'peach'
   const startX = `${Math.random() * 100}%`
   const startY = `${-Math.random() * 20}%`
