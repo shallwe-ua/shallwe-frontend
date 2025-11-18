@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "msw": "^2.11.3",
     "next": "15.5.4",
@@ -16,6 +17,7 @@
     "react-dom": "19.1.0",
     "react-easy-crop": "^5.5.3",
     "react-tag-input-component": "^2.0.2",
+    "tailwind-merge": "^3.4.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {

@@ -11,6 +11,9 @@ import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError typ
 import { ProfileEditView } from '../components/profile/ProfileEditView'
 import PhotoWithFallbacks from '../components/profile/PhotoWithFallbacks'
 import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert } from '@/components/ui/alert'
 
 
 interface DisplayLocation {
@@ -263,10 +266,10 @@ export default function SettingsPage() {
   // --- RENDER LOGIC ---
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background-white to-primary-blue flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-lg text-gray-700">Loading your profile...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <Card className="w-full max-w-md">
+          <CardContent className="py-8 text-center text-muted">Loading your profile…</CardContent>
+        </Card>
       </div>
     )
   }
@@ -275,67 +278,58 @@ export default function SettingsPage() {
     // This state should ideally be handled by the error check in useEffect leading to a redirect,
     // but render a message just in case.
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background-white to-primary-blue flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8 space-y-6">
-          <h1 className="text-2xl font-bold text-center text-black">Profile Not Found</h1>
-          <p className="text-center text-gray-600">We could not load your profile data.</p>
-          {apiError && <p className="text-center text-red-600">{apiError}</p>}
-          <button
-            onClick={() => router.push('/')} // Fallback redirect button
-            className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Go to Home
-          </button>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center p-8">
+        <Card className="w-full max-w-md space-y-4">
+          <CardHeader>
+            <CardTitle className="text-center">Profile not found</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-center">
+            <p className="text-muted">We could not load your profile data.</p>
+            {apiError && <Alert variant="destructive">{apiError}</Alert>}
+            <Button onClick={() => router.push('/')} className="w-full">
+              Go to Home
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   // --- MAIN RENDER (Profile Data Loaded) ---
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background-white to-primary-blue flex flex-col items-center justify-center p-4">
-      <div className="max-w-4xl w-full bg-white rounded-xl shadow-md p-8 space-y-6">
-        <div className="flex justify-between items-start">
-          <h1 className="text-2xl font-bold text-black">Your Profile Settings</h1>
-          {/* Show Edit button only when not editing */}
+    <div className="min-h-screen py-10">
+      <div className="page-shell max-w-5xl space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold text-foreground">Your Profile Settings</h1>
           {!isEditing && (
-              <button
-                  onClick={handleEditClick}
-                  className="ml-3 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                  Edit
-              </button>
+            <Button onClick={handleEditClick} size="sm">
+              Edit
+            </Button>
           )}
         </div>
 
-        {/* API Error Display */}
-        {apiError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">Error: {apiError}</span>
-          </div>
-        )}
+        {apiError && <Alert variant="destructive">Error: {apiError}</Alert>}
 
-        {/* Profile Visibility Toggle */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <span className="text-sm font-medium text-gray-700">
-            Profile Visibility: <strong>{profileData.profile.is_hidden ? 'Hidden' : 'Visible'}</strong>
-          </span>
-          <button
-            onClick={handleToggleVisibility}
-            disabled={isVisibilityUpdating}
-            className={`px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white ${
-              isVisibilityUpdating ? 'bg-gray-400' : profileData.profile.is_hidden ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              profileData.profile.is_hidden ? 'focus:ring-green-500' : 'focus:ring-yellow-500'
-            }`}
-          >
-            {isVisibilityUpdating
-              ? 'Updating...'
-              : profileData.profile.is_hidden
-              ? 'Make Visible'
-              : 'Hide Profile'}
-          </button>
-        </div>
+        <Card className="border-border/80">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <span className="text-sm font-medium text-foreground">
+              Profile Visibility:{' '}
+              <strong>{profileData.profile.is_hidden ? 'Hidden' : 'Visible'}</strong>
+            </span>
+            <Button
+              onClick={handleToggleVisibility}
+              disabled={isVisibilityUpdating}
+              variant={profileData.profile.is_hidden ? 'secondary' : 'outline'}
+              size="sm"
+            >
+              {isVisibilityUpdating
+                ? 'Updating...'
+                : profileData.profile.is_hidden
+                ? 'Make Visible'
+                : 'Hide Profile'}
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Profile Data Display */}
         {isEditing ? (
@@ -515,12 +509,9 @@ export default function SettingsPage() {
 
         {/* Delete Button */}
         <div className="flex justify-end mt-6">
-          <button
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          >
+          <Button variant="destructive" onClick={() => setIsDeleteModalOpen(true)} size="sm">
             Delete Profile & Account
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -566,23 +557,23 @@ export default function SettingsPage() {
               </div>
               {/* Footer with Buttons */}
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
+                <Button
                   type="button"
                   onClick={handleDeleteConfirm}
                   disabled={isDeleting}
-                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white sm:ml-3 sm:w-auto sm:text-sm ${
-                    isDeleting ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
-                  }`}
+                  variant="destructive"
+                  className="w-full sm:w-auto"
                 >
                   {isDeleting ? 'Deleting...' : 'Delete'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setIsDeleteModalOpen(false)} // Close the modal
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full sm:mt-0 sm:ml-3 sm:w-auto"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>

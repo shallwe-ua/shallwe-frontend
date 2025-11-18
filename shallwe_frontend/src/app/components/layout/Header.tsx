@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 import { logout } from '@/lib/shallwe/auth/api/calls'
+import { Button } from '@/components/ui/button'
 
 
 
@@ -52,30 +53,47 @@ const Header = () => {
 
 
   // --- RENDER ---
+  const isLanding = pathname === '/'
+
   return (
-    <header className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex-shrink-0">
-            <Link href={isLoggedIn ? "/settings" : "/"} className="text-xl font-bold text-primary-blue-dark">
-              Shallwe
-            </Link>
-          </div>
-          <nav className="hidden md:block">
-            {/* Add navigation links here later if needed, e.g., for logged-out state */}
-            {/* Example: <Link href="/about" className="text-gray-700 hover:text-primary-blue mx-3">About</Link> */}
-          </nav>
-          <div>
-            {/* Show logout button if user seems logged in */}
-            {isLoggedIn && (
-              <button
-                onClick={handleLogout}
-                className="text-sm font-medium text-gray-700 hover:text-red-600"
-              >
-                Logout
-              </button>
-            )}
-          </div>
+    <header className="sticky top-0 z-30 border-b border-border bg-white/90 backdrop-blur">
+      <div className="page-shell">
+        <div className="flex h-16 items-center justify-between">
+          <Link
+            href={isLoggedIn ? '/settings' : '/'}
+            className="text-lg font-semibold text-foreground tracking-tight"
+            aria-label="Shallwe home"
+          >
+            Shallwe
+          </Link>
+
+          {!isLanding && (
+            <>
+              <nav className="hidden items-center gap-6 text-sm text-muted sm:flex">
+                <Link href="/settings" className="hover:text-foreground">
+                  Settings
+                </Link>
+                <Link href="/setup" className="hover:text-foreground">
+                  Profile
+                </Link>
+              </nav>
+
+              <div>
+                {isLoggedIn ? (
+                  <Button variant="ghost" size="sm" onClick={handleLogout}>
+                    Logout
+                  </Button>
+                ) : (
+                  <Link
+                    href="/"
+                    className="rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-surface-elevated"
+                  >
+                    Home
+                  </Link>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>
