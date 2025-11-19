@@ -15,7 +15,7 @@ export function MSWInitializer({ children }: { children: ReactNode }) {
           })
       })
     }
-  }, [])
+  }, [ready])
 
   // This ensures that worker is initialized first before rendering to avoid middleware errors.
   return !ready ? null : <>{children}</> 

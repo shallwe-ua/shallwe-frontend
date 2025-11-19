@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useMemo, useEffect } from 'react'
 import { updateProfile } from '@/lib/shallwe/profile/api/calls'
 import { ProfileUpdateFormState, getProfileUpdateFormStateInitial } from '@/lib/shallwe/profile/formstates/states'
 import { collectProfileUpdateDataFromState } from '@/lib/shallwe/profile/formstates/collectors/update'
@@ -35,7 +34,6 @@ interface ProfileEditViewProps {
 }
 
 export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfileData, onSave, onCancel }) => {
-  const router = useRouter()
 
   // Initialize editFormState using the NEW initializer function
   const initialEditFormState: ProfileUpdateFormState = getProfileUpdateFormStateInitial(initialProfileData)

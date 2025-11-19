@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { isBefore, isAfter, parseISO } from 'date-fns'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
 
 interface BirthDateSelectProps {
@@ -16,7 +20,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
   currentValue,
   onChange,
   error,
-  className = ''
+  className,
 }) => {
   // State for individual date components (always strings, representing valid numbers or empty initially)
   const [day, setDay] = useState<string>('')
@@ -27,10 +31,13 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
   const [isInitiated, setIsInitiated] = useState<boolean>(currentValue !== null)
 
   // Age limits as dates - calculated precisely
-  const currentDate = new Date() // Use current date for calculations
-  // Calculate exact dates 120 and 16 years ago
-  const minSelectableDate = new Date(currentDate.getFullYear() - 120, currentDate.getMonth(), currentDate.getDate())
-  const maxSelectableDate = new Date(currentDate.getFullYear() - 16, currentDate.getMonth(), currentDate.getDate())
+  const { minSelectableDate, maxSelectableDate } = useMemo(() => {
+    const now = new Date()
+    return {
+      minSelectableDate: new Date(now.getFullYear() - 120, now.getMonth(), now.getDate()),
+      maxSelectableDate: new Date(now.getFullYear() - 16, now.getMonth(), now.getDate()),
+    }
+  }, [])
 
   // Generate options based on min/max dates
   const minYear = minSelectableDate.getFullYear()
@@ -109,7 +116,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
         setMonth(defaultMonth)
         setDay(defaultDay)
     }
-  }, [currentValue, minSelectableDate, maxSelectableDate])
+  }, [currentValue, minSelectableDate, maxSelectableDate, minYear, maxYear])
 
 
   // --- Calculate days based on selected month and year ---
@@ -205,80 +212,80 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
   const displayError = error
 
   return (
-    <div>
-      <label htmlFor={inputId} className="block text-sm font-medium text-gray-700">
-        Birth Date (16-120 years old allowed)
-      </label>
-      <div className="flex flex-row space-x-2 mt-1">
+    <div className={cn('space-y-2', className)}>
+      <p className="text-xs text-subtle">Birth Date (16–120 years old allowed)</p>
+      <div className="flex flex-row gap-3">
         {!isInitiated ? (
-          <div className="sm:col-span-3">
-            <button
-              type="button"
-              onClick={handleSelectDateClick}
-              className={`w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                displayError ? 'border-red-500' : ''
-              } ${className}`}
-            >
-              Select the date
-            </button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSelectDateClick}
+            className={cn(
+              'w-full justify-center',
+              displayError && 'border-destructive/70 text-destructive hover:bg-destructive/5'
+            )}
+          >
+            Select the date
+          </Button>
         ) : (
-          // Show date selects when date is selected
           <>
-            {/* Day Select */}
-            <div className="flex flex-col"> {/* Container for Day label and select */}
-              <label htmlFor={`${inputId}-day`} className="text-xs text-gray-500 mb-1">Day</label>
-              <select
+            <div className="flex flex-col gap-1">
+              <Label htmlFor={`${inputId}-day`} className="text-xs text-muted uppercase tracking-wide">
+                Day
+              </Label>
+              <Select
                 id={`${inputId}-day`}
                 value={day}
                 onChange={(e) => handleSelectChange('day', e.target.value)}
-                className={`rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                  displayError ? 'border-red-500' : ''
-                } ${className}`}
+                className={cn(displayError && 'border-destructive/70 focus-visible:ring-destructive')}
               >
-                {dayOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
+                {dayOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
-            {/* Month Select */}
-            <div className="flex flex-col"> {/* Container for Month label and select */}
-              <label htmlFor={`${inputId}-month`} className="text-xs text-gray-500 mb-1">Month</label>
-              <select
+            <div className="flex flex-col gap-1">
+              <Label htmlFor={`${inputId}-month`} className="text-xs text-muted uppercase tracking-wide">
+                Month
+              </Label>
+              <Select
                 id={`${inputId}-month`}
                 value={month}
                 onChange={(e) => handleSelectChange('month', e.target.value)}
-                className={`rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                  displayError ? 'border-red-500' : ''
-                } ${className}`}
+                className={cn(displayError && 'border-destructive/70 focus-visible:ring-destructive')}
               >
-                {monthOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
+                {monthOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
-            {/* Year Select */}
-            <div className="flex flex-col"> {/* Container for Year label and select */}
-              <label htmlFor={`${inputId}-year`} className="text-xs text-gray-500 mb-1">Year</label>
-              <select
+            <div className="flex flex-col gap-1">
+              <Label htmlFor={`${inputId}-year`} className="text-xs text-muted uppercase tracking-wide">
+                Year
+              </Label>
+              <Select
                 id={`${inputId}-year`}
                 value={year}
                 onChange={(e) => handleSelectChange('year', e.target.value)}
-                className={`rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                  displayError ? 'border-red-500' : ''
-                } ${className}`}
+                className={cn(displayError && 'border-destructive/70 focus-visible:ring-destructive')}
               >
-                 {yearOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                 ))}
-              </select>
+                {yearOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Select>
             </div>
           </>
         )}
       </div>
-      {displayError && <p className="mt-1 text-sm text-red-600">{displayError}</p>}
+      {displayError && <p className="text-sm text-destructive">{displayError}</p>}
     </div>
   )
 }

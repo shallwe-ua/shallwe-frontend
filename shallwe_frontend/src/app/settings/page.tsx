@@ -1,7 +1,7 @@
 'use client'
 
 
-import { useState, useEffect, ReactNode } from 'react'
+import { useState, useEffect, ReactNode, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { getProfile, updateProfileVisibility } from '@/lib/shallwe/profile/api/calls' // Import read and visibility API calls
@@ -143,7 +143,7 @@ export default function SettingsPage() {
     setApiError(null) // Clear any errors set during editing
   }
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setIsLoading(true) // Set loading state
       setApiError(null) // Clear previous errors
@@ -186,12 +186,12 @@ export default function SettingsPage() {
     } finally {
       setIsLoading(false) // Clear loading state
     }
-  }
+  }, [router])
 
   // Fetch profile data on component mount
   useEffect(() => {
     fetchProfile()
-  }, [router]) // Add router to dependency array if used for redirect
+  }, [fetchProfile])
 
   const handleToggleVisibility = async () => {
     if (isVisibilityUpdating || !profileData) return // Prevent calls if updating or data not loaded

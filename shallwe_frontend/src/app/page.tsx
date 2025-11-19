@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { CSSProperties, useEffect, useRef, useState } from 'react'
+import { CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,22 +37,13 @@ export default function LandingPage() {
     window.location.href = googleAuthUrl
   }
 
-  const handleBackendAuth = async (code: string) => {
-    try {
-      await loginGoogle(code)
-      handleAuthSuccess()
-    } catch (error) {
-      handleAuthError(error)
-    }
-  }
-
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = useCallback(() => {
     setIsLoading(false)
     setError(null)
     window.location.reload() // Middleware will handle the redirect based on profile-status
-  }
+  }, [])
 
-  const handleAuthError = (err: unknown) => {
+  const handleAuthError = useCallback((err: unknown) => {
     const isApiError = (error: unknown): error is ApiError => {
       return typeof error === 'object' && error !== null && 'message' in error
     }
@@ -68,7 +59,19 @@ export default function LandingPage() {
       console.warn('Unexpected error type received in handleLoginError:', typeof err, err)
       setError('An unexpected error occurred.')
     }
-  }
+  }, [])
+
+  const handleBackendAuth = useCallback(
+    async (code: string) => {
+      try {
+        await loginGoogle(code)
+        handleAuthSuccess()
+      } catch (error) {
+        handleAuthError(error)
+      }
+    },
+    [handleAuthError, handleAuthSuccess]
+  )
 
   useEffect(() => {
     if (typeof window === 'undefined') return

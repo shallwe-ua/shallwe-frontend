@@ -15,13 +15,11 @@ const PhotoWithFallbacks: React.FC<PhotoWithFallbacksProprs> = ({
 }) => {
   const [currentSrc, setCurrentSrc] = useState<string>(src);
   const [hasError, setHasError] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Optional: for loading state
 
   // Reset state when the primary `src` prop changes
   useEffect(() => {
     setCurrentSrc(src);
     setHasError(false);
-    setIsLoading(true); // Optional
   }, [src]);
 
   const handleError = () => {
@@ -33,14 +31,12 @@ const PhotoWithFallbacks: React.FC<PhotoWithFallbacksProprs> = ({
       // If fallback also fails, or there's no fallback, or it was already tried, show error/SVG
       console.log(`ImageWithFallbacks: Error loading image ${currentSrc}, showing fallback UI.`);
       setHasError(true);
-      setIsLoading(false); // Optional
     }
   };
 
   const handleLoad = () => {
     // Image loaded successfully
     console.log(`ImageWithFallbacks: Successfully loaded ${currentSrc}`);
-    setIsLoading(false); // Optional
   };
 
   // If there was an error loading both primary and fallback, show SVG
@@ -62,6 +58,7 @@ const PhotoWithFallbacks: React.FC<PhotoWithFallbacksProprs> = ({
 
   // Render the img tag with the current source (primary or fallback)
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={currentSrc}
       alt={alt}

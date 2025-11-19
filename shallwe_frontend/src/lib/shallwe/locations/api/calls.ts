@@ -1,5 +1,5 @@
-import { ApiError, baseApiCall } from "@/lib/shallwe/common/api/calls"
-import { emptyLocationsReadData, LocationsReadFields } from "./schema"
+import { baseApiCall } from "@/lib/shallwe/common/api/calls"
+import { LocationsReadFields } from "./schema"
 
 
 // Search locations
