@@ -1,11 +1,11 @@
 'use client'
 
-
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { ApiError } from '@/lib/shallwe/common/api/calls'
-import { logout } from '@/lib/shallwe/auth/api/calls'
+import { logout, deleteUser } from '@/lib/shallwe/auth/api/calls'
 import { Button } from '@/components/ui/button'
 
 
@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button'
 const Header = () => {
 
   const pathname = usePathname() // Get current path
+  const [isCancellingSetup, setIsCancellingSetup] = useState(false)
+  const isSetupPage = pathname === '/setup'
   const isLoggedIn = pathname && !['/', '/setup'].includes(pathname) // TODO: USE AUTH CONTEXT LATER !!!!
 
 
@@ -33,12 +35,12 @@ const Header = () => {
   }
 
 
-  const handleLogoutError = (err: unknown) => {
+  const logApiError = (label: string, err: unknown) => {
     const isApiError = (error: unknown): error is ApiError => {
       return typeof error === 'object' && error !== null && 'message' in error
     }
 
-    console.error("Logout failed:", err)
+    console.error(`${label} failed:`, err)
 
     if (isApiError(err)) {
       console.error(err.message || "An error occurred during logout.")
@@ -51,14 +53,29 @@ const Header = () => {
     }
   }
 
+  const handleLogoutError = (err: unknown) => logApiError('Logout', err)
+
+  const handleCancelSetup = async () => {
+    if (isCancellingSetup) return
+
+    setIsCancellingSetup(true)
+    try {
+      await deleteUser()
+      window.location.href = '/'
+    } catch (error) {
+      logApiError('Cancel setup', error)
+      setIsCancellingSetup(false)
+    }
+  }
+
 
   // --- RENDER ---
   const isLanding = pathname === '/'
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border bg-background shadow-[var(--shadow-soft)]">
       <div className="page-shell">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-14 items-center justify-between">
           <Link
             href={isLoggedIn ? '/settings' : '/'}
             className="text-lg font-semibold text-foreground tracking-tight"
@@ -68,31 +85,29 @@ const Header = () => {
           </Link>
 
           {!isLanding && (
-            <>
-              <nav className="hidden items-center gap-6 text-sm text-muted sm:flex">
-                <Link href="/settings" className="hover:text-foreground">
-                  Settings
+            <div>
+              {isLoggedIn ? (
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  Logout
+                </Button>
+              ) : isSetupPage ? (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleCancelSetup}
+                  disabled={isCancellingSetup}
+                >
+                  {isCancellingSetup ? 'Cancelling…' : 'Cancel setup'}
+                </Button>
+              ) : (
+                <Link
+                  href="/"
+                  className="rounded-[var(--radius-sm)] border border-border px-3 py-2 text-sm text-foreground hover:bg-surface-muted"
+                >
+                  Home
                 </Link>
-                <Link href="/setup" className="hover:text-foreground">
-                  Profile
-                </Link>
-              </nav>
-
-              <div>
-                {isLoggedIn ? (
-                  <Button variant="ghost" size="sm" onClick={handleLogout}>
-                    Logout
-                  </Button>
-                ) : (
-                  <Link
-                    href="/"
-                    className="rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-surface-elevated"
-                  >
-                    Home
-                  </Link>
-                )}
-              </div>
-            </>
+              )}
+            </div>
           )}
         </div>
       </div>

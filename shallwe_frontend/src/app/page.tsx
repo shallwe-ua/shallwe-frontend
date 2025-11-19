@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -105,34 +105,16 @@ export default function LandingPage() {
   }, [handleBackendAuth])
 
   return (
-    <Section className="relative min-h-screen flex items-center" as="div" fullWidth bleed>
-      <div className="bg-ornaments">
-        <div className="bg-orb bg-orb--blue" style={{ top: '-120px', left: '-80px' }} />
-        <div className="bg-orb bg-orb--peach" style={{ bottom: '-160px', right: '-60px' }} />
-          <div className="pointer-events-none absolute inset-0">
-            {houseRain.map((house, idx) => {
-              const style: CSSProperties & { ['--house-duration']?: string } = {
-                top: house.startY,
-                left: house.startX,
-                animationDelay: house.delay,
-                '--house-duration': house.duration,
-              }
-              return (
-                <div
-                  key={idx}
-                  className={`bg-house ${house.color === 'blue' ? 'bg-house--blue' : 'bg-house--peach'}`}
-                  style={style}
-                />
-              )
-            })}
-          </div>
-        </div>
-
-      <Stack gap="lg" className="page-shell relative z-10 mx-auto max-w-xl items-center text-center">
+    <Section
+      className="relative flex min-h-[calc(100vh-9rem)] items-center justify-center pt-12 pb-8 sm:pt-16"
+      as="div"
+      fullWidth
+      bleed
+    >
+      <Stack gap="lg" className="page-shell mx-auto max-w-xl items-center text-center">
         <Stack gap="xs">
-          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Roommate matching</span>
           <h1 className="text-[2.35rem] font-semibold leading-tight text-foreground sm:text-[2.75rem]">
-            Meet a roommate who lives the way you do
+            Meet a flatmate who lives the way you do
           </h1>
           <p className="text-base text-muted">
             Share a quick profile and review photo-verified matches before you sign a lease.
@@ -167,12 +149,3 @@ export default function LandingPage() {
     </Section>
   )
 }
-
-const houseRain = Array.from({ length: 36 }).map(() => {
-  const color = Math.random() > 0.5 ? 'blue' : 'peach'
-  const startX = `${Math.random() * 100}%`
-  const startY = `${-Math.random() * 20}%`
-  const delay = `${Math.random() * 4}s`
-  const duration = `${7 + Math.random() * 4}s` // 7-11s fall
-  return { color, startX, startY, delay, duration }
-})

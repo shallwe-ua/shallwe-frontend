@@ -305,7 +305,7 @@ export default function SettingsPage() {
   // --- RENDER LOGIC ---
   if (isLoading) {
     return (
-      <Section as="div" className="min-h-screen flex items-center justify-center" fullWidth>
+      <Section as="div" className="flex items-center justify-center" fullWidth>
         <Card className="w-full max-w-md text-center">
           <CardContent className="py-8 text-sm text-muted">Loading your profile…</CardContent>
         </Card>
@@ -315,7 +315,7 @@ export default function SettingsPage() {
 
   if (!profileData) {
     return (
-      <Section as="div" className="min-h-screen flex items-center justify-center" fullWidth>
+      <Section as="div" className="flex items-center justify-center" fullWidth>
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <CardTitle>Profile not found</CardTitle>
@@ -413,7 +413,7 @@ export default function SettingsPage() {
 
   // --- MAIN RENDER (Profile Data Loaded) ---
   return (
-    <Section as="div" className="min-h-screen bg-background-soft/40" fullWidth>
+    <Section as="div" className="bg-background-soft" fullWidth>
       <Stack gap="lg" className="mx-auto w-full max-w-5xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Stack gap="xs">
@@ -429,7 +429,7 @@ export default function SettingsPage() {
 
         {apiError && <Alert variant="destructive">Error: {apiError}</Alert>}
 
-        <Card className="border border-border/70">
+        <Card className="border border-border">
           <CardContent className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
             <Stack gap="xs">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Visibility</span>
@@ -490,7 +490,7 @@ export default function SettingsPage() {
                   </Stack>
                   <InfoGrid items={aboutItems} />
 
-                  <div className="border-t border-border/60 pt-6">
+                  <div className="border-t border-border pt-6">
                     <Stack gap="md">
                       <Stack gap="xs">
                         <h3 className="text-lg font-semibold text-foreground">Rent preferences</h3>
@@ -516,7 +516,7 @@ export default function SettingsPage() {
                     </Stack>
                   </div>
 
-                  <div className="border-t border-border/60 pt-6">
+                  <div className="border-t border-border pt-6">
                     <Stack gap="md">
                       <Stack gap="xs">
                         <h3 className="text-lg font-semibold text-foreground">Lifestyle & interests</h3>
@@ -531,7 +531,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <div className="border-t border-border/60 pt-6">
+        <div className="border-t border-border pt-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Stack gap="xs">
               <p className="text-sm font-semibold text-destructive">Delete account</p>
@@ -547,14 +547,14 @@ export default function SettingsPage() {
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
           <div
-            className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-overlay"
             aria-hidden="true"
             onClick={() => setIsDeleteModalOpen(false)}
           />
           <Card className="relative z-10 w-full max-w-lg">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive-soft text-destructive">
                   <svg
                     className="h-6 w-6"
                     xmlns="http://www.w3.org/2000/svg"

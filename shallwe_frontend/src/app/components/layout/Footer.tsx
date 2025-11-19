@@ -1,17 +1,15 @@
 const Footer = () => {
   return (
-    <footer className="border-t border-border bg-white/90 backdrop-blur">
-      <div className="page-shell py-6">
-        <div className="md:flex md:items-center md:justify-between gap-4">
-          <p className="text-sm text-muted">
-            &copy; {new Date().getFullYear()} Shallwe. All rights reserved.
-          </p>
-          <div className="mt-3 md:mt-0 flex gap-5 text-sm text-muted">
+    <footer className="border-t border-border bg-background">
+      <div className="page-shell text-foreground">
+        <div className="flex flex-col items-center justify-center gap-2 py-5 text-sm md:h-16 md:flex-row md:justify-between md:py-0">
+          <p>&copy; {new Date().getFullYear()} Shallwe. All rights reserved.</p>
+          <div className="flex gap-5">
             <a
               href="https://github.com/orgs/shallwe-ua/repositories"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-foreground"
+              className="hover:text-muted"
             >
               GitHub
             </a>
@@ -19,7 +17,7 @@ const Footer = () => {
               href="https://www.linkedin.com/in/serhii-soldatov"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-foreground"
+              className="hover:text-muted"
             >
               LinkedIn
             </a>
@@ -27,7 +25,7 @@ const Footer = () => {
               href="https://app.swaggerhub.com/apis/S3MCHANNEL/shallwe-api/0.6.1#"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-foreground"
+              className="hover:text-muted"
             >
               API Reference
             </a>

@@ -1,13 +1,35 @@
 import React, { useState, useEffect } from 'react';
 
-interface PhotoWithFallbacksProprs {
+interface PhotoWithFallbacksProps {
   src: string;
   fallbackSrc?: string; // URL for the default image
   alt: string;
   className?: string; // Allow passing Tailwind classes for styling
 }
 
-const PhotoWithFallbacks: React.FC<PhotoWithFallbacksProprs> = ({ 
+interface PhotoGlyphPlaceholderProps {
+  className?: string;
+  alt?: string;
+}
+
+export const PhotoGlyphPlaceholder: React.FC<PhotoGlyphPlaceholderProps> = ({
+  className = '',
+  alt = 'Profile photo',
+}) => (
+  <div className={`flex items-center justify-center bg-surface-muted ${className}`}>
+    <svg
+      className="h-16 w-16 text-muted"
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+    {alt ? <span className="sr-only">{alt}</span> : null}
+  </div>
+)
+
+const PhotoWithFallbacks: React.FC<PhotoWithFallbacksProps> = ({ 
   src, 
   fallbackSrc = '/img/profile/default192.webp', // Default fallback image path
   alt, 
@@ -41,19 +63,7 @@ const PhotoWithFallbacks: React.FC<PhotoWithFallbacksProprs> = ({
 
   // If there was an error loading both primary and fallback, show SVG
   if (hasError) {
-    return (
-      <div className={`flex items-center justify-center bg-gray-200 ${className}`}>
-        <svg 
-          className="w-16 h-16 text-gray-400" // Adjust size and color as needed
-          fill="currentColor" 
-          viewBox="0 0 24 24" 
-          aria-hidden="true"
-        >
-          <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-        <span className="sr-only">{alt}</span> {/* For accessibility */}
-      </div>
-    );
+    return <PhotoGlyphPlaceholder className={className} alt={alt} />;
   }
 
   // Render the img tag with the current source (primary or fallback)

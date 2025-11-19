@@ -11,20 +11,20 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantClasses: Record<ButtonVariant, string> = {
   default:
-    'bg-primary text-primary-foreground shadow-[var(--shadow-soft)] hover:bg-primary/90 hover:shadow-[var(--shadow-card)] focus-visible:ring-primary',
+    'bg-primary text-primary-foreground shadow-[var(--shadow-soft)] hover:bg-brand-strong hover:shadow-[var(--shadow-card)] focus-visible:ring-primary',
   secondary:
-    'bg-secondary text-secondary-foreground border border-border hover:bg-secondary/80 focus-visible:ring-secondary',
+    'bg-secondary text-secondary-foreground border border-border hover:bg-secondary focus-visible:ring-secondary',
   outline:
-    'border border-border bg-card text-foreground hover:bg-primary/10 focus-visible:ring-primary',
-  ghost: 'text-foreground hover:bg-muted/40 focus-visible:ring-ring',
+    'border border-border bg-card text-foreground hover:bg-brand-weak focus-visible:ring-primary',
+  ghost: 'text-foreground hover:bg-surface-muted focus-visible:ring-ring',
   destructive:
-    'bg-destructive text-destructive-foreground hover:bg-destructive/85 focus-visible:ring-destructive',
+    'bg-destructive text-destructive-foreground hover:bg-destructive focus-visible:ring-destructive',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-9 px-3 text-sm',
-  md: 'h-11 px-4 text-sm',
-  lg: 'h-12 px-6 text-base',
+  sm: 'h-8 px-3 text-sm',
+  md: 'h-10 px-4 text-sm',
+  lg: 'h-11 px-5 text-base',
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

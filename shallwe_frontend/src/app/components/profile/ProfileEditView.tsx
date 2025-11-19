@@ -198,6 +198,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
     'rent_preferences.room_sharing_level', 'rent_preferences.locations',
   ]
 
+  const petOptions = [
+    { id: 'has_cats_edit', field: 'has_cats', label: 'Cats' },
+    { id: 'has_dogs_edit', field: 'has_dogs', label: 'Dogs' },
+    { id: 'has_reptiles_edit', field: 'has_reptiles', label: 'Reptiles' },
+    { id: 'has_birds_edit', field: 'has_birds', label: 'Birds' },
+  ] as const
+
+  const tagInputWrapperClass = 'rounded-lg border border-border bg-card px-3 py-2'
+
   // Define a helper function to run validation and update errors
   const validateCurrentTagsInput = (fieldName: string, tagsToValidate: string[], validatorKey: string) => {
     const validationError = validators[validatorKey](tagsToValidate, editFormState);
@@ -276,7 +285,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
 
   // --- RENDER LOGIC ---
   return (
-    <Section as="div" className="bg-background-soft/40" fullWidth>
+    <Section as="div" className="bg-background-soft" fullWidth>
       <Stack gap="lg" className="mx-auto w-full max-w-4xl">
         {apiError && !isFloatingApiErrorDismissed && (
           <Alert variant="destructive" className="flex items-center justify-between gap-4">
@@ -298,12 +307,13 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
               <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <Stack gap="sm" className="items-center">
                   <ProfilePhotoPick
-                  initialFile={editFormState.profile.photo}
-                  initialPhotoUrl={initialProfileData.profile.photo_w192 || null}
-                  onError={handlePhotoError}
-                  onClearError={clearPhotoError}
-                  onCropComplete={handlePhotoCropped}
-                />
+                    initialFile={editFormState.profile.photo}
+                    initialPhotoUrl={initialProfileData.profile.photo_w192 || null}
+                    onError={handlePhotoError}
+                    onClearError={clearPhotoError}
+                    onCropComplete={handlePhotoCropped}
+                    mode="edit"
+                  />
                 <FormField label="Display Name" error={errors['profile.name']} className="w-full text-left">
                   <Input
                     value={editFormState.profile.name ?? ''}
@@ -459,7 +469,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           </div>
 
           {/* Rent Preferences */}
-          <div className="mt-4 space-y-4 rounded-lg bg-muted/10 p-4">
+          <div className="mt-4 space-y-4 rounded-lg bg-surface-muted p-4">
             <h3 className="text-lg font-medium text-foreground">Rent Preferences</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <FormField label="Min Budget" error={errors['rent_preferences.min_budget']}>
@@ -590,7 +600,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           </div>
 
           {/* Other Details - Similar structure, add fields as needed */}
-          <div className="mt-4 p-4 bg-muted/10 rounded-lg">
+          <div className="mt-4 p-4 bg-surface-muted rounded-lg">
               <h3 className="text-lg font-medium text-foreground mb-2">Other Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 {/* Example: Neighbourliness Level */}
@@ -687,65 +697,29 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   </Select>
                 </FormField>
 
-                {/* Pet Checkboxes */}
-                <div className="col-start-1 col-span-2">
-                  <p className="text-sm font-medium text-muted mb-1">I Have Animals:</p> {/* Label for the group */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="flex items-center">
-                        <input
-                          id="has_cats_edit"
-                          type="checkbox"
-                          checked={editFormState.about.has_cats === true}
-                          onChange={(e) => updateEditFormState('about', 'has_cats', e.target.checked)}
-                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                <FormField label="I have animals" className="md:col-span-2">
+                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+                    {petOptions.map((option) => (
+                      <Label key={option.id} htmlFor={option.id} className="flex items-center gap-2 text-sm text-muted">
+                        <Checkbox
+                          id={option.id}
+                          checked={editFormState.about[option.field] === true}
+                          onChange={(e) =>
+                            updateEditFormState('about', option.field, e.target.checked)
+                          }
                         />
-                        <label htmlFor="has_cats_edit" className="ml-2 block text-sm text-muted">
-                          Cats
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="has_dogs_edit"
-                          type="checkbox"
-                          checked={editFormState.about.has_dogs === true}
-                          onChange={(e) => updateEditFormState('about', 'has_dogs', e.target.checked)}
-                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                        />
-                        <label htmlFor="has_dogs_edit" className="ml-2 block text-sm text-muted">
-                          Dogs
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="has_reptiles_edit"
-                          type="checkbox"
-                          checked={editFormState.about.has_reptiles === true}
-                          onChange={(e) => updateEditFormState('about', 'has_reptiles', e.target.checked)}
-                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                        />
-                        <label htmlFor="has_reptiles_edit" className="ml-2 block text-sm text-muted">
-                          Reptiles
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="has_birds_edit"
-                          type="checkbox"
-                          checked={editFormState.about.has_birds === true}
-                          onChange={(e) => updateEditFormState('about', 'has_birds', e.target.checked)}
-                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                        />
-                        <label htmlFor="has_birds_edit" className="ml-2 block text-sm text-muted">
-                          Birds
-                        </label>
-                      </div>
-                    </div>
+                        {option.label}
+                      </Label>
+                    ))}
                   </div>
+                </FormField>
                   {/* other_animals (TagsInput or similar) */}
-                  <div className="col-span-2">
-                    <label htmlFor="other_animals_edit" className="block text-sm font-medium text-muted">
-                      Other Animals (up to 5)
-                    </label>
+                  <FormField
+                    label="Other animals (up to 5)"
+                    error={errors['about.other_animals']}
+                    className="md:col-span-2"
+                  >
+                    <div className={tagInputWrapperClass}>
                     <TagsInput
                       isEditOnRemove
                       value={editFormState.about.other_animals || []} // Bind to editFormState
@@ -810,19 +784,20 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       placeHolder="Press Enter to add"
                       // Adapted Tailwind classes for styling, matching the pattern from ProfileSetupPage and other inputs in ProfileEditView
                       classNames={{
-                        tag: "bg-primary/10 text-primary px-2 py-1 rounded-md text-sm", // Style for individual tags
+                        tag: "bg-brand-weak text-primary px-2 py-1 rounded-md text-sm", // Style for individual tags
                         input: "mt-0 block w-full p-0 text-sm border-0 focus:outline-none focus:ring-0", // Style for the input field itself, removing default border/ring to inherit from parent
                         // The parent div provides the border, focus ring, and error styling
                       }}
                     />
-                    {/* Error display using the standard pattern for this component */}
-                    {errors['about.other_animals'] && <p className="mt-1 text-sm text-destructive">{errors['about.other_animals']}</p>}
-                  </div>
+                    </div>
+                  </FormField>
 
-                  <div className="col-span-2">
-                    <label htmlFor="interests_edit" className="block text-sm font-medium text-muted">
-                      Interests (up to 5)
-                    </label>
+                  <FormField
+                    label="Interests (up to 5)"
+                    error={errors['about.interests']}
+                    className="md:col-span-2"
+                  >
+                    <div className={tagInputWrapperClass}>
                     <TagsInput
                       isEditOnRemove
                       value={editFormState.about.interests || []} // Bind to editFormState
@@ -884,13 +859,12 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       placeHolder="Press Enter to add"
                       // Adapted Tailwind classes for styling
                       classNames={{
-                        tag: "bg-primary/10 text-primary px-2 py-1 rounded-md text-sm",
+                        tag: "bg-brand-weak text-primary px-2 py-1 rounded-md text-sm",
                         input: "mt-0 block w-full p-0 text-sm border-0 focus:outline-none focus:ring-0",
                       }}
                     />
-                    {/* Error display */}
-                    {errors['about.interests'] && <p className="mt-1 text-sm text-destructive">{errors['about.interests']}</p>}
-                  </div>
+                    </div>
+                  </FormField>
 
                   {/* bio (textarea) */}
                   <FormField label="Bio (up to 1024 chars)" error={errors['about.bio']} className="md:col-span-2">
@@ -899,7 +873,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       rows={3}
                       value={editFormState.about.bio ?? ''}
                       onChange={(e) => updateEditFormState('about', 'bio', e.target.value || null)}
-                      className={editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'ring-2 ring-destructive/70' : undefined}
+                      className={editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'ring-2 ring-destructive' : undefined}
                     />
                     <p
                       className={`text-xs mt-1 ${
@@ -916,7 +890,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
       </div>
 
       {/* Save/Cancel Buttons */}
-      <div className="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:justify-end">
+      <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
         <Button variant="outline" onClick={onCancel} disabled={isSaving}>
           Cancel
         </Button>

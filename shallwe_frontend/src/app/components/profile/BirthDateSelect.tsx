@@ -222,7 +222,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
             onClick={handleSelectDateClick}
             className={cn(
               'w-full justify-center',
-              displayError && 'border-destructive/70 text-destructive hover:bg-destructive/5'
+              displayError && 'border-destructive text-destructive bg-destructive-soft hover:bg-destructive-soft'
             )}
           >
             Select the date
@@ -237,7 +237,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
                 id={`${inputId}-day`}
                 value={day}
                 onChange={(e) => handleSelectChange('day', e.target.value)}
-                className={cn(displayError && 'border-destructive/70 focus-visible:ring-destructive')}
+                className={cn(displayError && 'border-destructive focus-visible:ring-destructive')}
               >
                 {dayOptions.map((option) => (
                   <option key={option} value={option}>
@@ -255,7 +255,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
                 id={`${inputId}-month`}
                 value={month}
                 onChange={(e) => handleSelectChange('month', e.target.value)}
-                className={cn(displayError && 'border-destructive/70 focus-visible:ring-destructive')}
+                className={cn(displayError && 'border-destructive focus-visible:ring-destructive')}
               >
                 {monthOptions.map((option) => (
                   <option key={option} value={option}>
@@ -273,7 +273,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
                 id={`${inputId}-year`}
                 value={year}
                 onChange={(e) => handleSelectChange('year', e.target.value)}
-                className={cn(displayError && 'border-destructive/70 focus-visible:ring-destructive')}
+                className={cn(displayError && 'border-destructive focus-visible:ring-destructive')}
               >
                 {yearOptions.map((option) => (
                   <option key={option} value={option}>

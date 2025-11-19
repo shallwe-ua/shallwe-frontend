@@ -1,26 +1,34 @@
 ## Shallwe UI Primitives (v0.2)
 
-Single-source rules so every screen stays on the blue/peach system and on the shadcn/Radix rails.
+Single-source rules so every screen stays on the pared-back white + slate system and on the shadcn/Radix rails.
 
 ### Semantic Tokens
 
 - **Colors** – Only use the Tailwind tokens generated from `@theme` in `src/app/globals.css`:
-  - Surfaces → `bg-background`, `bg-card`
-  - Text → `text-foreground`, `text-muted-foreground`
-  - Accent/brand → `bg-primary`, `text-primary`, `bg-secondary`
-- **Borders & inputs** – `border-border`, `bg-muted/20`, `ring-primary`.
-- **Radii** – `rounded-[var(--radius-sm)]` for controls, `rounded-[var(--radius-lg)]` for sections/cards.
+  - Surfaces → `bg-background`, `bg-card`, `bg-surface-muted`, `bg-surface-elevated` (all subtle off-whites)
+  - Text → `text-foreground`, `text-muted-foreground` (charcoal + gray)
+  - Accent/brand → `bg-primary` (standard app blue #2563eb), `bg-accent` (safety orange #f97316), `bg-secondary` (slate), `bg-brand-weak` (pale blue)
+  - Status fills → `bg-success-soft`, `bg-warning-soft`, `bg-destructive-soft`; overlays must use `bg-overlay`
+- **Borders & inputs** – `border-border`, `ring-primary`, and `bg-card`. Skip opacity utilities entirely; rely on the provided solid tokens for any subtle fills.
+- **Radii** – softened just a hair: `--radius-xs` = 2px, `--radius-sm` = 4px, `--radius-md` = 6px, `--radius-lg` = 8px. Use `rounded-[var(--radius-sm)]` for controls, `rounded-[var(--radius-lg)]` for sections/cards, and avoid bigger Tailwind radius utilities.
 - **Shadows** – `shadow-[var(--shadow-soft)]` or `shadow-[var(--shadow-card)]` only.
 
 ### Layout Helpers
 
-- `.page-shell` – centers content with `--space-page-inline`.
+- `.page-shell` – centers content with `--space-page-inline` and `--content-max-width` (now capped at ~1040px) so views stay laptop-friendly.
 - `.section-shell` – section spacing wrapper; use `fullWidth`/`bleed` props via `Section`.
+- **Header offset** – the first `.section-shell` inside `main` automatically clamps its top padding to ~35% of `--space-section-y` so hero content hugs the sticky header.
 - `.card-shell` – elevated container for highlight panels.
 - `.surface-chip` – metadata badge background.
 - `.stack*` + `.form-field` – spacing primitives for vertical rhythm.
-- **Stack gaps & responsiveness** – `Stack` maps to `.stack-{xs|sm|md|lg}` which now drive `--stack-gap` via `clamp()`. Pick the closest token and avoid adding custom margins/padding for vertical rhythm; shrink on mobile happens automatically.
-- **Section density** – default `.section-shell` clamp handles hero/form padding. Only add modifiers defined in `globals.css` (e.g., `section-shell--fluid`, future `--compact`) instead of Tailwind `py-*` utilities.
+- **Stack gaps & responsiveness** – `Stack` maps to `.stack-{xs|sm|md|lg}` which now drive a tightened `--stack-gap` clamp (max 1.9rem). Pick the closest token and avoid adding custom margins/padding for vertical rhythm; shrink on mobile happens automatically.
+- **Section density** – `--space-section-y` now tops out at 3.5rem. Only add modifiers defined in `globals.css` (e.g., `section-shell--fluid`) instead of Tailwind `py-*` utilities.
+
+### Control & Button Scale
+
+- **Buttons** – `Button` sizes are locked to h-8/h-10/h-11 with coordinated padding. Mix sizes sparingly on the same view.
+- **Inputs/selects** – `Input`, `Select`, and form controls render at h-10 by default to align with medium buttons and keep forms compact.
+- **Cards/sections** – Card padding is capped at 1.25rem (header 1.25rem, content 1.25rem) to avoid huge gutters. Add internal `Stack` components if more breathing room is needed.
 
 ### Components
 
@@ -35,6 +43,7 @@ Single-source rules so every screen stays on the blue/peach system and on the sh
 3. **No custom gradients or shadows** – extend the token set if something is missing instead of inlining values.
 4. **Layouts go through shells** – hero/section layouts must use `Section`, `Stack`, `.page-shell`, etc.
 5. **Zero ad-hoc CSS** – style changes belong either in `globals.css` utilities or inside the shared primitives. Pages/components should only compose existing classes.
+6. **Solid surfaces only** – never use Tailwind opacity modifiers like `bg-primary/10` or `border-border/60`. If a softer fill is required, use the provided soft tokens (`bg-brand-weak`, `bg-success-soft`, `bg-overlay`, etc.) or add a new token first.
 
 ### Microcopy & Tone
 
@@ -54,4 +63,4 @@ Single-source rules so every screen stays on the blue/peach system and on the sh
 ### Notes
 
 - Landing + setup pages are the reference implementations—mirror their usage patterns everywhere else.
-- Keep backgrounds airy: use the provided gradients/ornaments (`bg-ornaments`, `.bg-orb`) instead of inventing new assets.
+- Keep backgrounds calm: stick to plain tokens (`bg-background`, `bg-card`) and skip gradients, ornaments, or animated flourishes entirely.

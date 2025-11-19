@@ -5,7 +5,7 @@ import Cropper, { Area, Point } from 'react-easy-crop'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 import { performFacecheck } from '@/lib/shallwe/photo/api/calls'
 import { validateProfilePhotoFile } from '@/lib/shallwe/photo/formstates/validators'
-import PhotoWithFallbacks from './PhotoWithFallbacks'
+import PhotoWithFallbacks, { PhotoGlyphPlaceholder } from './PhotoWithFallbacks'
 import { Button } from '@/components/ui/button'
 
 
@@ -19,6 +19,7 @@ interface ProfilePhotoPickProps {
   onError: (error: string) => void
   onClearError: () => void
   onCropComplete: (croppedFile: File) => void
+  mode?: 'setup' | 'edit'
 }
 
 
@@ -28,6 +29,7 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
   onError, 
   onClearError, 
   onCropComplete,
+  mode = 'setup',
 }) => {
   
   const [imageSrc, setImageSrc] = useState<string | null>(null); // Source for the image to crop (from new file)
@@ -37,23 +39,22 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRawFile, setSelectedRawFile] = useState<File | null>(null);
-  const [finalCroppedFile, setFinalCroppedFile] = useState<File | null>(null);
-  const [committedCroppedFile, setCommittedCroppedFile] = useState<File | null>(null);
+  const [finalCroppedFile, setFinalCroppedFile] = useState<File | null>(null)
+  const [committedCroppedFile, setCommittedCroppedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Helpers ---
   const handleClearInternals = useCallback(() => {
-    setImageSrc(null);
-    setDisplayImageUrl(null);
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-    setCroppedAreaPixels(null);
-    setSelectedRawFile(null);
-    setFinalCroppedFile(null);
+    setImageSrc(null)
+    setDisplayImageUrl(null)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setCroppedAreaPixels(null)
+    setSelectedRawFile(null)
+    setFinalCroppedFile(null)
+    setCommittedCroppedFile(null)
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // Reset native file input
+      fileInputRef.current.value = ''
     }
-    // Do NOT call onClearError here automatically, let parent decide.
   }, [])
 
   const handleClear = useCallback(() => {
@@ -64,6 +65,9 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
     setSelectedRawFile(null)
     if (committedCroppedFile) {
       setFinalCroppedFile(committedCroppedFile)
+    } else {
+      setFinalCroppedFile(null)
+      setDisplayImageUrl(null)
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -72,36 +76,33 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
   }, [committedCroppedFile, onClearError])
 
 
-  // --- EFFECT 1: Handle changes to initialFile (new file selected) ---
-  // This effect prioritizes a newly selected file for cropping/preview
+  // --- EFFECT 1: Sync with parent-provided committed file (e.g., onboarding state) ---
   useEffect(() => {
+    if (initialFile === undefined) return
+
     if (initialFile instanceof File) {
-      console.log("ProfilePhoto: New initialFile provided, preparing for cropping.");
-      // A new file is provided (e.g., from parent state after user selection)
-      setSelectedRawFile(initialFile);
-      setFinalCroppedFile(null); // Clear any previous final cropped file
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImageSrc(reader.result as string); // Set imageSrc to trigger cropper UI
-        setDisplayImageUrl(null); // Ensure display URL is cleared if showing cropper
-        // Reset crop/zoom for new image
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-      };
-      reader.onerror = () => {
-        console.error("ProfilePhoto: Error reading initialFile.");
-        onError("Failed to load the selected image.");
-        setImageSrc(null);
-        setDisplayImageUrl(null);
-      };
-      reader.readAsDataURL(initialFile);
-    } else if (initialFile === null) {
-      // Explicitly cleared by parent (e.g., onClear or successful save leading to reset)
-      console.log("ProfilePhoto: initialFile cleared.");
-      handleClearInternals(); // Reset internal state
+      // No need to re-sync if the committed preview already reflects this file
+      if (initialFile === committedCroppedFile) {
+        return
+      }
+      setSelectedRawFile(null)
+      setImageSrc(null)
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setCroppedAreaPixels(null)
+      setDisplayImageUrl(null)
+      setFinalCroppedFile(initialFile)
+      setCommittedCroppedFile(initialFile)
+      onClearError()
     }
-    // Note: Does not handle initialFile being a string URL here, that's initialPhotoUrl's job.
-  }, [initialFile, handleClearInternals, onError]); // Only re-run if initialFile prop changes
+    else if (initialFile === null) {
+      // Only clear if we previously had a committed file or preview to show
+      if (committedCroppedFile || finalCroppedFile || displayImageUrl) {
+        console.log('ProfilePhoto: initialFile cleared by parent.')
+        handleClearInternals()
+      }
+    }
+  }, [initialFile, committedCroppedFile, finalCroppedFile, displayImageUrl, handleClearInternals, onClearError])
 
   // --- EFFECT 2: Handle changes to initialPhotoUrl (existing photo URL) ---
   // This effect sets the display URL when no new file is being processed.
@@ -123,13 +124,6 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
       }
     }
   }, [initialPhotoUrl, selectedRawFile, finalCroppedFile, imageSrc]); // Re-run if URL or processing state changes
-
-  // Clear state when initialFile changes (e.g., cleared by parent)
-  useEffect(() => {
-     if (initialFile === null) {
-         handleClear()
-     }
-  }, [initialFile, handleClear])
 
   // Handle file selection
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -259,9 +253,14 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
       // Check the result of the facecheck API call
       if (facecheckResult.success) {
         setFinalCroppedFile(croppedFile)
-        setCommittedCroppedFile(croppedFile) // <-- NEW: remember the last valid crop
+        setCommittedCroppedFile(croppedFile)
         onCropComplete(croppedFile)
         onClearError()
+        setSelectedRawFile(null)
+        setImageSrc(null)
+        setCrop({ x: 0, y: 0 })
+        setZoom(1)
+        setCroppedAreaPixels(null)
       } else {
         onError(facecheckResult.error || 'Facecheck failed. Please ensure your photo contains a clear face.')
         setFinalCroppedFile(null)
@@ -288,30 +287,10 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
     }
   }
 
-  // Load initial file preview if provided (only if it passes initial validation conceptually,
-  // but we don't re-validate here unless initialFile changes)
-  useEffect(() => {
-    if (initialFile) {
-      // Assume initialFile passed validation when it was set in the parent state
-      // Just load the preview for the initial file
-      setSelectedRawFile(initialFile)
-      setFinalCroppedFile(initialFile) // If initialFile is the *final* cropped one from a previous save/edit
-      const reader = new FileReader()
-      reader.onload = () => {
-        setImageSrc(reader.result as string)
-      }
-      reader.readAsDataURL(initialFile)
-    } else {
-      // If initialFile is null/undefined, clear the state
-      handleClear()
-    }
-  }, [initialFile, handleClear]) // Only run on initialFile change, not on other state changes
-
-
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-foreground">
           Photo (JPG, PNG, HEIC, HEIF, max 20MB, will be cropped to square)
         </label>
 
@@ -336,7 +315,7 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
       </div>
 
       {/* Preview Area - Shows raw file preview, cropped preview, or placeholder */}
-      <div className="relative h-64 w-full overflow-hidden rounded-lg border border-border bg-muted/40 md:h-80">
+      <div className="relative h-64 w-full overflow-hidden rounded-lg border border-border bg-surface-muted md:h-80">
         {imageSrc && !finalCroppedFile && ( // Show cropper if new raw file is loaded but not yet validated/applied
           <>
             <Cropper
@@ -366,9 +345,16 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
           />
         )}
         {!imageSrc && !finalCroppedFile && !displayImageUrl && (
-          <div className="flex h-full w-full items-center justify-center">
-            <p className="text-sm text-muted">Select a photo to begin</p>
-          </div>
+          mode === 'edit' ? (
+            <PhotoGlyphPlaceholder
+              className="h-full w-full"
+              alt="Profile photo placeholder"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <p className="text-sm text-muted">Select a photo to begin</p>
+            </div>
+          )
         )}
       </div>
 
@@ -397,7 +383,7 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
               {isLoading ? 'Validating...' : 'Apply & Validate'}
             </Button>
             <Button type="button" variant="outline" onClick={handleClear}>
-              Clear
+              Cancel
             </Button>
           </div>
         </div>

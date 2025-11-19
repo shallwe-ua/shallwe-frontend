@@ -41,10 +41,10 @@ const STEPS = [
   { id: 'preferences', name: 'Rent Preferences' },
 ]
 
-const tagInputWrapperClass = 'rounded-lg border border-border/70 bg-card px-3 py-2'
+const tagInputWrapperClass = 'rounded-lg border border-border bg-card px-3 py-2'
 
 const tagInputClassNames = {
-  tag: 'rounded-md bg-primary/10 px-2 py-1 text-sm text-primary',
+  tag: 'rounded-md bg-brand-weak px-2 py-1 text-sm text-primary',
   input:
     'mt-0 block w-full border-0 bg-transparent p-0 text-sm text-foreground placeholder:text-muted focus:outline-none',
 }
@@ -435,14 +435,15 @@ export default function ProfileSetupPage() {
             </div>
 
             {/* Optional Fields Accordion */}
-            <Card className="border border-border/70">
-              <button
-                type="button"
+            <Card className="border border-border">
+              <Button
+                variant="ghost"
+                size="md"
                 onClick={() => setIsAboutAccordionOpen(!isAboutAccordionOpen)}
                 aria-expanded={isAboutAccordionOpen}
-                className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-card/80 focus:outline-none"
+                className="flex w-full items-center justify-between rounded-none border-0 px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-card"
               >
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 text-left">
                   <span className="text-sm font-semibold text-foreground">Lifestyle extras (optional)</span>
                   <span className="text-xs text-muted">Fine-tune habits, pets, and prompts.</span>
                 </div>
@@ -459,9 +460,9 @@ export default function ProfileSetupPage() {
                     clipRule="evenodd"
                   />
                 </svg>
-              </button>
+              </Button>
               {isAboutAccordionOpen && (
-                <CardContent className="border-t border-border/60 px-4 py-4">
+                <CardContent className="border-t border-border px-4 py-4">
                   <Stack gap="lg">
                     <div className="grid gap-4 md:grid-cols-2">
                       <FormField label="Occupation Type" error={errors['about.occupation_type']}>
@@ -790,7 +791,7 @@ export default function ProfileSetupPage() {
                       className={cn(
                         'min-h-[120px]',
                         (errors['about.bio'] || (formState.about.bio && formState.about.bio.length > 1024)) &&
-                          'ring-2 ring-destructive/70'
+                          'ring-2 ring-destructive'
                       )}
                     />
                     <p
@@ -947,14 +948,13 @@ export default function ProfileSetupPage() {
 
   // --- RENDER ---
   return (
-    <Section as="div" className="min-h-screen bg-background-soft/60" fullWidth>
+    <Section as="div" className="bg-background-soft" fullWidth>
       <Card className="mx-auto w-full max-w-3xl">
         <CardContent className="p-6 sm:p-8">
           <Stack gap="lg">
             <Stack gap="xs" className="text-center">
-              <span className="text-xs font-semibold uppercase tracking-wide text-primary">Profile setup</span>
               <h1 className="text-2xl font-semibold leading-tight text-foreground sm:text-[2.2rem]">
-                Wrap up your roommate profile
+                Wrap up your flatmate profile
               </h1>
               <p className="text-sm text-muted">
                 Three focused sections and you&apos;re ready to review matches.
@@ -962,7 +962,7 @@ export default function ProfileSetupPage() {
             </Stack>
 
             <nav aria-label="Setup progress" className="overflow-x-auto">
-              <ol className="flex items-center gap-4 text-sm font-medium">
+              <ol className="flex items-center justify-center gap-4 text-sm font-medium">
                 {STEPS.map((step, index) => {
                   const isPast = index < currentStep
                   const isActive = index === currentStep
@@ -993,7 +993,7 @@ export default function ProfileSetupPage() {
 
             {getStepContent()}
 
-            <div className="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:justify-between">
+            <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-between">
               <Button variant="outline" onClick={prevStep} disabled={currentStep === 0} className="sm:w-auto">
                 Back
               </Button>

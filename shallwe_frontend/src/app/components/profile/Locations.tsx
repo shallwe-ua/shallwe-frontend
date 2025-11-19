@@ -4,6 +4,7 @@ import { LocationsReadFields, GenericLocationReadFields } from '@/lib/shallwe/lo
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 import { Input } from '@/components/ui/input'
 import { MetaPill } from '@/components/ui/meta-pill'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 interface LocationsProps {
@@ -175,8 +176,8 @@ const Locations: React.FC<LocationsProps> = ({
       className={cn(
         'cursor-pointer rounded-md px-3 py-2 text-sm transition',
         selectedLocations.includes(hierarchy)
-          ? 'bg-primary/10 text-primary hover:bg-primary/20'
-          : 'text-foreground hover:bg-muted/30',
+          ? 'bg-brand-weak text-primary hover:bg-brand-weak'
+          : 'text-foreground hover:bg-surface-muted',
         selectedLocations.length >= MAX_LOCATIONS && !selectedLocations.includes(hierarchy) && 'cursor-not-allowed opacity-50'
       )}
     >
@@ -185,7 +186,7 @@ const Locations: React.FC<LocationsProps> = ({
   );
 
   const searchInputClasses = cn(
-    isInputFrozen && 'border-destructive bg-destructive/5 text-destructive cursor-not-allowed',
+    isInputFrozen && 'border-destructive bg-destructive-soft text-destructive cursor-not-allowed',
     searchError && 'border-destructive focus-visible:ring-destructive',
     !isInputFrozen && !searchError && 'border-border'
   )
@@ -217,7 +218,7 @@ const Locations: React.FC<LocationsProps> = ({
         />
         {isLoading && (
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-weak border-t-primary" />
           </div>
         )}
       </div>
@@ -231,18 +232,19 @@ const Locations: React.FC<LocationsProps> = ({
           {selectedLocations.length}/{MAX_LOCATIONS} locations picked
         </span>
         {selectedLocations.length > 0 && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => {
               onLocationsChange([])
               setNameMap({})
               setIsInputFrozen(false)
               setIsCounterSwinging(false)
             }}
-            className="text-xs font-medium text-muted underline-offset-2 hover:text-foreground"
+            className="h-auto px-0 text-xs font-medium text-muted underline-offset-2 hover:text-foreground"
           >
-            clear all &times;
-          </button>
+            clear all ×
+          </Button>
         )}
       </div>
 
@@ -306,14 +308,15 @@ const Locations: React.FC<LocationsProps> = ({
           : selectedLocations.map((loc) => (
               <MetaPill key={loc} className="normal-case text-xs font-medium tracking-normal">
                 {nameMap[loc] || loc}
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleRemoveLocation(loc)}
-                  className="ml-1 text-muted transition hover:text-destructive"
+                  className="ml-1 h-5 w-5 rounded-full p-0 text-muted hover:text-destructive"
                   aria-label={`Remove ${nameMap[loc] || loc}`}
                 >
-                  &times;
-                </button>
+                  ×
+                </Button>
               </MetaPill>
             ))}
       </div>
