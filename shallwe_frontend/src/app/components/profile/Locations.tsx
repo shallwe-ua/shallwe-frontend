@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { searchLocations } from '@/lib/shallwe/locations/api/calls'
 import { LocationsReadFields, GenericLocationReadFields } from '@/lib/shallwe/locations/api/schema'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
+import { Input } from '@/components/ui/input'
+import { MetaPill } from '@/components/ui/meta-pill'
+import { cn } from '@/lib/utils'
 
 interface LocationsProps {
   selectedLocations: string[]
@@ -168,74 +171,75 @@ const Locations: React.FC<LocationsProps> = ({
   const renderResultItem = (hierarchy: string, displayName: string) => (
     <div
       key={hierarchy}
-      onClick={() => handleSelectLocation(hierarchy, displayName)} // Pass the pre-formatted display name
-      className={`p-2 text-sm cursor-pointer hover:bg-gray-100 ${
-        selectedLocations.includes(hierarchy) ? 'bg-green-100 hover:bg-green-200' : ''
-      } ${selectedLocations.length >= MAX_LOCATIONS && !selectedLocations.includes(hierarchy) ? 'opacity-50 cursor-not-allowed' : ''}`}
+      onClick={() => handleSelectLocation(hierarchy, displayName)}
+      className={cn(
+        'cursor-pointer rounded-md px-3 py-2 text-sm transition',
+        selectedLocations.includes(hierarchy)
+          ? 'bg-primary/10 text-primary hover:bg-primary/20'
+          : 'text-foreground hover:bg-muted/30',
+        selectedLocations.length >= MAX_LOCATIONS && !selectedLocations.includes(hierarchy) && 'cursor-not-allowed opacity-50'
+      )}
     >
       {displayName}
     </div>
   );
 
+  const searchInputClasses = cn(
+    isInputFrozen && 'border-destructive bg-destructive/5 text-destructive cursor-not-allowed',
+    searchError && 'border-destructive focus-visible:ring-destructive',
+    !isInputFrozen && !searchError && 'border-border'
+  )
+
   return (
-    <div className="space-y-2 relative" ref={wrapperRef}>
+    <div className="relative space-y-3" ref={wrapperRef}>
       {/* Search field */}
       <div className="relative">
-        <input
-          type="text"
+        <Input
           id="location-search"
           value={searchQuery}
           onChange={(e) => {
             if (!isInputFrozen) {
-              setSearchQuery(e.target.value);
+              setSearchQuery(e.target.value)
             }
           }}
           placeholder="Enter location..."
           onFocus={() => {
             if (selectedLocations.length >= MAX_LOCATIONS) {
-              setIsInputFrozen(true);
-              setIsCounterSwinging(true);
-              setTimeout(() => setIsCounterSwinging(false), 500);
-            } else {
-              searchResults && setShowResults(true);
+              setIsInputFrozen(true)
+              setIsCounterSwinging(true)
+              setTimeout(() => setIsCounterSwinging(false), 500)
+            } else if (searchResults) {
+              setShowResults(true)
             }
           }}
-          className={`mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-            isInputFrozen 
-              ? 'border-red-500 bg-red-50 cursor-not-allowed' 
-              : searchError 
-                ? 'border-red-500' 
-                : 'border-gray-300'
-          }`}
+          className={searchInputClasses}
           disabled={isInputFrozen}
         />
         {isLoading && (
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
           </div>
         )}
       </div>
 
-      {searchError && <p className="mt-1 text-sm text-gray-400">{searchError}</p>}
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {searchError && <p className="text-sm text-muted">{searchError}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       {/* Location Counter */}
-      <div className={`text-sm font-medium text-gray-400 transition-colors duration-300 flex justify-between items-center`}>
-        <span 
-          className={`inline-block ${isCounterSwinging ? 'animate-pulse text-red-600' : ''}`}
-        >
+      <div className="flex items-center justify-between text-sm text-subtle">
+        <span className={cn('inline-block transition-colors', isCounterSwinging && 'animate-pulse text-destructive')}>
           {selectedLocations.length}/{MAX_LOCATIONS} locations picked
         </span>
         {selectedLocations.length > 0 && (
           <button
             type="button"
             onClick={() => {
-              onLocationsChange([]);
-              setNameMap({});
-              setIsInputFrozen(false);
-              setIsCounterSwinging(false);
+              onLocationsChange([])
+              setNameMap({})
+              setIsInputFrozen(false)
+              setIsCounterSwinging(false)
             }}
-            className="text-sm text-gray-400 hover:text-gray-700 cursor-pointer underline"
+            className="text-xs font-medium text-muted underline-offset-2 hover:text-foreground"
           >
             clear all &times;
           </button>
@@ -245,22 +249,22 @@ const Locations: React.FC<LocationsProps> = ({
       {/* Search Results Dropdown (absolute overlay) */}
       {showResults && searchResults && (
         <div
-          className="absolute left-0 right-0 bg-white border border-gray-200 rounded-md max-h-60 overflow-y-auto z-50 shadow-lg"
+          className="absolute left-0 right-0 z-50 max-h-60 overflow-y-auto rounded-lg border border-border bg-card shadow-[var(--shadow-soft)]"
         >
           {/* Regions */}
           {searchResults.regions && searchResults.regions.length > 0 && (
-            <div className="p-2">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Regions</h3>
+            <div className="p-3 space-y-1">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted">Regions</h3>
               {searchResults.regions.map((region) => {
-                const displayName = getDisplayName(region, 'region');
-                return renderResultItem(region.hierarchy, displayName);
+                const displayName = getDisplayName(region, 'region')
+                return renderResultItem(region.hierarchy, displayName)
               })}
             </div>
           )}
           {/* Cities */}
           {searchResults.cities && searchResults.cities.length > 0 && (
-            <div className="p-2">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Cities</h3>
+            <div className="space-y-1 p-3">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted">Cities</h3>
               {searchResults.cities.map((city) => (
                 <React.Fragment key={city.hierarchy}>
                   {/* Render the main city */}
@@ -280,8 +284,8 @@ const Locations: React.FC<LocationsProps> = ({
           )}
           {/* Other */}
           {searchResults.other_ppls && searchResults.other_ppls.length > 0 && (
-            <div className="p-2">
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Other</h3>
+            <div className="space-y-1 p-3">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted">Other</h3>
               {searchResults.other_ppls.map((ppl) => {
                 const displayName = getDisplayName(ppl, 'other_ppl');
                 return renderResultItem(ppl.hierarchy, displayName);
@@ -292,30 +296,26 @@ const Locations: React.FC<LocationsProps> = ({
       )}
 
       {/* Selected Tags */}
-      <div className="mt-2 flex flex-wrap gap-2">
-        {showAllUkraineTag ? (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-            Вся Україна (Default)
-          </span>
-        ) : (
-          selectedLocations.map((loc) => (
-            <span
-              key={loc}
-              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
-            >
-              {nameMap[loc] || loc}
-              <button
-                type="button"
-                onClick={() => handleRemoveLocation(loc)}
-                className="ml-2 text-indigo-600 hover:bg-indigo-200 hover:text-indigo-800 rounded-full p-0.5"
-              >
-                <svg className="h-3 w-3" stroke="currentColor" fill="none" viewBox="0 0 8 8">
-                  <path strokeLinecap="round" strokeWidth="1.5" d="M1 1l6 6m0-6L1 7" />
-                </svg>
-              </button>
-            </span>
-          ))
-        )}
+      <div className="flex flex-wrap gap-2">
+        {showAllUkraineTag
+          ? (
+            <MetaPill className="normal-case text-xs font-medium tracking-normal">
+              Вся Україна (Default)
+            </MetaPill>
+            )
+          : selectedLocations.map((loc) => (
+              <MetaPill key={loc} className="normal-case text-xs font-medium tracking-normal">
+                {nameMap[loc] || loc}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveLocation(loc)}
+                  className="ml-1 text-muted transition hover:text-destructive"
+                  aria-label={`Remove ${nameMap[loc] || loc}`}
+                >
+                  &times;
+                </button>
+              </MetaPill>
+            ))}
       </div>
     </div>
   )
