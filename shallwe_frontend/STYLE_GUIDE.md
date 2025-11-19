@@ -19,11 +19,13 @@ Single-source rules so every screen stays on the blue/peach system and on the sh
 - `.card-shell` – elevated container for highlight panels.
 - `.surface-chip` – metadata badge background.
 - `.stack*` + `.form-field` – spacing primitives for vertical rhythm.
+- **Stack gaps & responsiveness** – `Stack` maps to `.stack-{xs|sm|md|lg}` which now drive `--stack-gap` via `clamp()`. Pick the closest token and avoid adding custom margins/padding for vertical rhythm; shrink on mobile happens automatically.
+- **Section density** – default `.section-shell` clamp handles hero/form padding. Only add modifiers defined in `globals.css` (e.g., `section-shell--fluid`, future `--compact`) instead of Tailwind `py-*` utilities.
 
 ### Components
 
-- All new UI **must** import from `src/components/ui/*` (Button, Card, Alert, Input, Stack, Section, FormField, MetaPill). Do not hand-roll Tailwind blobs inside pages.
-- Inputs + textareas inherit `--radius-sm`, `bg-card`, `ring-primary`.
+- All new UI **must** import from `src/components/ui/*` (Button, Card, Alert, Input, Select, Textarea, Checkbox, Radio, Stack, Section, FormField, MetaPill). Do not hand-roll Tailwind blobs inside pages.
+- Inputs, selects, textareas, radios, and checkboxes inherit `--radius-sm`, `bg-card`, and `ring-primary` via the shared primitives.
 - To introduce a new semantic color/spacing token: add it to `@theme` in `globals.css`, re-run Tailwind, then surface it via the UI primitives. Never drop raw hex/HSL directly into JSX.
 
 ### Guardrails for Contributors (LLMs included)
@@ -33,6 +35,13 @@ Single-source rules so every screen stays on the blue/peach system and on the sh
 3. **No custom gradients or shadows** – extend the token set if something is missing instead of inlining values.
 4. **Layouts go through shells** – hero/section layouts must use `Section`, `Stack`, `.page-shell`, etc.
 5. **Zero ad-hoc CSS** – style changes belong either in `globals.css` utilities or inside the shared primitives. Pages/components should only compose existing classes.
+
+### Microcopy & Tone
+
+- **Concise hero text** – limit primary headlines to one clause and body copy to one sentence (two max) focused on value/action.
+- **Action-oriented buttons** – prefer verbs + nouns (`Continue with Google`, `Save changes`, `Hide profile`).
+- **Hints stay short** – helper text in `FormField` should stay under ~8 words and avoid repeating label language.
+- **Plain vocabulary** – avoid marketing fillers (`revolutionize`, `game-changing`). Be specific about what happens next (e.g., “Takes under a minute”).
 
 ### Self-check Before Shipping
 

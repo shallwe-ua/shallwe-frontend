@@ -305,9 +305,9 @@ export default function SettingsPage() {
   // --- RENDER LOGIC ---
   if (isLoading) {
     return (
-      <Section as="div" className="min-h-screen flex items-center justify-center py-16" fullWidth>
+      <Section as="div" className="min-h-screen flex items-center justify-center" fullWidth>
         <Card className="w-full max-w-md text-center">
-          <CardContent className="py-8 text-muted">Loading your profile…</CardContent>
+          <CardContent className="py-8 text-sm text-muted">Loading your profile…</CardContent>
         </Card>
       </Section>
     )
@@ -315,17 +315,19 @@ export default function SettingsPage() {
 
   if (!profileData) {
     return (
-      <Section as="div" className="min-h-screen flex items-center justify-center py-16" fullWidth>
+      <Section as="div" className="min-h-screen flex items-center justify-center" fullWidth>
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <CardTitle>Profile not found</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted">We could not load your profile data.</p>
-            {apiError && <Alert variant="destructive">{apiError}</Alert>}
-            <Button onClick={() => router.push('/')} className="w-full">
-              Go to Home
-            </Button>
+          <CardContent>
+            <Stack gap="md">
+              <p className="text-sm text-muted">We couldn&apos;t load your profile data.</p>
+              {apiError && <Alert variant="destructive">{apiError}</Alert>}
+              <Button onClick={() => router.push('/')} className="w-full">
+                Go to landing
+              </Button>
+            </Stack>
           </CardContent>
         </Card>
       </Section>
@@ -411,16 +413,16 @@ export default function SettingsPage() {
 
   // --- MAIN RENDER (Profile Data Loaded) ---
   return (
-    <Section as="div" className="min-h-screen pb-16 pt-12" fullWidth>
+    <Section as="div" className="min-h-screen bg-background-soft/40" fullWidth>
       <Stack gap="lg" className="mx-auto w-full max-w-5xl">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Your Profile Settings</h1>
-            <p className="text-sm text-muted">Review your profile, visibility, and account status.</p>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Stack gap="xs">
+            <h1 className="text-2xl font-semibold text-foreground">Profile & visibility</h1>
+            <p className="text-sm text-muted">Keep your Shallwe card up to date and control who can see it.</p>
+          </Stack>
           {!isEditing && (
             <Button onClick={handleEditClick} size="sm">
-              Edit
+              Edit profile
             </Button>
           )}
         </div>
@@ -428,11 +430,18 @@ export default function SettingsPage() {
         {apiError && <Alert variant="destructive">Error: {apiError}</Alert>}
 
         <Card className="border border-border/70">
-          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-            <span className="text-sm font-medium text-foreground">
-              Profile Visibility:{' '}
-              <strong>{profileData.profile.is_hidden ? 'Hidden' : 'Visible'}</strong>
-            </span>
+          <CardContent className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <Stack gap="xs">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Visibility</span>
+              <p className="text-base font-semibold text-foreground">
+                {profileData.profile.is_hidden ? 'Hidden from matches' : 'Visible to matches'}
+              </p>
+              <p className="text-sm text-muted">
+                {profileData.profile.is_hidden
+                  ? 'Your card stays private until you show it again.'
+                  : 'Compatible users can view your profile card.'}
+              </p>
+            </Stack>
             <Button
               onClick={handleToggleVisibility}
               disabled={isVisibilityUpdating}
@@ -440,10 +449,10 @@ export default function SettingsPage() {
               size="sm"
             >
               {isVisibilityUpdating
-                ? 'Updating...'
+                ? 'Updating…'
                 : profileData.profile.is_hidden
-                ? 'Make Visible'
-                : 'Hide Profile'}
+                ? 'Show profile'
+                : 'Hide profile'}
             </Button>
           </CardContent>
         </Card>
@@ -456,8 +465,8 @@ export default function SettingsPage() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <Card className="text-center md:col-span-1">
-              <CardContent className="flex flex-col items-center gap-3">
+            <Card className="md:col-span-1 text-center">
+              <CardContent className="flex flex-col items-center gap-4 p-6">
                 <PhotoWithFallbacks
                   src={profileData.profile.photo_w192 || ''}
                   alt={`Profile picture of ${profileData.profile.name}`}
@@ -466,64 +475,72 @@ export default function SettingsPage() {
                 <Stack gap="xs" className="w-full text-center">
                   <h2 className="text-xl font-semibold">{profileData.profile.name}</h2>
                   <p className="text-sm text-muted">
-                    {profileData.profile.is_hidden ? 'Profile Hidden' : 'Profile Visible'}
+                    {profileData.profile.is_hidden ? 'Hidden from matches' : 'Visible to matches'}
                   </p>
                 </Stack>
               </CardContent>
             </Card>
 
             <Card className="md:col-span-2">
-              <CardContent className="stack stack-lg">
-                <Stack gap="xs">
-                  <h3 className="text-lg font-semibold text-foreground">About you</h3>
-                  <p className="text-sm text-muted">Core identity details visible to your matches.</p>
+              <CardContent className="p-6">
+                <Stack gap="lg">
+                  <Stack gap="xs">
+                    <h3 className="text-lg font-semibold text-foreground">Profile essentials</h3>
+                    <p className="text-sm text-muted">What compatible matches learn at a glance.</p>
+                  </Stack>
+                  <InfoGrid items={aboutItems} />
+
+                  <div className="border-t border-border/60 pt-6">
+                    <Stack gap="md">
+                      <Stack gap="xs">
+                        <h3 className="text-lg font-semibold text-foreground">Rent preferences</h3>
+                        <p className="text-sm text-muted">Budget, duration, and areas you approved.</p>
+                      </Stack>
+                      <InfoGrid items={rentItems} />
+                      <FormField label="Locations">
+                        {processedLocations.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {processedLocations.map((item: DisplayLocation, index: number) => (
+                              <MetaPill
+                                key={`${item.type}-${index}`}
+                                className="normal-case text-xs font-medium tracking-normal"
+                              >
+                                {item.displayName}
+                              </MetaPill>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-base font-medium text-muted">All Ukraine (default)</p>
+                        )}
+                      </FormField>
+                    </Stack>
+                  </div>
+
+                  <div className="border-t border-border/60 pt-6">
+                    <Stack gap="md">
+                      <Stack gap="xs">
+                        <h3 className="text-lg font-semibold text-foreground">Lifestyle & interests</h3>
+                        <p className="text-sm text-muted">Habits, animals, and a quick bio snapshot.</p>
+                      </Stack>
+                      <InfoGrid items={lifestyleItems} />
+                    </Stack>
+                  </div>
                 </Stack>
-                <InfoGrid items={aboutItems} />
-
-                <div className="border-t border-border/60 pt-6">
-                  <Stack gap="md">
-                    <Stack gap="xs">
-                      <h3 className="text-lg font-semibold text-foreground">Rent preferences</h3>
-                      <p className="text-sm text-muted">Budget, duration, and areas you selected.</p>
-                    </Stack>
-                    <InfoGrid items={rentItems} />
-                    <FormField label="Locations">
-                      {processedLocations.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {processedLocations.map((item: DisplayLocation, index: number) => (
-                            <MetaPill
-                              key={`${item.type}-${index}`}
-                              className="normal-case text-xs font-medium tracking-normal"
-                            >
-                              {item.displayName}
-                            </MetaPill>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-base font-medium text-muted">Вся Україна (Default)</p>
-                      )}
-                    </FormField>
-                  </Stack>
-                </div>
-
-                <div className="border-t border-border/60 pt-6">
-                  <Stack gap="md">
-                    <Stack gap="xs">
-                      <h3 className="text-lg font-semibold text-foreground">Lifestyle & interests</h3>
-                      <p className="text-sm text-muted">Habits, animals, and a quick bio snapshot.</p>
-                    </Stack>
-                    <InfoGrid items={lifestyleItems} />
-                  </Stack>
-                </div>
               </CardContent>
             </Card>
           </div>
         )}
 
-        <div className="flex justify-end">
-          <Button variant="destructive" onClick={() => setIsDeleteModalOpen(true)} size="sm">
-            Delete Profile & Account
-          </Button>
+        <div className="border-t border-border/60 pt-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Stack gap="xs">
+              <p className="text-sm font-semibold text-destructive">Delete account</p>
+              <p className="text-sm text-muted">Remove your profile and access instantly. This can’t be undone.</p>
+            </Stack>
+            <Button variant="destructive" onClick={() => setIsDeleteModalOpen(true)} size="sm" className="sm:w-auto">
+              Delete account
+            </Button>
+          </div>
         </div>
       </Stack>
 
@@ -555,9 +572,9 @@ export default function SettingsPage() {
                   </svg>
                 </div>
                 <div>
-                  <CardTitle className="text-lg">Delete Profile & Account</CardTitle>
+                  <CardTitle className="text-lg">Delete account</CardTitle>
                   <p className="text-sm text-muted">
-                    This action cannot be undone. All your data will be permanently removed.
+                    This permanently removes your profile, matches, and account access.
                   </p>
                 </div>
               </div>
@@ -578,7 +595,7 @@ export default function SettingsPage() {
                 variant="destructive"
                 className="w-full sm:w-auto"
               >
-                {isDeleting ? 'Deleting...' : 'Delete'}
+                {isDeleting ? 'Deleting…' : 'Delete account'}
               </Button>
             </CardContent>
           </Card>

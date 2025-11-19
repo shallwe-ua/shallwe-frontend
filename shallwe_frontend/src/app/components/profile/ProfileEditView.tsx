@@ -20,6 +20,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { FormField } from '@/components/ui/form-field'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Radio } from '@/components/ui/radio'
+import { Label } from '@/components/ui/label'
 
 // Define the props for the edit view
 interface ProfileEditViewProps {
@@ -272,7 +278,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
 
   // --- RENDER LOGIC ---
   return (
-    <Section as="div" className="py-10" fullWidth>
+    <Section as="div" className="bg-background-soft/40" fullWidth>
       <Stack gap="lg" className="mx-auto w-full max-w-4xl">
         {apiError && !isFloatingApiErrorDismissed && (
           <Alert variant="destructive" className="flex items-center justify-between gap-4">
@@ -283,11 +289,17 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           </Alert>
         )}
 
+        <Stack gap="xs">
+          <h2 className="text-xl font-semibold text-foreground">Edit your profile</h2>
+          <p className="text-sm text-muted">Update your info and save the changes below.</p>
+        </Stack>
+
         <Card>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <Stack gap="sm" className="items-center">
-                <ProfilePhotoPick
+          <CardContent className="p-6">
+            <Stack gap="lg">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <Stack gap="sm" className="items-center">
+                  <ProfilePhotoPick
                   initialFile={editFormState.profile.photo}
                   initialPhotoUrl={initialProfileData.profile.photo_w192 || null}
                   onError={handlePhotoError}
@@ -295,24 +307,23 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   onCropComplete={handlePhotoCropped}
                 />
                 <FormField label="Display Name" error={errors['profile.name']} className="w-full text-left">
-                  <input
-                    type="text"
+                  <Input
                     value={editFormState.profile.name ?? ''}
                     onChange={(e) => updateEditFormState('profile', 'name', e.target.value)}
-                    className="w-full rounded-md border border-border bg-card p-2 text-sm focus:border-primary focus:ring-primary"
                   />
                 </FormField>
                 {errors['profile.photo'] && (
                   <p className="text-sm text-destructive">{errors['profile.photo']}</p>
                 )}
                 <p className="text-sm text-muted text-center">
-                  {initialProfileData.profile.is_hidden ? 'Profile Hidden' : 'Profile Visible'}
+                  {initialProfileData.profile.is_hidden ? 'Currently hidden from matches' : 'Visible to matches'}
                 </p>
               </Stack>
 
         {/* Main Details */}
-        <div className="md:col-span-2 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <Stack gap="lg">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
             <FormField label="Birth Date" error={errors['about.birth_date']}>
               <BirthDateSelect
@@ -328,48 +339,46 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   { id: 'gender_male_edit', value: 1, label: 'Male' },
                   { id: 'gender_female_edit', value: 2, label: 'Female' },
                 ].map((option) => (
-                  <label key={option.id} htmlFor={option.id} className="flex items-center gap-2 text-sm text-muted">
-                    <input
+                  <Label
+                    key={option.id}
+                    htmlFor={option.id}
+                    className="flex items-center gap-2 text-sm text-muted"
+                  >
+                    <Radio
                       id={option.id}
                       name="gender_edit"
-                      type="radio"
                       checked={editFormState.about.gender === option.value}
                       onChange={() => updateEditFormState('about', 'gender', option.value as 1 | 2)}
-                      className="h-4 w-4 border-border text-primary focus:ring-primary"
                     />
                     {option.label}
-                  </label>
+                  </Label>
                 ))}
               </div>
             </FormField>
             <FormField label="Is Couple" error={errors['about.is_couple']}>
-              <label htmlFor="is_couple_edit" className="flex items-center gap-2 text-sm text-muted">
-                <input
+              <Label htmlFor="is_couple_edit" className="flex items-center gap-2 text-sm text-muted">
+                <Checkbox
                   id="is_couple_edit"
-                  type="checkbox"
                   checked={editFormState.about.is_couple === true}
                   onChange={(e) => updateEditFormState('about', 'is_couple', e.target.checked)}
-                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
                 />
                 Applying as a couple
-              </label>
+              </Label>
             </FormField>
 
             <FormField label="Has Children" error={errors['about.has_children']}>
-              <label htmlFor="has_children_edit" className="flex items-center gap-2 text-sm text-muted">
-                <input
+              <Label htmlFor="has_children_edit" className="flex items-center gap-2 text-sm text-muted">
+                <Checkbox
                   id="has_children_edit"
-                  type="checkbox"
                   checked={editFormState.about.has_children === true}
                   onChange={(e) => updateEditFormState('about', 'has_children', e.target.checked)}
-                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
                 />
                 Children will live with me
-              </label>
+              </Label>
             </FormField>
             {/* Add more fields as needed, mirroring the structure from ProfileSetupPage for the 'about' section */}
             <FormField label="Occupation Type" error={errors['about.occupation_type']}>
-              <select
+              <Select
                 id="occupation_type_edit"
                 value={editFormState.about.occupation_type ?? ''}
                 onChange={(e) =>
@@ -379,18 +388,17 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
                   )
                 }
-                className="mt-1 block w-full rounded-md border border-border bg-card p-2 text-sm focus:border-primary focus:ring-primary"
               >
                 <option value="">Select...</option>
                 <option value="1">Employed</option>
                 <option value="2">Student</option>
                 <option value="3">Unemployed</option>
                 <option value="4">Retired</option>
-              </select>
+              </Select>
             </FormField>
 
             <FormField label="Drinking Level" error={errors['about.drinking_level']}>
-              <select
+              <Select
                 id="drinking_level_edit"
                 value={editFormState.about.drinking_level ?? ''}
                 onChange={(e) =>
@@ -400,18 +408,17 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
                   )
                 }
-                className="mt-1 block w-full rounded-md border border-border bg-card p-2 text-sm focus:border-primary focus:ring-primary"
               >
                 <option value="">Select...</option>
                 <option value="1">Never</option>
                 <option value="2">Rarely</option>
                 <option value="3">Socially</option>
                 <option value="4">Often</option>
-              </select>
+              </Select>
             </FormField>
 
             <FormField label="Smoking Level" error={errors['about.smoking_level']}>
-              <select
+              <Select
                 id="smoking_level_edit"
                 value={editFormState.about.smoking_level ?? ''}
                 onChange={(e) =>
@@ -419,198 +426,169 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
                   )
                 }
-                className="mt-1 block w-full rounded-md border border-border bg-card p-2 text-sm focus:border-primary focus:ring-primary"
               >
                 <option value="">Select...</option>
                 <option value="1">Never</option>
                 <option value="2">Rarely</option>
                 <option value="3">Socially</option>
                 <option value="4">Often</option>
-              </select>
+              </Select>
             </FormField>
 
             {/* Add Smoking Type Checkboxes (Conditional based on smoking_level) - ADD THIS BLOCK */}
             {editFormState.about.smoking_level !== null && editFormState.about.smoking_level > 1 && (
-              <div className="col-span-2 mt-2"> {/* Use col-span-2 to span full width, add top margin */}
-                <p className="text-sm font-medium text-muted mb-1">Smoking Types:</p> {/* Label for the group */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ml-2"> {/* Grid layout: 1 column on mobile, 2 on small screens, 4 on medium+ screens */}
-                  <div className="flex items-center">
-                    <input
-                      id="smokes_iqos_edit"
-                      type="checkbox"
-                      checked={editFormState.about.smokes_iqos === true}
-                      onChange={(e) => updateEditFormState('about', 'smokes_iqos', e.target.checked)}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <label htmlFor="smokes_iqos_edit" className="ml-2 block text-sm text-muted">
-                      IQOS
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      id="smokes_vape_edit"
-                      type="checkbox"
-                      checked={editFormState.about.smokes_vape === true}
-                      onChange={(e) => updateEditFormState('about', 'smokes_vape', e.target.checked)}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <label htmlFor="smokes_vape_edit" className="ml-2 block text-sm text-muted">
-                      Vape
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      id="smokes_tobacco_edit"
-                      type="checkbox"
-                      checked={editFormState.about.smokes_tobacco === true}
-                      onChange={(e) => updateEditFormState('about', 'smokes_tobacco', e.target.checked)}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <label htmlFor="smokes_tobacco_edit" className="ml-2 block text-sm text-muted">
-                      Tobacco
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      id="smokes_cigs_edit"
-                      type="checkbox"
-                      checked={editFormState.about.smokes_cigs === true}
-                      onChange={(e) => updateEditFormState('about', 'smokes_cigs', e.target.checked)}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <label htmlFor="smokes_cigs_edit" className="ml-2 block text-sm text-muted">
-                      Cigarettes
-                    </label>
-                  </div>
+              <FormField label="Smoking Types" hint="Select all that apply" className="col-span-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
+                  {[
+                    { id: 'smokes_iqos_edit', label: 'IQOS', field: 'smokes_iqos' as const },
+                    { id: 'smokes_vape_edit', label: 'Vape', field: 'smokes_vape' as const },
+                    { id: 'smokes_tobacco_edit', label: 'Tobacco', field: 'smokes_tobacco' as const },
+                    { id: 'smokes_cigs_edit', label: 'Cigarettes', field: 'smokes_cigs' as const },
+                  ].map((option) => (
+                    <Label key={option.id} htmlFor={option.id} className="flex items-center gap-2 text-sm text-muted">
+                      <Checkbox
+                        id={option.id}
+                        checked={editFormState.about[option.field] === true}
+                        onChange={(e) => updateEditFormState('about', option.field, e.target.checked)}
+                      />
+                      {option.label}
+                    </Label>
+                  ))}
                 </div>
-              </div>
+              </FormField>
             )}
             {/* End of Smoking Type Checkboxes block */}
           </div>
 
           {/* Rent Preferences */}
-          <div className="mt-4 p-4 bg-muted/10 rounded-lg">
-            <h3 className="text-lg font-medium text-foreground mb-2">Rent Preferences</h3>
-            <div className="grid grid-cols-2 gap-4">
-              
-              <div>
-                <label htmlFor="min_budget_edit" className="block text-sm font-medium text-muted">
-                  Min Budget
-                </label>
-                <input
+          <div className="mt-4 space-y-4 rounded-lg bg-muted/10 p-4">
+            <h3 className="text-lg font-medium text-foreground">Rent Preferences</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField label="Min Budget" error={errors['rent_preferences.min_budget']}>
+                <Input
                   type="number"
+                  inputMode="numeric"
                   id="min_budget_edit"
-                  value={editFormState.rent_preferences.min_budget}
+                  value={editFormState.rent_preferences.min_budget ?? ''}
                   onChange={(e) => {
-                    const raw = e.target.value;
-                    const cleaned = raw.length > 1 ? raw.replace(/^0+(?=\d)/, '') : raw;
+                    const raw = e.target.value
+                    const cleaned = raw.length > 1 ? raw.replace(/^0+(?=\d)/, '') : raw
                     if (cleaned !== raw) e.target.value = cleaned
-                    updateEditFormState('rent_preferences', 'min_budget', Number(cleaned));
+                    const nextValue = cleaned === '' ? null : Number(cleaned)
+                    updateEditFormState(
+                      'rent_preferences',
+                      'min_budget',
+                      nextValue as ProfileUpdateFormState['rent_preferences']['min_budget']
+                    )
                   }}
-                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                    errors['rent_preferences.min_budget'] ? 'border-destructive' : ''
-                  }`}
                 />
-                {errors['rent_preferences.min_budget'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.min_budget']}</p>}
-              </div>
-
-              <div>
-                <label htmlFor="max_budget_edit" className="block text-sm font-medium text-muted">
-                  Max Budget
-                </label>
-                <input
+              </FormField>
+              <FormField label="Max Budget" error={errors['rent_preferences.max_budget']}>
+                <Input
                   type="number"
+                  inputMode="numeric"
                   id="max_budget_edit"
-                  value={editFormState.rent_preferences.max_budget}
+                  value={editFormState.rent_preferences.max_budget ?? ''}
                   onChange={(e) => {
-                    const raw = e.target.value;
-                    const cleaned = raw.length > 1 ? raw.replace(/^0+(?=\d)/, '') : raw;
+                    const raw = e.target.value
+                    const cleaned = raw.length > 1 ? raw.replace(/^0+(?=\d)/, '') : raw
                     if (cleaned !== raw) e.target.value = cleaned
-                    updateEditFormState('rent_preferences', 'max_budget', Number(cleaned));
+                    const nextValue = cleaned === '' ? null : Number(cleaned)
+                    updateEditFormState(
+                      'rent_preferences',
+                      'max_budget',
+                      nextValue as ProfileUpdateFormState['rent_preferences']['max_budget']
+                    )
                   }}
-                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                    errors['rent_preferences.max_budget'] ? 'border-destructive' : ''
-                  }`}
                 />
-                {errors['rent_preferences.max_budget'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.max_budget']}</p>}
-              </div>
-
-              <div>
-                <label htmlFor="min_rent_duration_level_edit" className="block text-sm font-medium text-muted">
-                  Min Rent Duration Level
-                </label>
-                <select
+              </FormField>
+              <FormField
+                label="Min Rent Duration Level"
+                error={errors['rent_preferences.min_rent_duration_level']}
+              >
+                <Select
                   id="min_rent_duration_level_edit"
-                  value={editFormState.rent_preferences.min_rent_duration_level} // Handle potential null
-                  onChange={(e) => updateEditFormState('rent_preferences', 'min_rent_duration_level', Number(e.target.value))} // Send null if empty string
-                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                    errors['rent_preferences.min_rent_duration_level'] ? 'border-destructive' : ''
-                  }`}
+                  value={editFormState.rent_preferences.min_rent_duration_level ?? ''}
+                  onChange={(e) =>
+                    updateEditFormState(
+                      'rent_preferences',
+                      'min_rent_duration_level',
+                      e.target.value
+                        ? (Number(e.target.value) as ProfileUpdateFormState['rent_preferences']['min_rent_duration_level'])
+                        : (null as unknown as ProfileUpdateFormState['rent_preferences']['min_rent_duration_level'])
+                    )
+                  }
                 >
-                  <option value="1">Level 1</option>
-                  <option value="2">Level 2</option>
-                  <option value="3">Level 3</option>
-                  <option value="4">Level 4</option>
-                  <option value="5">Level 5</option>
-                </select>
-                {errors['rent_preferences.min_rent_duration_level'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.min_rent_duration_level']}</p>}
-              </div>
-              <div>
-                <label htmlFor="max_rent_duration_level_edit" className="block text-sm font-medium text-muted">
-                  Max Rent Duration Level
-                </label>
-                <select
+                  <option value="">Select...</option>
+                  <option value="1">1 month</option>
+                  <option value="2">2 months</option>
+                  <option value="3">3 months</option>
+                  <option value="4">6 months</option>
+                  <option value="5">1 year</option>
+                </Select>
+              </FormField>
+              <FormField
+                label="Max Rent Duration Level"
+                error={errors['rent_preferences.max_rent_duration_level']}
+              >
+                <Select
                   id="max_rent_duration_level_edit"
-                  value={editFormState.rent_preferences.max_rent_duration_level} // Handle potential null
-                  onChange={(e) => updateEditFormState('rent_preferences', 'max_rent_duration_level', Number(e.target.value))} // Send null if empty string
-                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                    errors['rent_preferences.max_rent_duration_level'] ? 'border-destructive' : ''
-                  }`}
+                  value={editFormState.rent_preferences.max_rent_duration_level ?? ''}
+                  onChange={(e) =>
+                    updateEditFormState(
+                      'rent_preferences',
+                      'max_rent_duration_level',
+                      e.target.value
+                        ? (Number(e.target.value) as ProfileUpdateFormState['rent_preferences']['max_rent_duration_level'])
+                        : (null as unknown as ProfileUpdateFormState['rent_preferences']['max_rent_duration_level'])
+                    )
+                  }
                 >
-                  <option value="1">Level 1</option>
-                  <option value="2">Level 2</option>
-                  <option value="3">Level 3</option>
-                  <option value="4">Level 4</option>
-                  <option value="5">Level 5</option>
-                </select>
-                {errors['rent_preferences.max_rent_duration_level'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.max_rent_duration_level']}</p>}
-              </div>
-              <div>
-                <label htmlFor="room_sharing_level_edit" className="block text-sm font-medium text-muted">
-                  Room Sharing Level
-                </label>
-                <select
+                  <option value="">Select...</option>
+                  <option value="1">1 month</option>
+                  <option value="2">2 months</option>
+                  <option value="3">3 months</option>
+                  <option value="4">6 months</option>
+                  <option value="5">1 year</option>
+                </Select>
+              </FormField>
+              <FormField
+                label="Room Sharing Level"
+                error={errors['rent_preferences.room_sharing_level']}
+              >
+                <Select
                   id="room_sharing_level_edit"
-                  value={editFormState.rent_preferences.room_sharing_level ?? ''} // Handle potential null
-                  onChange={(e) => updateEditFormState('rent_preferences', 'room_sharing_level', Number(e.target.value) as 1 | 2 | 3)} // Send null if empty string
-                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                    errors['rent_preferences.room_sharing_level'] ? 'border-destructive' : ''
-                  }`}
+                  value={editFormState.rent_preferences.room_sharing_level ?? ''}
+                  onChange={(e) =>
+                    updateEditFormState(
+                      'rent_preferences',
+                      'room_sharing_level',
+                      e.target.value
+                        ? (Number(e.target.value) as 1 | 2 | 3)
+                        : (null as unknown as ProfileUpdateFormState['rent_preferences']['room_sharing_level'])
+                    )
+                  }
                 >
+                  <option value="">Select...</option>
                   <option value="1">Private Room Only</option>
                   <option value="2">Shared Room Possible</option>
                   <option value="3">Flexible (Any Arrangement)</option>
-                </select>
-                {errors['rent_preferences.room_sharing_level'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.room_sharing_level']}</p>}
-              </div>
+                </Select>
+              </FormField>
             </div>
-            {/* Location Search Component */}
-            <div className="mt-4">
-                <label className="block text-sm font-medium text-muted">
-                  Locations (Select up to 30, no overlaps)
-                </label>
-                <Locations
-                    // Pass the array of hierarchies from editFormState
-                    selectedLocations={editFormState.rent_preferences.locations}
-                    initialLocationNames={initialLocationNamesMap} // PASS THE NEW PROP
-                    onLocationsChange={handleLocationsChange}
-                    // Pass error state and handler
-                    // Ensure the error prop is either a string or undefined, never null
-                    error={errors['rent_preferences.locations'] || undefined} // CORRECT: Use '|| undefined' to guarantee 'string | undefined' type
-                    onClearError={clearLocationsError}
-                />
-                {errors['rent_preferences.locations'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.locations']}</p>}
-            </div>
+            <FormField
+              label="Locations"
+              hint="Select up to 30, no overlaps."
+              error={errors['rent_preferences.locations']}
+            >
+              <Locations
+                selectedLocations={editFormState.rent_preferences.locations}
+                initialLocationNames={initialLocationNamesMap}
+                onLocationsChange={handleLocationsChange}
+                error={errors['rent_preferences.locations'] || undefined}
+                onClearError={clearLocationsError}
+              />
+            </FormField>
           </div>
 
           {/* Other Details - Similar structure, add fields as needed */}
@@ -618,103 +596,98 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
               <h3 className="text-lg font-medium text-foreground mb-2">Other Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 {/* Example: Neighbourliness Level */}
-                <div>
-                  <label htmlFor="neighbourliness_level_edit" className="block text-sm font-medium text-muted">
-                    Neighbourliness Level
-                  </label>
-                  <select
+                <FormField label="Neighbourliness Level" error={errors['about.neighbourliness_level']}>
+                  <Select
                     id="neighbourliness_level_edit"
-                    value={editFormState.about.neighbourliness_level ?? ''} // Handle potential null
-                    onChange={(e) => updateEditFormState('about', 'neighbourliness_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
-                    className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                      errors['about.neighbourliness_level'] ? 'border-destructive' : ''
-                    }`}
+                    value={editFormState.about.neighbourliness_level ?? ''}
+                    onChange={(e) =>
+                      updateEditFormState(
+                        'about',
+                        'neighbourliness_level',
+                        e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                      )
+                    }
                   >
                     <option value="">Select...</option>
                     <option value="1">Low</option>
                     <option value="2">Medium</option>
                     <option value="3">High</option>
-                  </select>
-                  {errors['about.neighbourliness_level'] && <p className="mt-1 text-sm text-destructive">{errors['about.neighbourliness_level']}</p>}
-                </div>
+                  </Select>
+                </FormField>
                 
-                <div>
-                  <label htmlFor="guests_level_edit" className="block text-sm font-medium text-muted">
-                    Guests Level
-                  </label>
-                  <select
+                <FormField label="Guests Level" error={errors['about.guests_level']}>
+                  <Select
                     id="guests_level_edit"
-                    value={editFormState.about.guests_level ?? ''} // Handle potential null
-                    onChange={(e) => updateEditFormState('about', 'guests_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
-                    className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                      errors['about.guests_level'] ? 'border-destructive' : ''
-                    }`}
+                    value={editFormState.about.guests_level ?? ''}
+                    onChange={(e) =>
+                      updateEditFormState(
+                        'about',
+                        'guests_level',
+                        e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                      )
+                    }
                   >
                     <option value="">Select...</option>
                     <option value="1">Low</option>
                     <option value="2">Medium</option>
                     <option value="3">High</option>
-                  </select>
-                  {errors['about.guests_level'] && <p className="mt-1 text-sm text-destructive">{errors['about.guests_level']}</p>}
-                </div>
-                <div>
-                  <label htmlFor="parties_level_edit" className="block text-sm font-medium text-muted">
-                    Parties Level
-                  </label>
-                  <select
+                  </Select>
+                </FormField>
+                <FormField label="Parties Level" error={errors['about.parties_level']}>
+                  <Select
                     id="parties_level_edit"
-                    value={editFormState.about.parties_level ?? ''} // Handle potential null
-                    onChange={(e) => updateEditFormState('about', 'parties_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
-                    className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                      errors['about.parties_level'] ? 'border-destructive' : ''
-                    }`}
+                    value={editFormState.about.parties_level ?? ''}
+                    onChange={(e) =>
+                      updateEditFormState(
+                        'about',
+                        'parties_level',
+                        e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                      )
+                    }
                   >
                     <option value="">Select...</option>
                     <option value="1">Low</option>
                     <option value="2">Medium</option>
                     <option value="3">High</option>
-                  </select>
-                  {errors['about.parties_level'] && <p className="mt-1 text-sm text-destructive">{errors['about.parties_level']}</p>}
-                </div>
-                <div>
-                  <label htmlFor="bedtime_level_edit" className="block text-sm font-medium text-muted">
-                    Bedtime Level
-                  </label>
-                  <select
+                  </Select>
+                </FormField>
+                <FormField label="Bedtime Level" error={errors['about.bedtime_level']}>
+                  <Select
                     id="bedtime_level_edit"
-                    value={editFormState.about.bedtime_level ?? ''} // Handle potential null
-                    onChange={(e) => updateEditFormState('about', 'bedtime_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)} // Send null if empty string, adjust type if needed
-                    className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                      errors['about.bedtime_level'] ? 'border-destructive' : ''
-                    }`}
+                    value={editFormState.about.bedtime_level ?? ''}
+                    onChange={(e) =>
+                      updateEditFormState(
+                        'about',
+                        'bedtime_level',
+                        e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
+                      )
+                    }
                   >
                     <option value="">Select...</option>
                     <option value="1">Early (e.g., 22:00)</option>
                     <option value="2">Midnight</option>
                     <option value="3">Late (e.g., 02:00)</option>
                     <option value="4">Very Late (e.g., 04:00)</option>
-                  </select>
-                  {errors['about.bedtime_level'] && <p className="mt-1 text-sm text-destructive">{errors['about.bedtime_level']}</p>}
-                </div>
-                <div>
-                  <label htmlFor="neatness_level_edit" className="block text-sm font-medium text-muted">
-                    Neatness Level
-                  </label>
-                  <select
+                  </Select>
+                </FormField>
+                <FormField label="Neatness Level" error={errors['about.neatness_level']}>
+                  <Select
                     id="neatness_level_edit"
-                    value={editFormState.about.neatness_level ?? ''} // Handle potential null
-                    onChange={(e) => updateEditFormState('about', 'neatness_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Send null if empty string
-                    className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                      errors['about.neatness_level'] ? 'border-destructive' : ''
-                    }`}
+                    value={editFormState.about.neatness_level ?? ''}
+                    onChange={(e) =>
+                      updateEditFormState(
+                        'about',
+                        'neatness_level',
+                        e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                      )
+                    }
                   >
                     <option value="">Select...</option>
                     <option value="1">Low</option>
                     <option value="2">Medium</option>
                     <option value="3">High</option>
-                  </select>
-                  {errors['about.neatness_level'] && <p className="mt-1 text-sm text-destructive">{errors['about.neatness_level']}</p>}
-                </div>
+                  </Select>
+                </FormField>
 
                 {/* Pet Checkboxes */}
                 <div className="col-start-1 col-span-2">
@@ -777,7 +750,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     </label>
                     <TagsInput
                       isEditOnRemove
-                      value={editFormState.about.other_animals} // Bind to editFormState
+                      value={editFormState.about.other_animals || []} // Bind to editFormState
                       beforeAddValidate={(newTag: string, currentTags: string[]) => {
                         const newTagsCandidate = [...currentTags, newTag];
                         const validationError = validators['about.other_animals'](newTagsCandidate, editFormState); // Use editFormState
@@ -836,7 +809,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                           }
                         }}
                       name="other_animals_edit" // Unique name for this instance
-                      placeHolder="Type and press enter"
+                      placeHolder="Press Enter to add"
                       // Adapted Tailwind classes for styling, matching the pattern from ProfileSetupPage and other inputs in ProfileEditView
                       classNames={{
                         tag: "bg-primary/10 text-primary px-2 py-1 rounded-md text-sm", // Style for individual tags
@@ -910,7 +883,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                           }
                         }}
                       name="interests_edit" // Unique name for this instance
-                      placeHolder="Type and press enter"
+                      placeHolder="Press Enter to add"
                       // Adapted Tailwind classes for styling
                       classNames={{
                         tag: "bg-primary/10 text-primary px-2 py-1 rounded-md text-sm",
@@ -922,40 +895,38 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   </div>
 
                   {/* bio (textarea) */}
-                  <div className="col-span-2">
-                    <label htmlFor="bio_edit" className="block text-sm font-medium text-muted">
-                      Bio (up to 1024 chars)
-                    </label>
-                    <textarea
+                  <FormField label="Bio (up to 1024 chars)" error={errors['about.bio']} className="md:col-span-2">
+                    <Textarea
                       id="bio_edit"
                       rows={3}
-                      value={editFormState.about.bio ?? ''} // Handle potential null
-                      onChange={(e) => updateEditFormState('about', 'bio', e.target.value || null)} // Send null if empty string
-                      className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                        errors['about.bio'] ? 'border-destructive' : ''
-                      }`}
+                      value={editFormState.about.bio ?? ''}
+                      onChange={(e) => updateEditFormState('about', 'bio', e.target.value || null)}
+                      className={editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'ring-2 ring-destructive/70' : undefined}
                     />
-                    <p className={`text-xs mt-1 ${
-                      editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'text-destructive' : 'text-muted' // Change color based on limit
-                    }`}>
+                    <p
+                      className={`text-xs mt-1 ${
+                        editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'text-destructive' : 'text-muted'
+                      }`}
+                    >
                       {editFormState.about.bio ? editFormState.about.bio.length : 0} / 1024 characters
                     </p>
-                    {errors['about.bio'] && <p className="mt-1 text-sm text-destructive">{errors['about.bio']}</p>}
-                  </div>
+                  </FormField>
               </div>
             </div>
+          </Stack>
         </div>
       </div>
 
       {/* Save/Cancel Buttons */}
-      <div className="flex justify-end gap-4">
+      <div className="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:justify-end">
         <Button variant="outline" onClick={onCancel} disabled={isSaving}>
           Cancel
         </Button>
         <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
-          {isSaving ? 'Saving...' : 'Save Changes'}
+          {isSaving ? 'Saving…' : 'Save changes'}
         </Button>
       </div>
+            </Stack>
           </CardContent>
         </Card>
       </Stack>

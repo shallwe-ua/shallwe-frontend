@@ -102,7 +102,7 @@ export default function LandingPage() {
   }, [handleBackendAuth])
 
   return (
-    <Section className="relative min-h-screen pt-20 pb-16 flex items-start" as="div" fullWidth bleed>
+    <Section className="relative min-h-screen flex items-center" as="div" fullWidth bleed>
       <div className="bg-ornaments">
         <div className="bg-orb bg-orb--blue" style={{ top: '-120px', left: '-80px' }} />
         <div className="bg-orb bg-orb--peach" style={{ bottom: '-160px', right: '-60px' }} />
@@ -125,21 +125,21 @@ export default function LandingPage() {
           </div>
         </div>
 
-      <Stack gap="lg" className="page-shell relative z-10 max-w-xl mx-auto items-center text-center">
-        <Stack gap="sm" className="pt-4">
-          <h1 className="text-[2.45rem] font-semibold leading-tight text-foreground sm:text-[2.75rem]">
-            Find a flatmate who matches how you live.
+      <Stack gap="lg" className="page-shell relative z-10 mx-auto max-w-xl items-center text-center">
+        <Stack gap="xs">
+          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Roommate matching</span>
+          <h1 className="text-[2.35rem] font-semibold leading-tight text-foreground sm:text-[2.75rem]">
+            Meet a roommate who lives the way you do
           </h1>
-          <p className="text-base text-muted max-w-xl mx-auto">
-            Answer a few questions, build a detailed profile, and review photo-verified matches before
-            you commit to a lease.
+          <p className="text-base text-muted">
+            Share a quick profile and review photo-verified matches before you sign a lease.
           </p>
         </Stack>
 
-        <Card className="w-full max-w-xl card-shell border border-border/70">
+        <Card className="w-full max-w-xl">
           <CardHeader>
-            <CardTitle>Continue with Google</CardTitle>
-            <CardDescription>Sign in to start your profile in under 60 seconds.</CardDescription>
+            <CardTitle>Sign in to get started</CardTitle>
+            <CardDescription>Use Google to launch your Shallwe profile in under a minute.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {error && <Alert variant="destructive">{error}</Alert>}
@@ -156,7 +156,7 @@ export default function LandingPage() {
             </Button>
 
             <p className="text-center text-xs text-muted">
-            By continuing you agree to our Terms and Privacy Policy.
+              By continuing you agree to the Shallwe Terms and Privacy Policy.
             </p>
           </CardContent>
         </Card>
