@@ -241,7 +241,7 @@ const Locations: React.FC<LocationsProps> = ({
               setIsInputFrozen(false)
               setIsCounterSwinging(false)
             }}
-            className="h-auto px-0 text-xs font-medium text-muted underline-offset-2 hover:text-foreground"
+            className="h-auto px-0 text-sm font-medium text-muted underline-offset-2 hover:text-foreground"
           >
             clear all ×
           </Button>
@@ -256,7 +256,7 @@ const Locations: React.FC<LocationsProps> = ({
           {/* Regions */}
           {searchResults.regions && searchResults.regions.length > 0 && (
             <div className="p-3 space-y-1">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted">Regions</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Regions</h3>
               {searchResults.regions.map((region) => {
                 const displayName = getDisplayName(region, 'region')
                 return renderResultItem(region.hierarchy, displayName)
@@ -266,7 +266,7 @@ const Locations: React.FC<LocationsProps> = ({
           {/* Cities */}
           {searchResults.cities && searchResults.cities.length > 0 && (
             <div className="space-y-1 p-3">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted">Cities</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Cities</h3>
               {searchResults.cities.map((city) => (
                 <React.Fragment key={city.hierarchy}>
                   {/* Render the main city */}
@@ -287,7 +287,7 @@ const Locations: React.FC<LocationsProps> = ({
           {/* Other */}
           {searchResults.other_ppls && searchResults.other_ppls.length > 0 && (
             <div className="space-y-1 p-3">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted">Other</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Other</h3>
               {searchResults.other_ppls.map((ppl) => {
                 const displayName = getDisplayName(ppl, 'other_ppl');
                 return renderResultItem(ppl.hierarchy, displayName);
@@ -301,12 +301,12 @@ const Locations: React.FC<LocationsProps> = ({
       <div className="flex flex-wrap gap-2">
         {showAllUkraineTag
           ? (
-            <MetaPill className="normal-case text-xs font-medium tracking-normal">
+            <MetaPill className="normal-case">
               Вся Україна (Default)
             </MetaPill>
             )
           : selectedLocations.map((loc) => (
-              <MetaPill key={loc} className="normal-case text-xs font-medium tracking-normal">
+              <MetaPill key={loc} className="normal-case">
                 {nameMap[loc] || loc}
                 <Button
                   variant="ghost"

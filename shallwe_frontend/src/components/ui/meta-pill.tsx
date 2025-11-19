@@ -10,7 +10,7 @@ export const MetaPill = React.forwardRef<HTMLSpanElement, MetaPillProps>(
     <span
       ref={ref}
       className={cn(
-        'surface-chip inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium uppercase tracking-wide',
+        'surface-chip inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium',
         className
       )}
       {...props}

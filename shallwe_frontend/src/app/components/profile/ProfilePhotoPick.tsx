@@ -303,15 +303,15 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
           className="hidden"
         />
 
-        {/* custom trigger button */}
         <Button
           type="button"
           variant="secondary"
           onClick={() => fileInputRef.current?.click()}
-          className="mt-1"
+          className="mt-2"
         >
           Choose File
         </Button>
+
       </div>
 
       {/* Preview Area - Shows raw file preview, cropped preview, or placeholder */}
@@ -392,9 +392,10 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
       {/* Show final cropped file name after successful cropping/validation */}
       {finalCroppedFile && (
         <div className="mt-2">
-          <p className="text-xs text-muted">Selected: {finalCroppedFile.name}</p>
+          <p className="text-sm text-muted">Selected: {finalCroppedFile.name}</p>
         </div>
       )}
+
     </div>
   )
 }

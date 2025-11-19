@@ -85,7 +85,7 @@ type InfoItem = {
 }
 
 const InfoGrid = ({ items }: { items: InfoItem[] }) => (
-  <div className="grid gap-4 md:grid-cols-2">
+  <div className="grid gap-3 md:grid-cols-2">
     {items.map((item, index) => {
       const resolvedValue = item.value ?? 'Not specified'
       const isPrimitive = typeof resolvedValue === 'string' || typeof resolvedValue === 'number'
@@ -97,7 +97,7 @@ const InfoGrid = ({ items }: { items: InfoItem[] }) => (
           className={cn(item.fullWidth && 'md:col-span-2')}
         >
           {isPrimitive ? (
-            <p className="text-base font-medium text-foreground">{resolvedValue}</p>
+            <p className="text-sm font-semibold text-foreground">{resolvedValue}</p>
           ) : (
             resolvedValue
           )}
@@ -321,7 +321,7 @@ export default function SettingsPage() {
             <CardTitle>Profile not found</CardTitle>
           </CardHeader>
           <CardContent>
-            <Stack gap="md">
+            <Stack gap="sm">
               <p className="text-sm text-muted">We couldn&apos;t load your profile data.</p>
               {apiError && <Alert variant="destructive">{apiError}</Alert>}
               <Button onClick={() => router.push('/')} className="w-full">
@@ -403,7 +403,7 @@ export default function SettingsPage() {
     {
       label: 'Bio',
       value: (
-        <p className="text-base font-medium text-foreground break-words whitespace-pre-line">
+        <p className="text-sm font-medium text-foreground break-words whitespace-pre-line">
           {profileData.about.bio?.trim() || 'Not specified'}
         </p>
       ),
@@ -411,51 +411,37 @@ export default function SettingsPage() {
     },
   ]
 
+  const visibilityLabel = profileData.profile.is_hidden ? 'Hidden' : 'Visible'
+  const visibilityHint = profileData.profile.is_hidden ? 'Only you can see this.' : 'Matches can view it.'
+  const visibilityDotClass = profileData.profile.is_hidden ? 'bg-warning' : 'bg-success'
+
   // --- MAIN RENDER (Profile Data Loaded) ---
   return (
     <Section as="div" className="bg-background-soft" fullWidth>
-      <Stack gap="lg" className="mx-auto w-full max-w-5xl">
+      <Stack gap={isEditing ? 'xs' : 'sm'} className="mx-auto w-full max-w-5xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Stack gap="xs">
-            <h1 className="text-2xl font-semibold text-foreground">Profile & visibility</h1>
-            <p className="text-sm text-muted">Keep your Shallwe card up to date and control who can see it.</p>
+            <h1 className="text-base font-semibold text-foreground">Profile & visibility</h1>
+            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+              <span className={`h-2.5 w-2.5 rounded-full ${visibilityDotClass}`} aria-hidden />
+              <span>{visibilityLabel}</span>
+              <span className="text-sm font-normal text-muted">{visibilityHint}</span>
+            </div>
           </Stack>
-          {!isEditing && (
-            <Button onClick={handleEditClick} size="sm">
-              Edit profile
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {isEditing ? (
+              <Button onClick={handleEditCancel} size="sm">
+                Cancel editing
+              </Button>
+            ) : (
+              <Button onClick={handleEditClick} size="sm">
+                Edit profile
+              </Button>
+            )}
+          </div>
         </div>
 
         {apiError && <Alert variant="destructive">Error: {apiError}</Alert>}
-
-        <Card className="border border-border">
-          <CardContent className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
-            <Stack gap="xs">
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Visibility</span>
-              <p className="text-base font-semibold text-foreground">
-                {profileData.profile.is_hidden ? 'Hidden from matches' : 'Visible to matches'}
-              </p>
-              <p className="text-sm text-muted">
-                {profileData.profile.is_hidden
-                  ? 'Your card stays private until you show it again.'
-                  : 'Compatible users can view your profile card.'}
-              </p>
-            </Stack>
-            <Button
-              onClick={handleToggleVisibility}
-              disabled={isVisibilityUpdating}
-              variant={profileData.profile.is_hidden ? 'secondary' : 'outline'}
-              size="sm"
-            >
-              {isVisibilityUpdating
-                ? 'Updating…'
-                : profileData.profile.is_hidden
-                ? 'Show profile'
-                : 'Hide profile'}
-            </Button>
-          </CardContent>
-        </Card>
 
         {isEditing ? (
           <ProfileEditView
@@ -464,63 +450,74 @@ export default function SettingsPage() {
             onCancel={handleEditCancel}
           />
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <Card className="md:col-span-1 text-center">
-              <CardContent className="flex flex-col items-center gap-4 p-6">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <Card className="text-center md:col-span-1">
+              <CardContent className="flex flex-col items-center gap-3 p-4">
                 <PhotoWithFallbacks
                   src={profileData.profile.photo_w192 || ''}
                   alt={`Profile picture of ${profileData.profile.name}`}
                   className="h-32 w-32 rounded-full object-cover"
                 />
                 <Stack gap="xs" className="w-full text-center">
-                  <h2 className="text-xl font-semibold">{profileData.profile.name}</h2>
-                  <p className="text-sm text-muted">
-                    {profileData.profile.is_hidden ? 'Hidden from matches' : 'Visible to matches'}
-                  </p>
+                  <h2 className="text-base font-semibold">{profileData.profile.name}</h2>
                 </Stack>
+                <div className="flex w-full flex-col gap-2 text-left">
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <span className={`h-2.5 w-2.5 rounded-full ${visibilityDotClass}`} aria-hidden />
+                    <span className="font-semibold">{visibilityLabel}</span>
+                    <span className="text-muted">{visibilityHint}</span>
+                  </div>
+                  <Button
+                      onClick={handleToggleVisibility}
+                      disabled={isVisibilityUpdating}
+                      variant={profileData.profile.is_hidden ? 'secondary' : 'outline'}
+                      size="sm"
+                      className="self-start"
+                    >
+                      {isVisibilityUpdating
+                        ? 'Updating…'
+                        : profileData.profile.is_hidden
+                        ? 'Show profile'
+                        : 'Hide profile'}
+                    </Button>
+                  </div>
               </CardContent>
             </Card>
 
             <Card className="md:col-span-2">
-              <CardContent className="p-6">
-                <Stack gap="lg">
+              <CardContent className="p-4">
+                <Stack gap="sm">
                   <Stack gap="xs">
-                    <h3 className="text-lg font-semibold text-foreground">Profile essentials</h3>
-                    <p className="text-sm text-muted">What compatible matches learn at a glance.</p>
+                    <h3 className="text-base font-semibold text-foreground">Profile essentials</h3>
                   </Stack>
                   <InfoGrid items={aboutItems} />
 
-                  <div className="border-t border-border pt-6">
-                    <Stack gap="md">
+                  <div className="pt-4">
+                    <Stack gap="sm">
                       <Stack gap="xs">
-                        <h3 className="text-lg font-semibold text-foreground">Rent preferences</h3>
-                        <p className="text-sm text-muted">Budget, duration, and areas you approved.</p>
+                        <h3 className="text-base font-semibold text-foreground">Rent preferences</h3>
                       </Stack>
                       <InfoGrid items={rentItems} />
-                      <FormField label="Locations">
+                      <FormField label="Locations" hint="Matches only appear from these areas.">
                         {processedLocations.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
                             {processedLocations.map((item: DisplayLocation, index: number) => (
-                              <MetaPill
-                                key={`${item.type}-${index}`}
-                                className="normal-case text-xs font-medium tracking-normal"
-                              >
+                              <MetaPill key={`${item.type}-${index}`} className="normal-case">
                                 {item.displayName}
                               </MetaPill>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-base font-medium text-muted">All Ukraine (default)</p>
+                          <p className="text-sm font-medium text-muted">All Ukraine (default)</p>
                         )}
                       </FormField>
                     </Stack>
                   </div>
 
-                  <div className="border-t border-border pt-6">
-                    <Stack gap="md">
+                  <div className="pt-4">
+                    <Stack gap="sm">
                       <Stack gap="xs">
-                        <h3 className="text-lg font-semibold text-foreground">Lifestyle & interests</h3>
-                        <p className="text-sm text-muted">Habits, animals, and a quick bio snapshot.</p>
+                        <h3 className="text-base font-semibold text-foreground">Lifestyle & interests</h3>
                       </Stack>
                       <InfoGrid items={lifestyleItems} />
                     </Stack>
@@ -531,7 +528,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <div className="border-t border-border pt-6">
+        <div className="pt-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Stack gap="xs">
               <p className="text-sm font-semibold text-destructive">Delete account</p>
@@ -572,7 +569,7 @@ export default function SettingsPage() {
                   </svg>
                 </div>
                 <div>
-                  <CardTitle className="text-lg">Delete account</CardTitle>
+                  <CardTitle className="text-base">Delete account</CardTitle>
                   <p className="text-sm text-muted">
                     This permanently removes your profile, matches, and account access.
                   </p>

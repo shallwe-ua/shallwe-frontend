@@ -78,7 +78,7 @@ const Header = () => {
         <div className="flex h-14 items-center justify-between">
           <Link
             href={isLoggedIn ? '/settings' : '/'}
-            className="text-lg font-semibold text-foreground tracking-tight"
+            className="text-base font-semibold text-foreground tracking-tight"
             aria-label="Shallwe home"
           >
             Shallwe

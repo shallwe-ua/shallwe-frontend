@@ -213,7 +213,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <p className="text-xs text-subtle">Birth Date (16–120 years old allowed)</p>
+      <p className="text-sm text-subtle">Birth Date (16–120 years old allowed)</p>
       <div className="flex flex-row gap-3">
         {!isInitiated ? (
           <Button
@@ -230,7 +230,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
         ) : (
           <>
             <div className="flex flex-col gap-1">
-              <Label htmlFor={`${inputId}-day`} className="text-xs text-muted uppercase tracking-wide">
+              <Label htmlFor={`${inputId}-day`} className="text-sm text-muted uppercase tracking-wide">
                 Day
               </Label>
               <Select
@@ -248,7 +248,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
             </div>
 
             <div className="flex flex-col gap-1">
-              <Label htmlFor={`${inputId}-month`} className="text-xs text-muted uppercase tracking-wide">
+              <Label htmlFor={`${inputId}-month`} className="text-sm text-muted uppercase tracking-wide">
                 Month
               </Label>
               <Select
@@ -266,7 +266,7 @@ const BirthDateSelect: React.FC<BirthDateSelectProps> = ({
             </div>
 
             <div className="flex flex-col gap-1">
-              <Label htmlFor={`${inputId}-year`} className="text-xs text-muted uppercase tracking-wide">
+              <Label htmlFor={`${inputId}-year`} className="text-sm text-muted uppercase tracking-wide">
                 Year
               </Label>
               <Select

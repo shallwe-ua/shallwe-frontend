@@ -26,8 +26,9 @@ Single-source rules so every screen stays on the pared-back white + slate system
 
 ### Control & Button Scale
 
-- **Buttons** – `Button` sizes are locked to h-8/h-10/h-11 with coordinated padding. Mix sizes sparingly on the same view.
-- **Inputs/selects** – `Input`, `Select`, and form controls render at h-10 by default to align with medium buttons and keep forms compact.
+- **Buttons** – `Button` sizes are now h-9/h-10/h-11 (sm/md/lg) for better touch targets; mix sizes sparingly on the same view.
+- **Inputs/selects** – `Input`, `Select`, and similar controls sit at h-8 by default so they feel lighter than primary buttons.
+- **Typography** – Stick to three font sizes across the app: `text-base` for titles/body, `text-sm` for meta/hints, and `text-xs` is prohibited. No custom `[text-*]` or `text-lg` utilities.
 - **Cards/sections** – Card padding is capped at 1.25rem (header 1.25rem, content 1.25rem) to avoid huge gutters. Add internal `Stack` components if more breathing room is needed.
 
 ### Components

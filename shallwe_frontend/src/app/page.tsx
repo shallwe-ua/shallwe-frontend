@@ -111,9 +111,9 @@ export default function LandingPage() {
       fullWidth
       bleed
     >
-      <Stack gap="lg" className="page-shell mx-auto max-w-xl items-center text-center">
+      <Stack gap="sm" className="page-shell mx-auto max-w-xl items-center text-center">
         <Stack gap="xs">
-          <h1 className="text-[2.35rem] font-semibold leading-tight text-foreground sm:text-[2.75rem]">
+          <h1 className="text-base font-semibold leading-tight text-foreground">
             Meet a flatmate who lives the way you do
           </h1>
           <p className="text-base text-muted">
@@ -140,9 +140,9 @@ export default function LandingPage() {
               {isLoading ? 'Processing…' : 'Sign in with Google'}
             </Button>
 
-            <p className="text-center text-xs text-muted">
-              By continuing you agree to the Shallwe Terms and Privacy Policy.
-            </p>
+          <p className="text-center text-sm text-muted">
+            By continuing you agree to the Shallwe Terms and Privacy Policy.
+          </p>
           </CardContent>
         </Card>
       </Stack>

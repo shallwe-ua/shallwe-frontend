@@ -15,7 +15,7 @@ const gapClasses: Record<StackGap, string> = {
 }
 
 export const Stack = React.forwardRef<HTMLDivElement, StackProps>(
-  ({ className, gap = 'md', ...props }, ref) => {
+  ({ className, gap = 'sm', ...props }, ref) => {
     return <div ref={ref} className={cn('stack', gapClasses[gap], className)} {...props} />
   }
 )

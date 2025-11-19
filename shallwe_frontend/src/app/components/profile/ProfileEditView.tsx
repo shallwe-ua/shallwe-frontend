@@ -13,7 +13,6 @@ import Locations from '@/app/components/profile/Locations'
 import { ValidationResult, validators } from '@/lib/shallwe/profile/formstates/validators/common'
 import { TagsInput } from 'react-tag-input-component'
 import BirthDateSelect from './BirthDateSelect'
-import { Section } from '@/components/ui/section'
 import { Stack } from '@/components/ui/stack'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert } from '@/components/ui/alert'
@@ -285,8 +284,8 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
 
   // --- RENDER LOGIC ---
   return (
-    <Section as="div" className="bg-background-soft" fullWidth>
-      <Stack gap="lg" className="mx-auto w-full max-w-4xl">
+    <div className="bg-background-soft">
+      <Stack gap="sm" className="mx-auto w-full max-w-5xl">
         {apiError && !isFloatingApiErrorDismissed && (
           <Alert variant="destructive" className="flex items-center justify-between gap-4">
             <span>API Error: {apiError}</span>
@@ -296,15 +295,10 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           </Alert>
         )}
 
-        <Stack gap="xs">
-          <h2 className="text-xl font-semibold text-foreground">Edit your profile</h2>
-          <p className="text-sm text-muted">Update your info and save the changes below.</p>
-        </Stack>
-
         <Card>
-          <CardContent className="p-6">
-            <Stack gap="lg">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <CardContent className="p-4">
+            <Stack gap="sm">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <Stack gap="sm" className="items-center">
                   <ProfilePhotoPick
                     initialFile={editFormState.profile.photo}
@@ -314,23 +308,20 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     onCropComplete={handlePhotoCropped}
                     mode="edit"
                   />
-                <FormField label="Display Name" error={errors['profile.name']} className="w-full text-left">
-                  <Input
-                    value={editFormState.profile.name ?? ''}
-                    onChange={(e) => updateEditFormState('profile', 'name', e.target.value)}
-                  />
-                </FormField>
-                {errors['profile.photo'] && (
-                  <p className="text-sm text-destructive">{errors['profile.photo']}</p>
-                )}
-                <p className="text-sm text-muted text-center">
-                  {initialProfileData.profile.is_hidden ? 'Currently hidden from matches' : 'Visible to matches'}
-                </p>
-              </Stack>
+                  {errors['profile.photo'] && (
+                    <p className="text-sm text-destructive">{errors['profile.photo']}</p>
+                  )}
+                  <FormField label="Display Name" error={errors['profile.name']} className="w-full text-left">
+                    <Input
+                      value={editFormState.profile.name ?? ''}
+                      onChange={(e) => updateEditFormState('profile', 'name', e.target.value)}
+                    />
+                  </FormField>
+                </Stack>
 
         {/* Main Details */}
-        <div className="md:col-span-2">
-          <Stack gap="lg">
+                <div className="md:col-span-2">
+                  <Stack gap="sm">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
             <FormField label="Birth Date" error={errors['about.birth_date']}>
@@ -469,8 +460,8 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           </div>
 
           {/* Rent Preferences */}
-          <div className="mt-4 space-y-4 rounded-lg bg-surface-muted p-4">
-            <h3 className="text-lg font-medium text-foreground">Rent Preferences</h3>
+          <div className="space-y-3">
+            <h3 className="text-base font-semibold text-foreground">Rent Preferences</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <FormField label="Min Budget" error={errors['rent_preferences.min_budget']}>
                 <Input
@@ -600,8 +591,8 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           </div>
 
           {/* Other Details - Similar structure, add fields as needed */}
-          <div className="mt-4 p-4 bg-surface-muted rounded-lg">
-              <h3 className="text-lg font-medium text-foreground mb-2">Other Details</h3>
+          <div className="space-y-3">
+              <h3 className="text-base font-semibold text-foreground">Other Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 {/* Example: Neighbourliness Level */}
                 <FormField label="Neighbourliness Level" error={errors['about.neighbourliness_level']}>
@@ -876,7 +867,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       className={editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'ring-2 ring-destructive' : undefined}
                     />
                     <p
-                      className={`text-xs mt-1 ${
+                      className={`text-sm mt-1 ${
                         editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'text-destructive' : 'text-muted'
                       }`}
                     >
@@ -890,7 +881,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
       </div>
 
       {/* Save/Cancel Buttons */}
-      <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
+      <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-end">
         <Button variant="outline" onClick={onCancel} disabled={isSaving}>
           Cancel
         </Button>
@@ -902,6 +893,6 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           </CardContent>
         </Card>
       </Stack>
-    </Section>
+    </div>
   )
 }
