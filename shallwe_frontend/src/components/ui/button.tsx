@@ -11,14 +11,14 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantClasses: Record<ButtonVariant, string> = {
   default:
-    'bg-primary text-primary-foreground shadow-[var(--shadow-soft)] hover:bg-primary/90 focus-visible:ring-primary',
+    'bg-primary text-primary-foreground shadow-[var(--shadow-soft)] hover:bg-primary/90 hover:shadow-[var(--shadow-card)] focus-visible:ring-primary',
   secondary:
     'bg-secondary text-secondary-foreground border border-border hover:bg-secondary/80 focus-visible:ring-secondary',
   outline:
-    'border border-border text-foreground hover:bg-muted/30 focus-visible:ring-ring bg-card/80 backdrop-blur',
-  ghost: 'text-foreground hover:bg-muted/30 focus-visible:ring-ring',
+    'border border-border bg-card text-foreground hover:bg-primary/10 focus-visible:ring-primary',
+  ghost: 'text-foreground hover:bg-muted/40 focus-visible:ring-ring',
   destructive:
-    'bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive',
+    'bg-destructive text-destructive-foreground hover:bg-destructive/85 focus-visible:ring-destructive',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -33,7 +33,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         type={type}
         className={cn(
-          'inline-flex items-center justify-center rounded-[var(--radius-sm)] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ring-offset-background disabled:opacity-60 disabled:cursor-not-allowed',
+          'inline-flex items-center justify-center rounded-[var(--radius-sm)] font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ring-offset-background enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60',
           variantClasses[variant],
           sizeClasses[size],
           className

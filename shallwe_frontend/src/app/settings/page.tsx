@@ -1,7 +1,7 @@
 'use client'
 
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { getProfile, updateProfileVisibility } from '@/lib/shallwe/profile/api/calls' // Import read and visibility API calls
@@ -14,6 +14,11 @@ import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert } from '@/components/ui/alert'
+import { Stack } from '@/components/ui/stack'
+import { Section } from '@/components/ui/section'
+import { MetaPill } from '@/components/ui/meta-pill'
+import { FormField } from '@/components/ui/form-field'
+import { cn } from '@/lib/utils'
 
 
 interface DisplayLocation {
@@ -22,7 +27,7 @@ interface DisplayLocation {
 }
 
 
-export const prepareLocationsForDisplay = (locationsObject: LocationsReadFields): DisplayLocation[] => {
+const prepareLocationsForDisplay = (locationsObject: LocationsReadFields): DisplayLocation[] => {
   const displayItems: DisplayLocation[] = [];
 
   // Process Regions
@@ -72,6 +77,35 @@ export const prepareLocationsForDisplay = (locationsObject: LocationsReadFields)
 
   return displayItems;
 };
+
+type InfoItem = {
+  label: string
+  value: ReactNode
+  fullWidth?: boolean
+}
+
+const InfoGrid = ({ items }: { items: InfoItem[] }) => (
+  <div className="grid gap-4 md:grid-cols-2">
+    {items.map((item, index) => {
+      const resolvedValue = item.value ?? 'Not specified'
+      const isPrimitive = typeof resolvedValue === 'string' || typeof resolvedValue === 'number'
+
+      return (
+        <FormField
+          key={`${item.label}-${index}`}
+          label={item.label}
+          className={cn(item.fullWidth && 'md:col-span-2')}
+        >
+          {isPrimitive ? (
+            <p className="text-base font-medium text-foreground">{resolvedValue}</p>
+          ) : (
+            resolvedValue
+          )}
+        </FormField>
+      )
+    })}
+  </div>
+)
 
 
 export default function SettingsPage() {
@@ -224,7 +258,10 @@ export default function SettingsPage() {
   }
 
   // --- HELPER FUNCTIONS (Copied from ProfileReadView) ---
-  const formatBoolean = (value: boolean): string => (value ? 'Yes' : 'No')
+  const formatBoolean = (value: boolean | null | undefined): string => {
+    if (value === null || value === undefined) return 'Not specified'
+    return value ? 'Yes' : 'No'
+  }
 
   const formatLevel = (value: number | null, type: 'drinking' | 'smoking' | 'neighbourliness' | 'guests' | 'parties' | 'bedtime' | 'neatness' | 'duration' | 'room_sharing'): string => {
     if (value === null) return 'Not specified'
@@ -259,31 +296,31 @@ export default function SettingsPage() {
   }
 
   const joinArray = (items: string[] | undefined): string => {
-    return items ? items.join(', ') : 'None'
+    if (!items || items.length === 0) return 'None'
+    const value = items.join(', ').trim()
+    return value.length > 0 ? value : 'None'
   }
   // --- END HELPER FUNCTIONS ---
 
   // --- RENDER LOGIC ---
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8">
-        <Card className="w-full max-w-md">
-          <CardContent className="py-8 text-center text-muted">Loading your profile…</CardContent>
+      <Section as="div" className="min-h-screen flex items-center justify-center py-16" fullWidth>
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="py-8 text-muted">Loading your profile…</CardContent>
         </Card>
-      </div>
+      </Section>
     )
   }
 
   if (!profileData) {
-    // This state should ideally be handled by the error check in useEffect leading to a redirect,
-    // but render a message just in case.
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-8">
-        <Card className="w-full max-w-md space-y-4">
+      <Section as="div" className="min-h-screen flex items-center justify-center py-16" fullWidth>
+        <Card className="w-full max-w-md text-center">
           <CardHeader>
-            <CardTitle className="text-center">Profile not found</CardTitle>
+            <CardTitle>Profile not found</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 text-center">
+          <CardContent className="space-y-4">
             <p className="text-muted">We could not load your profile data.</p>
             {apiError && <Alert variant="destructive">{apiError}</Alert>}
             <Button onClick={() => router.push('/')} className="w-full">
@@ -291,16 +328,96 @@ export default function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </Section>
     )
   }
 
+  const processedLocations = profileData.rent_preferences.locations
+    ? prepareLocationsForDisplay(profileData.rent_preferences.locations)
+    : []
+
+  const animalsSummary =
+    [
+      profileData.about.has_cats && 'Cats',
+      profileData.about.has_dogs && 'Dogs',
+      profileData.about.has_reptiles && 'Reptiles',
+      profileData.about.has_birds && 'Birds',
+    ]
+      .filter(Boolean)
+      .join(', ') || 'None'
+
+  const aboutItems: InfoItem[] = [
+    { label: 'Birth Date', value: profileData.about.birth_date || 'Not specified' },
+    { label: 'Gender', value: formatGender(profileData.about.gender) },
+    { label: 'Is Couple', value: formatBoolean(profileData.about.is_couple) },
+    { label: 'Has Children', value: formatBoolean(profileData.about.has_children) },
+    { label: 'Occupation', value: formatOccupation(profileData.about.occupation_type) },
+    { label: 'Drinking Level', value: formatLevel(profileData.about.drinking_level, 'drinking') },
+    { label: 'Smoking Level', value: formatLevel(profileData.about.smoking_level, 'smoking') },
+  ]
+
+  if (profileData.about.smoking_level !== null && profileData.about.smoking_level > 1) {
+    aboutItems.push({
+      label: 'Smoking Types',
+      value:
+        formatSmokingTypes(
+          profileData.about.smokes_iqos,
+          profileData.about.smokes_vape,
+          profileData.about.smokes_tobacco,
+          profileData.about.smokes_cigs
+        ) || 'None',
+    })
+  }
+
+  const rentItems: InfoItem[] = [
+    { label: 'Min Budget', value: profileData.rent_preferences.min_budget ?? 'Not specified' },
+    { label: 'Max Budget', value: profileData.rent_preferences.max_budget ?? 'Not specified' },
+    {
+      label: 'Min Duration',
+      value: formatLevel(profileData.rent_preferences.min_rent_duration_level, 'duration'),
+    },
+    {
+      label: 'Max Duration',
+      value: formatLevel(profileData.rent_preferences.max_rent_duration_level, 'duration'),
+    },
+    {
+      label: 'Room Sharing',
+      value: formatLevel(profileData.rent_preferences.room_sharing_level, 'room_sharing'),
+    },
+  ]
+
+  const lifestyleItems: InfoItem[] = [
+    {
+      label: 'Neighbourliness',
+      value: formatLevel(profileData.about.neighbourliness_level, 'neighbourliness'),
+    },
+    { label: 'Guests Level', value: formatLevel(profileData.about.guests_level, 'guests') },
+    { label: 'Parties Level', value: formatLevel(profileData.about.parties_level, 'parties') },
+    { label: 'Bedtime Level', value: formatLevel(profileData.about.bedtime_level, 'bedtime') },
+    { label: 'Neatness Level', value: formatLevel(profileData.about.neatness_level, 'neatness') },
+    { label: 'Animals', value: animalsSummary, fullWidth: true },
+    { label: 'Other Animals', value: joinArray(profileData.about.other_animals), fullWidth: true },
+    { label: 'Interests', value: joinArray(profileData.about.interests), fullWidth: true },
+    {
+      label: 'Bio',
+      value: (
+        <p className="text-base font-medium text-foreground break-words whitespace-pre-line">
+          {profileData.about.bio?.trim() || 'Not specified'}
+        </p>
+      ),
+      fullWidth: true,
+    },
+  ]
+
   // --- MAIN RENDER (Profile Data Loaded) ---
   return (
-    <div className="min-h-screen py-10">
-      <div className="page-shell max-w-5xl space-y-6">
+    <Section as="div" className="min-h-screen pb-16 pt-12" fullWidth>
+      <Stack gap="lg" className="mx-auto w-full max-w-5xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-foreground">Your Profile Settings</h1>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Your Profile Settings</h1>
+            <p className="text-sm text-muted">Review your profile, visibility, and account status.</p>
+          </div>
           {!isEditing && (
             <Button onClick={handleEditClick} size="sm">
               Edit
@@ -310,7 +427,7 @@ export default function SettingsPage() {
 
         {apiError && <Alert variant="destructive">Error: {apiError}</Alert>}
 
-        <Card className="border-border/80">
+        <Card className="border border-border/70">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
             <span className="text-sm font-medium text-foreground">
               Profile Visibility:{' '}
@@ -331,254 +448,142 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Profile Data Display */}
         {isEditing ? (
-            <ProfileEditView
-                initialProfileData={profileData!} // Pass the loaded profile data
-                onSave={handleEditSave}           // Pass the save handler
-                onCancel={handleEditCancel}       // Pass the cancel handler
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Photo and Basic Info */}
-              <div className="md:col-span-1 flex flex-col items-center"> {/* Added flex container for centering text fallback */}
+          <ProfileEditView
+            initialProfileData={profileData!}
+            onSave={handleEditSave}
+            onCancel={handleEditCancel}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <Card className="text-center md:col-span-1">
+              <CardContent className="flex flex-col items-center gap-3">
                 <PhotoWithFallbacks
-                  src={profileData.profile.photo_w192 || ''} // Pass the photo URL or empty string
+                  src={profileData.profile.photo_w192 || ''}
                   alt={`Profile picture of ${profileData.profile.name}`}
-                  className="w-32 h-32 rounded-full object-cover mx-auto" // Pass Tailwind classes
+                  className="h-32 w-32 rounded-full object-cover"
                 />
-                <h2 className="text-xl font-semibold text-center mt-2">{profileData.profile.name}</h2>
-                <p className="text-gray-600 text-center">({profileData.profile.is_hidden ? 'Hidden' : 'Visible'})</p>
-              </div>
+                <Stack gap="xs" className="w-full text-center">
+                  <h2 className="text-xl font-semibold">{profileData.profile.name}</h2>
+                  <p className="text-sm text-muted">
+                    {profileData.profile.is_hidden ? 'Profile Hidden' : 'Profile Visible'}
+                  </p>
+                </Stack>
+              </CardContent>
+            </Card>
 
-              {/* Main Details */}
-              <div className="md:col-span-2 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Birth Date</p>
-                    <p className="font-medium">{profileData.about.birth_date || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Gender</p>
-                    <p className="font-medium">{formatGender(profileData.about.gender)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Is Couple</p>
-                    <p className="font-medium">{formatBoolean(profileData.about.is_couple)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Has Children</p>
-                    <p className="font-medium">{formatBoolean(profileData.about.has_children)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Occupation</p>
-                    <p className="font-medium">{formatOccupation(profileData.about.occupation_type)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Drinking Level</p>
-                    <p className="font-medium">{formatLevel(profileData.about.drinking_level, 'drinking')}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Smoking Level</p>
-                    <p className="font-medium">{formatLevel(profileData.about.smoking_level, 'smoking')}</p>
-                  </div>
-                  {/* Add Smoking Type List */}
-                  {profileData.about.smoking_level !== null && profileData.about.smoking_level > 1 && (
-                    <div>
-                      <p className="text-sm text-gray-500">Smoking Types</p>
-                      <p className="font-medium text-gray-900"> {/* Standard text color, not indigo */}
-                        {formatSmokingTypes(
-                          profileData.about.smokes_iqos,
-                          profileData.about.smokes_vape,
-                          profileData.about.smokes_tobacco,
-                          profileData.about.smokes_cigs
-                        )}
-                      </p>
-                    </div>
-                  )}
+            <Card className="md:col-span-2">
+              <CardContent className="stack stack-lg">
+                <Stack gap="xs">
+                  <h3 className="text-lg font-semibold text-foreground">About you</h3>
+                  <p className="text-sm text-muted">Core identity details visible to your matches.</p>
+                </Stack>
+                <InfoGrid items={aboutItems} />
+
+                <div className="border-t border-border/60 pt-6">
+                  <Stack gap="md">
+                    <Stack gap="xs">
+                      <h3 className="text-lg font-semibold text-foreground">Rent preferences</h3>
+                      <p className="text-sm text-muted">Budget, duration, and areas you selected.</p>
+                    </Stack>
+                    <InfoGrid items={rentItems} />
+                    <FormField label="Locations">
+                      {processedLocations.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {processedLocations.map((item: DisplayLocation, index: number) => (
+                            <MetaPill
+                              key={`${item.type}-${index}`}
+                              className="normal-case text-xs font-medium tracking-normal"
+                            >
+                              {item.displayName}
+                            </MetaPill>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-base font-medium text-muted">Вся Україна (Default)</p>
+                      )}
+                    </FormField>
+                  </Stack>
                 </div>
 
-                {/* Rent Preferences */}
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Rent Preferences</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">Min Budget</p>
-                      <p className="font-medium">{profileData.rent_preferences.min_budget}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Max Budget</p>
-                      <p className="font-medium">{profileData.rent_preferences.max_budget}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Min Duration</p>
-                      <p className="font-medium">{formatLevel(profileData.rent_preferences.min_rent_duration_level, 'duration')}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Max Duration</p>
-                      <p className="font-medium">{formatLevel(profileData.rent_preferences.max_rent_duration_level, 'duration')}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Room Sharing</p>
-                      <p className="font-medium">{formatLevel(profileData.rent_preferences.room_sharing_level, 'room_sharing')}</p>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                      <p className="text-sm text-gray-500">Locations</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                          {profileData.rent_preferences.locations ? (
-                            // Call the function to get the processed array
-                            prepareLocationsForDisplay(profileData.rent_preferences.locations).length > 0 ? (
-                              // Map over the processed array
-                              prepareLocationsForDisplay(profileData.rent_preferences.locations).map(
-                                (item: DisplayLocation, index: number) => (
-                                  <span
-                                    key={`${item.type}-${index}`} // Use type and index for a more specific key
-                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-                                  >
-                                    {item.displayName} {/* Render the pre-formatted display name */}
-                                  </span>
-                                )
-                              )
-                            ) : (
-                              // Or show default if the processed array is empty
-                              <p className="text-gray-600">Вся Україна (Default)</p>
-                            )
-                          ) : (
-                            // Handle case where profileData.rent_preferences.locations is null/undefined
-                            <p className="text-gray-600">Вся Україна (Default)</p>
-                          )}
-                      </div>
-                  </div>
+                <div className="border-t border-border/60 pt-6">
+                  <Stack gap="md">
+                    <Stack gap="xs">
+                      <h3 className="text-lg font-semibold text-foreground">Lifestyle & interests</h3>
+                      <p className="text-sm text-muted">Habits, animals, and a quick bio snapshot.</p>
+                    </Stack>
+                    <InfoGrid items={lifestyleItems} />
+                  </Stack>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-                {/* Other Details */}
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Other Details</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">Neighbourliness</p>
-                      <p className="font-medium">{formatLevel(profileData.about.neighbourliness_level, 'neighbourliness')}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Guests Level</p>
-                      <p className="font-medium">{formatLevel(profileData.about.guests_level, 'guests')}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Parties Level</p>
-                      <p className="font-medium">{formatLevel(profileData.about.parties_level, 'parties')}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Bedtime Level</p>
-                      <p className="font-medium">{formatLevel(profileData.about.bedtime_level, 'bedtime')}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Neatness Level</p>
-                      <p className="font-medium">{formatLevel(profileData.about.neatness_level, 'neatness')}</p>
-                    </div>
-                    {/* Pet Checkboxes - Display as a list */}
-                    <div className="col-span-2"> {/* Use col-span-2 to make it full width */}
-                      <p className="text-sm text-gray-500">Animals</p>
-                      <p className="font-medium text-gray-900"> {/* Standard text color */}
-                        {[
-                          profileData.about.has_cats && 'Cats',
-                          profileData.about.has_dogs && 'Dogs',
-                          profileData.about.has_reptiles && 'Reptiles',
-                          profileData.about.has_birds && 'Birds',
-                        ].filter(Boolean).join(', ') || 'None'} {/* Filter out falsy values and join, default to 'None' */}
-                      </p>
-                    </div>
-                    <div className="col-span-2">
-                      <p className="text-sm text-gray-500">Other Animals</p>
-                      <p className="font-medium">{joinArray(profileData.about.other_animals)}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <p className="text-sm text-gray-500">Interests</p>
-                      <p className="font-medium">{joinArray(profileData.about.interests)}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <p className="text-sm text-gray-500">Bio</p>
-                      <p className="font-medium break-words">{profileData.about.bio || 'Not specified'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-
-        {/* Delete Button */}
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-end">
           <Button variant="destructive" onClick={() => setIsDeleteModalOpen(true)} size="sm">
             Delete Profile & Account
           </Button>
         </div>
-      </div>
+      </Stack>
 
-      {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed z-50 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            {/* Overlay: Semi-transparent background - Ensure it dims the content */}
-            {/* Use fixed positioning, cover the screen, and apply opacity for dimming */}
-            <div 
-              className="fixed inset-0 bg-gray-500 transition-opacity" 
-              style={{ opacity: 0.75 }} // Explicitly set opacity to ensure dimming effect
-              aria-hidden="true"
-              // Optional: Add an onClick handler here to close the modal when clicking the overlay
-              // onClick={() => setIsDeleteModalOpen(false)}
-            >
-            </div>
-
-            {/* Spacer element for vertical centering (hidden) */}
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203</span>
-
-            {/* Main Modal Content Container - Ensure it's above the overlay */}
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-[51]"> {/* Increased z-index slightly to ensure it's above the overlay */}
-              {/* Inner Content Div */}
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                      Delete Profile & Account
-                    </h3>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        Are you sure you want to delete your profile and account? This action cannot be undone. All your data will be permanently removed.
-                      </p>
-                    </div>
-                  </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
+          <div
+            className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
+            aria-hidden="true"
+            onClick={() => setIsDeleteModalOpen(false)}
+          />
+          <Card className="relative z-10 w-full max-w-lg">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                  <svg
+                    className="h-6 w-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Delete Profile & Account</CardTitle>
+                  <p className="text-sm text-muted">
+                    This action cannot be undone. All your data will be permanently removed.
+                  </p>
                 </div>
               </div>
-              {/* Footer with Buttons */}
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <Button
-                  type="button"
-                  onClick={handleDeleteConfirm}
-                  disabled={isDeleting}
-                  variant="destructive"
-                  className="w-full sm:w-auto"
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDeleteModalOpen(false)} // Close the modal
-                  className="mt-3 w-full sm:mt-0 sm:ml-3 sm:w-auto"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
+            </CardHeader>
+            <CardContent className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => setIsDeleteModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                variant="destructive"
+                className="w-full sm:w-auto"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       )}
-    </div>
+    </Section>
   )
 }

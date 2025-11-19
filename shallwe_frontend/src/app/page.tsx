@@ -6,6 +6,8 @@ import { CSSProperties, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert } from '@/components/ui/alert'
+import { Stack } from '@/components/ui/stack'
+import { Section } from '@/components/ui/section'
 import { env } from '@/config/env'
 import { loginGoogle } from '@/lib/shallwe/auth/api/calls'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
@@ -100,7 +102,7 @@ export default function LandingPage() {
   }, [handleBackendAuth])
 
   return (
-    <div className="relative min-h-screen pb-16 pt-20 flex items-start">
+    <Section className="relative min-h-screen pt-20 pb-16 flex items-start" as="div" fullWidth bleed>
       <div className="bg-ornaments">
         <div className="bg-orb bg-orb--blue" style={{ top: '-120px', left: '-80px' }} />
         <div className="bg-orb bg-orb--peach" style={{ bottom: '-160px', right: '-60px' }} />
@@ -123,8 +125,8 @@ export default function LandingPage() {
           </div>
         </div>
 
-      <div className="page-shell relative z-10 max-w-xl mx-auto flex flex-col items-center gap-12 text-center">
-        <div className="space-y-4 pt-4">
+      <Stack gap="lg" className="page-shell relative z-10 max-w-xl mx-auto items-center text-center">
+        <Stack gap="sm" className="pt-4">
           <h1 className="text-[2.45rem] font-semibold leading-tight text-foreground sm:text-[2.75rem]">
             Find a flatmate who matches how you live.
           </h1>
@@ -132,9 +134,9 @@ export default function LandingPage() {
             Answer a few questions, build a detailed profile, and review photo-verified matches before
             you commit to a lease.
           </p>
-        </div>
+        </Stack>
 
-        <Card className="w-full max-w-xl border-border/80 shadow-lg">
+        <Card className="w-full max-w-xl card-shell border border-border/70">
           <CardHeader>
             <CardTitle>Continue with Google</CardTitle>
             <CardDescription>Sign in to start your profile in under 60 seconds.</CardDescription>
@@ -143,6 +145,7 @@ export default function LandingPage() {
             {error && <Alert variant="destructive">{error}</Alert>}
 
             <Button
+              variant="outline"
               onClick={openGoogleLogin}
               disabled={isLoading}
               className="w-full gap-2"
@@ -157,8 +160,8 @@ export default function LandingPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </Stack>
+    </Section>
   )
 }
 

@@ -1,31 +1,48 @@
-## Shallwe UI Primitives (v0.1)
+## Shallwe UI Primitives (v0.2)
 
-Lightweight rules so every screen uses the same blue/peach foundation.
+Single-source rules so every screen stays on the blue/peach system and on the shadcn/Radix rails.
 
 ### Semantic Tokens
 
-- **Colors** – Always consume Tailwind’s shadcn tokens:
-  - Surface: `bg-background`, `bg-card`
-  - Text: `text-foreground`, `text-muted-foreground`
-  - Accent/brand: `bg-primary`, `text-primary` (soft blue) and `bg-secondary` (peach).
-- **Borders & inputs** – `border-border`, `bg-muted/20` for subtle fills.
-- **Radii** – Use `rounded-[var(--radius-sm)]` for buttons + inputs, `rounded-[var(--radius-lg)]` for cards/sections.
-- **Shadows** – Prefer `shadow-[var(--shadow-card)]` or `shadow-[var(--shadow-soft)]`; avoid Tailwind defaults unless matching exactly.
+- **Colors** – Only use the Tailwind tokens generated from `@theme` in `src/app/globals.css`:
+  - Surfaces → `bg-background`, `bg-card`
+  - Text → `text-foreground`, `text-muted-foreground`
+  - Accent/brand → `bg-primary`, `text-primary`, `bg-secondary`
+- **Borders & inputs** – `border-border`, `bg-muted/20`, `ring-primary`.
+- **Radii** – `rounded-[var(--radius-sm)]` for controls, `rounded-[var(--radius-lg)]` for sections/cards.
+- **Shadows** – `shadow-[var(--shadow-soft)]` or `shadow-[var(--shadow-card)]` only.
 
 ### Layout Helpers
 
 - `.page-shell` – centers content with `--space-page-inline`.
-- `.section-shell` – adds vertical breathing room (use for hero/setup sections).
-- `.card-shell` – elevated container for multi-step forms or highlight panels.
-- `.surface-chip` – small pill for metadata badges; don’t invent new pill styles.
+- `.section-shell` – section spacing wrapper; use `fullWidth`/`bleed` props via `Section`.
+- `.card-shell` – elevated container for highlight panels.
+- `.surface-chip` – metadata badge background.
+- `.stack*` + `.form-field` – spacing primitives for vertical rhythm.
 
 ### Components
 
-- Buttons/alerts/cards should use the primitives from `src/components/ui/*` (no custom Tailwind stacks).
+- All new UI **must** import from `src/components/ui/*` (Button, Card, Alert, Input, Stack, Section, FormField, MetaPill). Do not hand-roll Tailwind blobs inside pages.
 - Inputs + textareas inherit `--radius-sm`, `bg-card`, `ring-primary`.
-- When a component needs a new semantic color, add it as a CSS variable first, then expose through Tailwind—no direct hex values inside JSX.
+- To introduce a new semantic color/spacing token: add it to `@theme` in `globals.css`, re-run Tailwind, then surface it via the UI primitives. Never drop raw hex/HSL directly into JSX.
+
+### Guardrails for Contributors (LLMs included)
+
+1. **Only one theme** – no dark-mode overrides, no alternative palettes.
+2. **No raw HTML buttons/links** – always wrap the shadcn/Radix component, even for temporary work.
+3. **No custom gradients or shadows** – extend the token set if something is missing instead of inlining values.
+4. **Layouts go through shells** – hero/section layouts must use `Section`, `Stack`, `.page-shell`, etc.
+5. **Zero ad-hoc CSS** – style changes belong either in `globals.css` utilities or inside the shared primitives. Pages/components should only compose existing classes.
+
+### Self-check Before Shipping
+
+1. Re-read the [official shadcn docs](https://ui.shadcn.com/docs) checklist: verify components stay inside `src/components/ui` and rely on Tailwind tokens.
+2. Run `npm run lint` and `npm run build -- --no-lint`; builds must pass before review.
+3. Inspect the page in the browser, toggling devtools to confirm no raw `#hex` or inline styles slipped in.
+4. Ensure any new primitive updates `STYLE_GUIDE.md` and is referenced from `PROGRES.md` if it adds a new guardrail.
+5. When touching generated shadcn files, note the change in the PR/commit so future CLI syncs know what diverged.
 
 ### Notes
 
-- Dark theme mirrors the same tokens; avoid hardcoded light-only colors.
-- Keep backgrounds airy: prefer gradients with `color-mix` or `bg-accent/40` overlays over solid white blocks.
+- Landing + setup pages are the reference implementations—mirror their usage patterns everywhere else.
+- Keep backgrounds airy: use the provided gradients/ornaments (`bg-ornaments`, `.bg-orb`) instead of inventing new assets.

@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { TagsInput } from "react-tag-input-component"
+import { TagsInput } from 'react-tag-input-component'
 
 import ProfilePhotoPick from '../components/profile/ProfilePhotoPick'
 import Locations from '../components/profile/Locations'
@@ -19,6 +19,13 @@ import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
 import { createProfile } from '@/lib/shallwe/profile/api/calls'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 import BirthDateSelect from '../components/profile/BirthDateSelect'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Alert } from '@/components/ui/alert'
+import { Section } from '@/components/ui/section'
+import { Stack } from '@/components/ui/stack'
+import { FormField } from '@/components/ui/form-field'
+import { cn } from '@/lib/utils'
 
 
 // Dividing visual flow in steps for better UX
@@ -26,6 +33,37 @@ const STEPS = [
   { id: 'profile', name: 'Basic Info' },
   { id: 'about', name: 'About You' },
   { id: 'preferences', name: 'Rent Preferences' },
+]
+
+const fieldControlClass =
+  'h-11 w-full rounded-lg border border-border/70 bg-card px-3 text-sm text-foreground shadow-sm placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60'
+
+const textareaControlClass =
+  'w-full rounded-lg border border-border/70 bg-card px-3 py-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60'
+
+const tagInputWrapperClass = 'rounded-lg border border-border/70 bg-card px-3 py-2'
+
+const tagInputClassNames = {
+  tag: 'rounded-md bg-primary/10 px-2 py-1 text-sm text-primary',
+  input:
+    'mt-0 block w-full border-0 bg-transparent p-0 text-sm text-foreground placeholder:text-muted focus:outline-none',
+}
+
+type SmokingField = 'smokes_iqos' | 'smokes_vape' | 'smokes_tobacco' | 'smokes_cigs'
+type AnimalField = 'has_cats' | 'has_dogs' | 'has_reptiles' | 'has_birds'
+
+const smokingTypeOptions: { id: string; label: string; field: SmokingField }[] = [
+  { id: 'smokes_iqos', label: 'IQOS', field: 'smokes_iqos' },
+  { id: 'smokes_vape', label: 'Vape', field: 'smokes_vape' },
+  { id: 'smokes_tobacco', label: 'Tobacco', field: 'smokes_tobacco' },
+  { id: 'smokes_cigs', label: 'Cigarettes', field: 'smokes_cigs' },
+]
+
+const animalOptions: { id: string; label: string; field: AnimalField }[] = [
+  { id: 'has_cats', label: 'Cats', field: 'has_cats' },
+  { id: 'has_dogs', label: 'Dogs', field: 'has_dogs' },
+  { id: 'has_reptiles', label: 'Reptiles', field: 'has_reptiles' },
+  { id: 'has_birds', label: 'Birds', field: 'has_birds' },
 ]
 
 
@@ -303,132 +341,110 @@ export default function ProfileSetupPage() {
       // Step 1 Basic info
       case 0:
         return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Profile Details</h2>
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Name (Cyrillic only)
-              </label>
+          <Stack gap="lg">
+            <h2 className="text-xl font-semibold text-foreground">Profile Details</h2>
+            <FormField
+              label="Name (Cyrillic only)"
+              error={errors['profile.name']}
+              required
+            >
               <input
                 type="text"
                 id="name"
-                value={formState.profile.name ?? ''} // Use ?? '' to handle null
-                onChange={(e) => updateFormState('profile', 'name', e.target.value || null)} // Convert empty string back to null if needed, though the ?? '' handles display
-                className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                  errors['profile.name'] ? 'border-red-500' : ''
-                }`}
+                value={formState.profile.name ?? ''}
+                onChange={(e) => updateFormState('profile', 'name', e.target.value || null)}
+                className="w-full rounded-md border border-border bg-card p-3 text-sm focus:border-primary focus:ring-primary"
               />
-              {errors['profile.name'] && <p className="mt-1 text-sm text-red-600">{errors['profile.name']}</p>}
-            </div>
+            </FormField>
 
-            <div>
+            <FormField
+              label="Profile Photo"
+              description="Square images crop best."
+              error={errors['profile.photo']}
+            >
               <ProfilePhotoPick
-                initialFile={formState.profile.photo} // Pass the current photo if editing
+                initialFile={formState.profile.photo}
                 onError={handlePhotoError}
                 onClearError={clearPhotoError}
                 onCropComplete={handlePhotoCropped}
-                // Removed formState and fieldPath props
               />
-              {/* Display central validation error for photo if it exists (e.g., required but not set after crop) */}
-              {/* This error will appear if the user proceeds without a valid photo after the component's internal checks */}
-              {errors['profile.photo'] && <p className="mt-1 text-sm text-red-600">{errors['profile.photo']}</p>}
-            </div>
-          </div>
+            </FormField>
+          </Stack>
         )
       
       // Step 2 About
       case 1:
         return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">About You</h2>
+          <Stack gap="lg">
+            <h2 className="text-xl font-semibold text-foreground">About You</h2>
 
-            {/* Required fields (birth_date, gender, is_couple, has_children) remain outside the accordion */}
-            <BirthDateSelect
-              inputId="birth_date"
-              currentValue={formState.about.birth_date} // Pass the string value from state
-              onChange={(dateString) => updateFormState('about', 'birth_date', dateString)} // Pass the update handler
-              error={errors['about.birth_date']} // Pass the error message
-              className={`${errors['about.birth_date'] ? 'border-red-500' : ''}`} // Pass specific Tailwind classes if needed
-            />
+            <FormField label="Birth Date" error={errors['about.birth_date']} required>
+              <BirthDateSelect
+                inputId="birth_date"
+                currentValue={formState.about.birth_date}
+                onChange={(dateString) => updateFormState('about', 'birth_date', dateString)}
+              />
+            </FormField>
 
-            {/* Gender */}
-            <div>
-              <fieldset>
-                <legend className="text-sm font-medium text-gray-700">Gender</legend>
-                <div className="mt-1 space-y-2">
-                  {[
-                    { id: 'gender_male', value: 1, label: 'Male' },
-                    { id: 'gender_female', value: 2, label: 'Female' },
-                  ].map((option) => (
-                    <div key={option.id} className="flex items-center">
-                      <input
-                        id={option.id}
-                        name="gender"
-                        type="radio"
-                        checked={formState.about.gender === option.value}
-                        onChange={() => updateFormState('about', 'gender', option.value as 1 | 2)}
-                        className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <label htmlFor={option.id} className="ml-3 block text-sm text-gray-700">
-                        {option.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-                {errors['about.gender'] && (
-                  <p className="mt-1 text-sm text-red-600">{errors['about.gender']}</p>
-                )}
-              </fieldset>
-            </div>
-
-            {/* Is Couple */}
-            <div className="flex flex-col mt-2">
-              <div className="flex items-center">
-                <input
-                  id="is_couple"
-                  type="checkbox"
-                  checked={formState.about.is_couple === true}
-                  onChange={(e) => updateFormState('about', 'is_couple', e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <label htmlFor="is_couple" className="ml-2 block text-sm text-gray-700">
-                  Is Couple
-                </label>
+            <FormField label="Gender" error={errors['about.gender']} required>
+              <div className="space-y-2">
+                {[
+                  { id: 'gender_male', value: 1, label: 'Male' },
+                  { id: 'gender_female', value: 2, label: 'Female' },
+                ].map((option) => (
+                  <label key={option.id} htmlFor={option.id} className="flex items-center gap-2 text-sm text-muted">
+                    <input
+                      id={option.id}
+                      name="gender"
+                      type="radio"
+                      checked={formState.about.gender === option.value}
+                      onChange={() => updateFormState('about', 'gender', option.value as 1 | 2)}
+                      className="h-4 w-4 border-border text-primary focus:ring-primary"
+                    />
+                    {option.label}
+                  </label>
+                ))}
               </div>
-              {errors['about.is_couple'] && (
-                <p className="mt-1 text-sm text-red-600">{errors['about.is_couple']}</p>
-              )}
-            </div>
+            </FormField>
 
-            {/* Has Children */}
-            <div className="flex flex-col mt-2">
-              <div className="flex items-center">
-                <input
-                  id="has_children"
-                  type="checkbox"
-                  checked={formState.about.has_children === true}
-                  onChange={(e) => updateFormState('about', 'has_children', e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <label htmlFor="has_children" className="ml-2 block text-sm text-gray-700">
-                  Has Children
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField label="Applying as a couple" error={errors['about.is_couple']}>
+                <label htmlFor="is_couple" className="flex items-center gap-2 text-sm text-muted">
+                  <input
+                    id="is_couple"
+                    type="checkbox"
+                    checked={formState.about.is_couple === true}
+                    onChange={(e) => updateFormState('about', 'is_couple', e.target.checked)}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  Yes, we’re a couple
                 </label>
-              </div>
-              {errors['about.has_children'] && (
-                <p className="mt-1 text-sm text-red-600">{errors['about.has_children']}</p>
-              )}
+              </FormField>
+
+              <FormField label="Children living with you" error={errors['about.has_children']}>
+                <label htmlFor="has_children" className="flex items-center gap-2 text-sm text-muted">
+                  <input
+                    id="has_children"
+                    type="checkbox"
+                    checked={formState.about.has_children === true}
+                    onChange={(e) => updateFormState('about', 'has_children', e.target.checked)}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  Kids live with me
+                </label>
+              </FormField>
             </div>
 
             {/* Optional Fields Accordion */}
-            <div className="border border-gray-200 rounded-md">
+            <Card className="border border-border/70">
               <button
                 type="button"
                 onClick={() => setIsAboutAccordionOpen(!isAboutAccordionOpen)}
-                className="w-full flex justify-between items-center p-4 text-left focus:outline-none"
+                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-card/80 focus:outline-none"
               >
-                <span className="text-sm font-medium text-gray-700">Optional Details</span>
+                <span>Optional Details</span>
                 <svg
-                  className={`h-5 w-5 text-gray-400 transform ${isAboutAccordionOpen ? 'rotate-180' : ''}`}
+                  className={cn('h-5 w-5 text-muted transition-transform', isAboutAccordionOpen && 'rotate-180')}
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -442,464 +458,364 @@ export default function ProfileSetupPage() {
                 </svg>
               </button>
               {isAboutAccordionOpen && (
-                <div className="p-4 space-y-4 border-t border-gray-200">
-                  {/* occupation_type (select) */}
-                  <div>
-                    <label htmlFor="occupation_type" className="block text-sm font-medium text-gray-700">
-                      Occupation Type
-                    </label>
-                    <select
-                      id="occupation_type"
-                      value={formState.about.occupation_type ?? ''}
-                      onChange={(e) => updateFormState('about', 'occupation_type', e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.occupation_type'] ? 'border-red-500' : ''
-                      }`}
-                    >
-                      <option value="">Select...</option>
-                      <option value="1">Employed</option>
-                      <option value="2">Student</option>
-                      <option value="3">Unemployed</option>
-                      <option value="4">Retired</option>
-                    </select>
-                    {errors['about.occupation_type'] && <p className="mt-1 text-sm text-red-600">{errors['about.occupation_type']}</p>}
+                <CardContent className="stack stack-lg border-t border-border/60 px-4 py-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField label="Occupation Type" error={errors['about.occupation_type']}>
+                      <select
+                        id="occupation_type"
+                        value={formState.about.occupation_type ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'occupation_type',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
+                          )
+                        }
+                        className={fieldControlClass}
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Employed</option>
+                        <option value="2">Student</option>
+                        <option value="3">Unemployed</option>
+                        <option value="4">Retired</option>
+                      </select>
+                    </FormField>
+
+                    <FormField label="Drinking Level" error={errors['about.drinking_level']}>
+                      <select
+                        id="drinking_level"
+                        value={formState.about.drinking_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'drinking_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
+                          )
+                        }
+                        className={fieldControlClass}
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Never</option>
+                        <option value="2">Rarely</option>
+                        <option value="3">Socially</option>
+                        <option value="4">Often</option>
+                      </select>
+                    </FormField>
+
+                    <FormField label="Smoking Level" error={errors['about.smoking_level']}>
+                      <select
+                        id="smoking_level"
+                        value={formState.about.smoking_level ?? ''}
+                        onChange={(e) =>
+                          updateSmokingLevelAndClearTypes(
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
+                          )
+                        }
+                        className={fieldControlClass}
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Never</option>
+                        <option value="2">Rarely</option>
+                        <option value="3">Socially</option>
+                        <option value="4">Often</option>
+                      </select>
+                    </FormField>
                   </div>
 
-                  {/* drinking_level (select) */}
-                  <div>
-                    <label htmlFor="drinking_level" className="block text-sm font-medium text-gray-700">
-                      Drinking Level
-                    </label>
-                    <select
-                      id="drinking_level"
-                      value={formState.about.drinking_level ?? ''}
-                      onChange={(e) => updateFormState('about', 'drinking_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.drinking_level'] ? 'border-red-500' : ''
-                      }`}
-                    >
-                      <option value="">Select...</option>
-                      <option value="1">Never</option>
-                      <option value="2">Rarely</option>
-                      <option value="3">Socially</option>
-                      <option value="4">Often</option>
-                    </select>
-                    {errors['about.drinking_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.drinking_level']}</p>}
-                  </div>
-
-                  {/* smoking_level (select) */}
-                  <div>
-                    <label htmlFor="smoking_level" className="block text-sm font-medium text-gray-700">
-                      Smoking Level
-                    </label>
-                    <select
-                      id="smoking_level"
-                      value={formState.about.smoking_level ?? ''}
-                      onChange={(e) => updateSmokingLevelAndClearTypes(e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.smoking_level'] ? 'border-red-500' : ''
-                      }`}
-                    >
-                      <option value="">Select...</option>
-                      <option value="1">Never</option>
-                      <option value="2">Rarely</option>
-                      <option value="3">Socially</option>
-                      <option value="4">Often</option>
-                    </select>
-                    {errors['about.smoking_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.smoking_level']}</p>}
-                  </div>
-
-                  {/* Smoking Type Checkboxes (Conditional based on smoking_level) */}
                   {formState.about.smoking_level !== null && formState.about.smoking_level > 1 && (
-                    <div className="col-span-2 mt-2"> {/* Use col-span-2 to span full width, add top margin */}
-                      <p className="text-sm font-medium text-gray-700 mb-1">Smoking Types:</p> {/* Label for the group */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2"> {/* Grid layout: 1 column on mobile, 2 on small screens, 4 on medium+ screens */}
-                        <div className="flex items-center">
-                          <input
-                            id="smokes_iqos"
-                            type="checkbox"
-                            checked={formState.about.smokes_iqos === true}
-                            onChange={(e) => updateFormState('about', 'smokes_iqos', e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <label htmlFor="smokes_iqos" className="ml-2 block text-sm text-gray-700">
-                            IQOS
+                    <FormField label="Smoking Types" hint="Select all that apply">
+                      <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4">
+                        {smokingTypeOptions.map((item) => (
+                          <label key={item.id} htmlFor={item.id} className="flex items-center gap-2 text-sm text-muted">
+                            <input
+                              id={item.id}
+                              type="checkbox"
+                              checked={formState.about[item.field] === true}
+                              onChange={(e) => updateFormState('about', item.field, e.target.checked)}
+                              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                            />
+                            {item.label}
                           </label>
-                        </div>
-                        <div className="flex items-center">
-                          <input
-                            id="smokes_vape"
-                            type="checkbox"
-                            checked={formState.about.smokes_vape === true}
-                            onChange={(e) => updateFormState('about', 'smokes_vape', e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <label htmlFor="smokes_vape" className="ml-2 block text-sm text-gray-700">
-                            Vape
-                          </label>
-                        </div>
-                        <div className="flex items-center">
-                          <input
-                            id="smokes_tobacco"
-                            type="checkbox"
-                            checked={formState.about.smokes_tobacco === true}
-                            onChange={(e) => updateFormState('about', 'smokes_tobacco', e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <label htmlFor="smokes_tobacco" className="ml-2 block text-sm text-gray-700">
-                            Tobacco
-                          </label>
-                        </div>
-                        <div className="flex items-center">
-                          <input
-                            id="smokes_cigs"
-                            type="checkbox"
-                            checked={formState.about.smokes_cigs === true}
-                            onChange={(e) => updateFormState('about', 'smokes_cigs', e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <label htmlFor="smokes_cigs" className="ml-2 block text-sm text-gray-700">
-                            Cigarettes
-                          </label>
-                        </div>
-                        </div>
-                    </div>
+                        ))}
+                      </div>
+                    </FormField>
                   )}
 
-                  {/* neighbourliness_level (select) */}
-                  <div>
-                    <label htmlFor="neighbourliness_level" className="block text-sm font-medium text-gray-700">
-                      Neighbourliness Level
-                    </label>
-                    <select
-                      id="neighbourliness_level"
-                      value={formState.about.neighbourliness_level ?? ''}
-                      onChange={(e) => updateFormState('about', 'neighbourliness_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.neighbourliness_level'] ? 'border-red-500' : ''
-                      }`}
-                    >
-                      <option value="">Select...</option>
-                      <option value="1">Low</option>
-                      <option value="2">Medium</option>
-                      <option value="3">High</option>
-                    </select>
-                    {errors['about.neighbourliness_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.neighbourliness_level']}</p>}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField label="Neighbourliness Level" error={errors['about.neighbourliness_level']}>
+                      <select
+                        id="neighbourliness_level"
+                        value={formState.about.neighbourliness_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'neighbourliness_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                          )
+                        }
+                        className={fieldControlClass}
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                      </select>
+                    </FormField>
+
+                    <FormField label="Guests Level" error={errors['about.guests_level']}>
+                      <select
+                        id="guests_level"
+                        value={formState.about.guests_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'guests_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                          )
+                        }
+                        className={fieldControlClass}
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                      </select>
+                    </FormField>
+
+                    <FormField label="Parties Level" error={errors['about.parties_level']}>
+                      <select
+                        id="parties_level"
+                        value={formState.about.parties_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'parties_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                          )
+                        }
+                        className={fieldControlClass}
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                      </select>
+                    </FormField>
+
+                    <FormField label="Bedtime Level" error={errors['about.bedtime_level']}>
+                      <select
+                        id="bedtime_level"
+                        value={formState.about.bedtime_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'bedtime_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
+                          )
+                        }
+                        className={fieldControlClass}
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Early (e.g., 22:00)</option>
+                        <option value="2">Midnight</option>
+                        <option value="3">Late (e.g., 02:00)</option>
+                        <option value="4">Very Late (e.g., 04:00)</option>
+                      </select>
+                    </FormField>
+
+                    <FormField label="Neatness Level" error={errors['about.neatness_level']}>
+                      <select
+                        id="neatness_level"
+                        value={formState.about.neatness_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'neatness_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                          )
+                        }
+                        className={fieldControlClass}
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                      </select>
+                    </FormField>
                   </div>
 
-                  {/* guests_level (select) */}
-                  <div>
-                    <label htmlFor="guests_level" className="block text-sm font-medium text-gray-700">
-                      Guests Level
-                    </label>
-                    <select
-                      id="guests_level"
-                      value={formState.about.guests_level ?? ''}
-                      onChange={(e) => updateFormState('about', 'guests_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.guests_level'] ? 'border-red-500' : ''
-                      }`}
-                    >
-                      <option value="">Select...</option>
-                      <option value="1">Low</option>
-                      <option value="2">Medium</option>
-                      <option value="3">High</option>
-                    </select>
-                    {errors['about.guests_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.guests_level']}</p>}
-                  </div>
-
-                  {/* parties_level (select) */}
-                  <div>
-                    <label htmlFor="parties_level" className="block text-sm font-medium text-gray-700">
-                      Parties Level
-                    </label>
-                    <select
-                      id="parties_level"
-                      value={formState.about.parties_level ?? ''}
-                      onChange={(e) => updateFormState('about', 'parties_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.parties_level'] ? 'border-red-500' : ''
-                      }`}
-                    >
-                      <option value="">Select...</option>
-                      <option value="1">Low</option>
-                      <option value="2">Medium</option>
-                      <option value="3">High</option>
-                    </select>
-                    {errors['about.parties_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.parties_level']}</p>}
-                  </div>
-
-                  {/* bedtime_level (select) */}
-                  <div>
-                    <label htmlFor="bedtime_level" className="block text-sm font-medium text-gray-700">
-                      Bedtime Level
-                    </label>
-                    <select
-                      id="bedtime_level"
-                      value={formState.about.bedtime_level ?? ''}
-                      onChange={(e) => updateFormState('about', 'bedtime_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 | 4 : null)}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.bedtime_level'] ? 'border-red-500' : ''
-                      }`}
-                    >
-                      <option value="">Select...</option>
-                      <option value="1">Early (e.g., 22:00)</option>
-                      <option value="2">Midnight</option>
-                      <option value="3">Late (e.g., 02:00)</option>
-                      <option value="4">Very Late (e.g., 04:00)</option>
-                    </select>
-                    {errors['about.bedtime_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.bedtime_level']}</p>}
-                  </div>
-
-                  {/* neatness_level (select) */}
-                  <div>
-                    <label htmlFor="neatness_level" className="block text-sm font-medium text-gray-700">
-                      Neatness Level
-                    </label>
-                    <select
-                      id="neatness_level"
-                      value={formState.about.neatness_level ?? ''}
-                      onChange={(e) => updateFormState('about', 'neatness_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.neatness_level'] ? 'border-red-500' : ''
-                      }`}
-                    >
-                      <option value="">Select...</option>
-                      <option value="1">Low</option>
-                      <option value="2">Medium</option>
-                      <option value="3">High</option>
-                    </select>
-                    {errors['about.neatness_level'] && <p className="mt-1 text-sm text-red-600">{errors['about.neatness_level']}</p>}
-                  </div>
-
-                  {/* Pet Checkboxes */}
-                  <div className="col-span-2 mt-2">
-                    <p className="text-sm font-medium text-gray-700 mb-1">I Have Animals:</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="col-start-1 flex items-center">
-                        <input
-                          id="has_cats"
-                          type="checkbox"
-                          checked={formState.about.has_cats === true}
-                          onChange={(e) => updateFormState('about', 'has_cats', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="has_cats" className="ml-2 block text-sm text-gray-700">
-                          Has Cats
+                  <FormField label="I Have Animals" hint="Check all that apply">
+                    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+                      {animalOptions.map((animal) => (
+                        <label key={animal.id} htmlFor={animal.id} className="flex items-center gap-2 text-sm text-muted">
+                          <input
+                            id={animal.id}
+                            type="checkbox"
+                            checked={formState.about[animal.field] === true}
+                            onChange={(e) => updateFormState('about', animal.field, e.target.checked)}
+                            className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                          />
+                          {animal.label}
                         </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="has_dogs"
-                          type="checkbox"
-                          checked={formState.about.has_dogs === true}
-                          onChange={(e) => updateFormState('about', 'has_dogs', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="has_dogs" className="ml-2 block text-sm text-gray-700">
-                          Has Dogs
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="has_reptiles"
-                          type="checkbox"
-                          checked={formState.about.has_reptiles === true}
-                          onChange={(e) => updateFormState('about', 'has_reptiles', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="has_reptiles" className="ml-2 block text-sm text-gray-700">
-                          Has Reptiles
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          id="has_birds"
-                          type="checkbox"
-                          checked={formState.about.has_birds === true}
-                          onChange={(e) => updateFormState('about', 'has_birds', e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor="has_birds" className="ml-2 block text-sm text-gray-700">
-                          Has Birds
-                        </label>
-                      </div>
+                      ))}
                     </div>
-                  </div>
+                  </FormField>
 
-                  {/* other_animals (text input - comma separated, validated by validator) */}
-                  <div>
-                    <label htmlFor="other_animals" className="block text-sm font-medium text-gray-700">
-                      Other Animals (up to 5)
-                    </label>
-                    <TagsInput
-                      isEditOnRemove
-                      value={formState.about.other_animals || []}
-                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
-                        const newTagsCandidate = [...currentTags, newTag];
-                        const validationError = validators['about.other_animals'](newTagsCandidate, formState);
-                        // Update the main errors state if validation fails
-                        if (validationError !== null) {
-                          setErrors(prevErrors => ({
-                            ...prevErrors,
-                            'about.other_animals': validationError
-                          }));
-                          return false; // Prevent adding the tag
-                        }
-
-                        // Clear the specific error for this field if validation passes
-                        setErrors(prevErrors => {
-                          const newErrors = { ...prevErrors };
-                          delete newErrors['about.other_animals']; // Remove the error for this key
-                          return newErrors;
-                        });
-                        return true; // Allow adding the tag
-                      }}
-                      onChange={(tags: string[]) => {
-                        // Clear the specific error for this field whenever tags change
-                        // This happens after a successful add (when beforeAddValidate passed)
-                        // or a remove action.
-                        setErrors(prevErrors => {
-                          const newErrors = { ...prevErrors };
-                          delete newErrors['about.other_animals']; // Remove the error for this key
-                          return newErrors;
-                        });
-                        updateFormState('about', 'other_animals', tags);
-                      }}
-                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                        const inputValue = (e.target as HTMLInputElement).value;
-
-                        if (inputValue) {
-                          const currentTags = formState.about.other_animals || []; // Use current state
-                          const newTagsCandidate = [...currentTags, inputValue];
-                          validateCurrentTagsInput('about.other_animals', newTagsCandidate, 'about.other_animals');
-                        }
-                        else {
+                  <FormField
+                    label="Other Animals (up to 5)"
+                    error={errors['about.other_animals']}
+                    hint="Type a word and press Enter to add it."
+                  >
+                    <div className={tagInputWrapperClass}>
+                      <TagsInput
+                        isEditOnRemove
+                        value={formState.about.other_animals || []}
+                        beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                          const newTagsCandidate = [...currentTags, newTag];
+                          const validationError = validators['about.other_animals'](newTagsCandidate, formState);
+                          if (validationError !== null) {
+                            setErrors(prevErrors => ({
+                              ...prevErrors,
+                              'about.other_animals': validationError
+                            }));
+                            return false;
+                          }
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.other_animals'];
+                            return newErrors;
+                          });
+                          return true;
+                        }}
+                        onChange={(tags: string[]) => {
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.other_animals'];
+                            return newErrors;
+                          });
+                          updateFormState('about', 'other_animals', tags);
+                        }}
+                        onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          const inputValue = (e.target as HTMLInputElement).value;
                           const currentTags = formState.about.other_animals || [];
-                          validateCurrentTagsInput('about.other_animals', currentTags, 'about.other_animals');
-                        }
-                      }}
-                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                        const inputElement = e.target as HTMLInputElement
-                        const inputValue = inputElement.value
-                        if (inputValue) {
-                          inputElement.value = ''
+                          if (inputValue) {
+                            const newTagsCandidate = [...currentTags, inputValue];
+                            validateCurrentTagsInput('about.other_animals', newTagsCandidate, 'about.other_animals');
+                          } else {
+                            validateCurrentTagsInput('about.other_animals', currentTags, 'about.other_animals');
+                          }
+                        }}
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                          const inputElement = e.target as HTMLInputElement
+                          const inputValue = inputElement.value
+                          if (inputValue) {
+                            inputElement.value = ''
+                            setErrors(prevErrors => {
+                              const newErrors = { ...prevErrors };
+                              delete newErrors['about.other_animals'];
+                              return newErrors;
+                            })
+                          }
+                        }}
+                        name="other_animals"
+                        placeHolder="Type and press enter"
+                        classNames={tagInputClassNames}
+                      />
+                    </div>
+                  </FormField>
+
+                  <FormField
+                    label="Interests (up to 5)"
+                    error={errors['about.interests']}
+                    hint="Type and press Enter to add hobbies."
+                  >
+                    <div className={tagInputWrapperClass}>
+                      <TagsInput
+                        isEditOnRemove
+                        value={formState.about.interests || []}
+                        beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                          const newTagsCandidate = [...currentTags, newTag];
+                          const validationError = validators['about.interests'](newTagsCandidate, formState);
+                          if (validationError !== null) {
+                            setErrors(prevErrors => ({
+                              ...prevErrors,
+                              'about.interests': validationError
+                            }));
+                            return false;
+                          }
+
                           setErrors(prevErrors => {
                             const newErrors = { ...prevErrors };
-                            delete newErrors['about.other_animals']; // Remove the error for this key
+                            delete newErrors['about.interests'];
                             return newErrors;
-                          })
-                        }
-                      }}
-                      name="other_animals"
-                      placeHolder="Type and press enter"
-                      classNames={{
-                        tag: "bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm",
-                        input: "mt-0 block w-full p-0 text-sm focus:outline-none",
-                      }}
-                    />
-                    {errors['about.other_animals'] && <p className="mt-1 text-sm text-red-600">{errors['about.other_animals']}</p>}
-                  </div>
-
-                  {/* interests (text input - comma separated, validated by validator) */}
-                  <div>
-                    <label htmlFor="interests" className="block text-sm font-medium text-gray-700">
-                      Interests (up to 5)
-                    </label>
-                    <TagsInput
-                      isEditOnRemove
-                      value={formState.about.interests || []}
-                      beforeAddValidate={(newTag: string, currentTags: string[]) => {
-                        const newTagsCandidate = [...currentTags, newTag];
-                        const validationError = validators['about.interests'](newTagsCandidate, formState);
-                        // Update the main errors state if validation fails
-                        if (validationError !== null) {
-                          setErrors(prevErrors => ({
-                            ...prevErrors,
-                            'about.interests': validationError
-                          }));
-                          return false; // Prevent adding the tag
-                        }
-
-                        // Clear the specific error for this field if validation passes
-                        setErrors(prevErrors => {
-                          const newErrors = { ...prevErrors };
-                          delete newErrors['about.interests']; // Remove the error for this key
-                          return newErrors;
-                        });
-                        return true; // Allow adding the tag
-                      }}
-                      onChange={(tags) => {
-                        setErrors(prevErrors => {
-                          const newErrors = { ...prevErrors };
-                          delete newErrors['about.interests']; // Remove the error for this key
-                          return newErrors;
-                        });
-                        updateFormState('about', 'interests', tags)
-                      }}
-                      onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                        const inputValue = (e.target as HTMLInputElement).value;
-
-                        if (inputValue) {
-                          const currentTags = formState.about.interests || []; // Use current state
-                          const newTagsCandidate = [...currentTags, inputValue];
-                          validateCurrentTagsInput('about.interests', newTagsCandidate, 'about.interests');
-                        }
-                        else {
+                          });
+                          return true;
+                        }}
+                        onChange={(tags) => {
+                          setErrors(prevErrors => {
+                            const newErrors = { ...prevErrors };
+                            delete newErrors['about.interests'];
+                            return newErrors;
+                          });
+                          updateFormState('about', 'interests', tags)
+                        }}
+                        onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          const inputValue = (e.target as HTMLInputElement).value;
                           const currentTags = formState.about.interests || [];
-                          validateCurrentTagsInput('about.interests', currentTags, 'about.interests');
-                        }
-                      }}
-                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                        const inputElement = e.target as HTMLInputElement
-                        const inputValue = inputElement.value
-                        if (inputValue) {
-                          inputElement.value = ''
-                          setErrors(prevErrors => {
-                            const newErrors = { ...prevErrors };
-                            delete newErrors['about.interests']; // Remove the error for this key
-                            return newErrors;
-                          })
-                        }
-                      }}
-                      name="interests"
-                      placeHolder="Type and press enter"
-                      classNames={{
-                        tag: "bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm",
-                        input: "mt-0 block w-full p-0 text-sm focus:outline-none",
-                      }}
-                    />
-                    {errors['about.interests'] && <p className="mt-1 text-sm text-red-600">{errors['about.interests']}</p>}
-                  </div>
+                          if (inputValue) {
+                            const newTagsCandidate = [...currentTags, inputValue];
+                            validateCurrentTagsInput('about.interests', newTagsCandidate, 'about.interests');
+                          }
+                          else {
+                            validateCurrentTagsInput('about.interests', currentTags, 'about.interests');
+                          }
+                        }}
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                          const inputElement = e.target as HTMLInputElement
+                          const inputValue = inputElement.value
+                          if (inputValue) {
+                            inputElement.value = ''
+                            setErrors(prevErrors => {
+                              const newErrors = { ...prevErrors };
+                              delete newErrors['about.interests'];
+                              return newErrors;
+                            })
+                          }
+                        }}
+                        name="interests"
+                        placeHolder="Type and press enter"
+                        classNames={tagInputClassNames}
+                      />
+                    </div>
+                  </FormField>
 
-                  {/* bio (textarea) */}
-                  <div>
-                    <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
-                      Bio (up to 1024 chars)
-                    </label>
+                  <FormField label="Bio (up to 1024 chars)" error={errors['about.bio']}>
                     <textarea
                       id="bio"
                       rows={3}
                       value={formState.about.bio ?? ''}
                       onChange={(e) => updateFormState('about', 'bio', e.target.value || null)}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                        errors['about.bio'] ? 'border-red-500' : // Prioritize validation errors
-                        (formState.about.bio && formState.about.bio.length > 1024 ? 'border-red-500' : 'border-gray-300') // Check char limit
-                      }`}
+                      className={cn(
+                        textareaControlClass,
+                        (errors['about.bio'] || (formState.about.bio && formState.about.bio.length > 1024)) &&
+                          'ring-2 ring-destructive/70'
+                      )}
                     />
-                    <p className={`text-xs mt-1 ${
-                      formState.about.bio && formState.about.bio.length > 1024 ? 'text-red-600' : 'text-gray-500' // Change color based on limit
-                    }`}>
+                    <p
+                      className={cn(
+                        'text-xs',
+                        formState.about.bio && formState.about.bio.length > 1024 ? 'text-destructive' : 'text-muted'
+                      )}
+                    >
                       {formState.about.bio ? formState.about.bio.length : 0} / 1024 characters
                     </p>
-                    {errors['about.bio'] && <p className="mt-1 text-sm text-red-600">{errors['about.bio']}</p>}
-                  </div>
-                </div>
+                  </FormField>
+                </CardContent>
               )}
-            </div>
+            </Card>
             {/* End of Optional Fields Accordion */}
 
-          </div>
+          </Stack>
         )
       
       // Step 3 Rent
@@ -910,7 +826,7 @@ export default function ProfileSetupPage() {
             {/* Add fields for rent_preferences section: budgets, duration, room sharing, locations */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="min_budget" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="min_budget" className="block text-sm font-medium text-muted">
                   Min Budget
                 </label>
                 <input
@@ -918,14 +834,14 @@ export default function ProfileSetupPage() {
                   id="min_budget"
                   value={formState.rent_preferences.min_budget ?? ''} // Use ?? '' to handle null
                   onChange={(e) => updateFormState('rent_preferences', 'min_budget', e.target.value ? Number(e.target.value) : null)}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                    errors['rent_preferences.min_budget'] ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
+                    errors['rent_preferences.min_budget'] ? 'border-destructive' : ''
                   }`}
                 />
-                {errors['rent_preferences.min_budget'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.min_budget']}</p>}
+                {errors['rent_preferences.min_budget'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.min_budget']}</p>}
               </div>
               <div>
-                <label htmlFor="max_budget" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="max_budget" className="block text-sm font-medium text-muted">
                   Max Budget
                 </label>
                 <input
@@ -933,25 +849,25 @@ export default function ProfileSetupPage() {
                   id="max_budget"
                   value={formState.rent_preferences.max_budget ?? ''} // Use ?? '' to handle null
                   onChange={(e) => updateFormState('rent_preferences', 'max_budget', e.target.value ? Number(e.target.value) : null)}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                    errors['rent_preferences.max_budget'] ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
+                    errors['rent_preferences.max_budget'] ? 'border-destructive' : ''
                   }`}
                 />
-                {errors['rent_preferences.max_budget'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.max_budget']}</p>}
+                {errors['rent_preferences.max_budget'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.max_budget']}</p>}
               </div>
             </div>
             {/* Add other 'rent_preferences' fields similarly */}
             {/* min_rent_duration_level (select) */}
             <div>
-                <label htmlFor="min_rent_duration_level" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="min_rent_duration_level" className="block text-sm font-medium text-muted">
                   Min Rent Duration Level
                 </label>
                 <select
                   id="min_rent_duration_level"
                   value={formState.rent_preferences.min_rent_duration_level ?? ''} // Use ?? '' to handle null
                   onChange={(e) => updateFormState('rent_preferences', 'min_rent_duration_level', e.target.value ? Number(e.target.value) : null)}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                    errors['rent_preferences.min_rent_duration_level'] ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
+                    errors['rent_preferences.min_rent_duration_level'] ? 'border-destructive' : ''
                   }`}
                 >
                   <option value="">Select...</option>
@@ -961,20 +877,20 @@ export default function ProfileSetupPage() {
                   <option value="4">Level 4</option>
                   <option value="5">Level 5</option>
                 </select>
-                {errors['rent_preferences.min_rent_duration_level'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.min_rent_duration_level']}</p>}
+                {errors['rent_preferences.min_rent_duration_level'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.min_rent_duration_level']}</p>}
             </div>
 
             {/* max_rent_duration_level (select) */}
             <div>
-                <label htmlFor="max_rent_duration_level" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="max_rent_duration_level" className="block text-sm font-medium text-muted">
                   Max Rent Duration Level
                 </label>
                 <select
                   id="max_rent_duration_level"
                   value={formState.rent_preferences.max_rent_duration_level ?? ''} // Use ?? '' to handle null
                   onChange={(e) => updateFormState('rent_preferences', 'max_rent_duration_level', e.target.value ? Number(e.target.value) : null)}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                    errors['rent_preferences.max_rent_duration_level'] ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
+                    errors['rent_preferences.max_rent_duration_level'] ? 'border-destructive' : ''
                   }`}
                 >
                   <option value="">Select...</option>
@@ -984,20 +900,20 @@ export default function ProfileSetupPage() {
                   <option value="4">Level 4</option>
                   <option value="5">Level 5</option>
                 </select>
-                {errors['rent_preferences.max_rent_duration_level'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.max_rent_duration_level']}</p>}
+                {errors['rent_preferences.max_rent_duration_level'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.max_rent_duration_level']}</p>}
             </div>
 
             {/* room_sharing_level (select) - Add this block */}
             <div>
-                <label htmlFor="room_sharing_level" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="room_sharing_level" className="block text-sm font-medium text-muted">
                   Room Sharing Level
                 </label>
                 <select
                   id="room_sharing_level"
                   value={formState.rent_preferences.room_sharing_level ?? ''} // Use ?? '' to handle null
                   onChange={(e) => updateFormState('rent_preferences', 'room_sharing_level', e.target.value ? Number(e.target.value) as 1 | 2 | 3 : null)} // Assuming 1 | 2 | 3 based on API spec for rent_preferences
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                    errors['rent_preferences.room_sharing_level'] ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
+                    errors['rent_preferences.room_sharing_level'] ? 'border-destructive' : ''
                   }`}
                 >
                   <option value="">Select...</option>
@@ -1005,13 +921,13 @@ export default function ProfileSetupPage() {
                   <option value="2">Shared Room Possible</option>
                   <option value="3">Flexible (Any Arrangement)</option>
                 </select>
-                {errors['rent_preferences.room_sharing_level'] && <p className="mt-1 text-sm text-red-600">{errors['rent_preferences.room_sharing_level']}</p>}
+                {errors['rent_preferences.room_sharing_level'] && <p className="mt-1 text-sm text-destructive">{errors['rent_preferences.room_sharing_level']}</p>}
             </div>
             {/* End of room_sharing_level field */}
 
             {/* Add Location Search Component */}
             <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-muted">
                   Locations (Select up to 30, no overlaps)
                 </label>
                 <Locations
@@ -1032,109 +948,64 @@ export default function ProfileSetupPage() {
 
   // --- RENDER ---
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background-white to-primary-blue flex flex-col items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-white rounded-xl shadow-md p-8 space-y-6">
-        <h1 className="text-2xl font-bold text-center text-black">Set Up Your Profile</h1>
+    <Section as="div" className="min-h-screen bg-background-soft/60 py-12" fullWidth>
+      <Card className="mx-auto w-full max-w-3xl">
+        <CardContent className="space-y-8 p-6 sm:p-8">
+          <Stack gap="sm" className="text-center">
+            <h1 className="text-2xl font-semibold text-foreground">Set Up Your Profile</h1>
+            <p className="text-sm text-muted">
+              Complete a few quick sections so we can match you with compatible roommates.
+            </p>
+          </Stack>
 
-        {/* Progress Bar/Steps Indicator */}
-        <div className="mb-6">
-          <nav aria-label="Progress">
-            <ol className="flex items-center space-x-4">
-              {STEPS.map((step, index) => (
-                <li key={step.name} className="relative md:flex-1 md:flex">
-                  {index < currentStep ? (
-                    <div className="group flex w-full">
-                      <span className="flex items-center text-sm font-medium text-gray-900">
-                        {step.name}
-                      </span>
-                    </div>
-                  ) : index === currentStep ? (
-                    <div className="flex items-center" aria-current="step">
-                      <span className="flex items-center text-sm font-medium text-indigo-600">
-                        {step.name}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="group flex w-full">
-                      <span className="flex items-center text-sm font-medium text-gray-500">
-                        {step.name}
-                      </span>
-                    </div>
-                  )}
-                  {index !== STEPS.length - 1 ? (
-                    <div className="absolute top-0 right-0 h-0 w-5 hidden md:block">
-                      <svg
-                        className="h-full w-full text-gray-300"
-                        viewBox="0 0 22 80"
-                        fill="none"
-                        preserveAspectRatio="none"
-                      >
-                        <path
-                          d="M0 -2L20 40L0 82"
-                          vectorEffect="non-scaling-stroke"
-                          stroke="currentcolor"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  ) : null}
-                </li>
-              ))}
+          <nav aria-label="Progress" className="overflow-x-auto">
+            <ol className="flex items-center gap-4 text-sm font-medium">
+              {STEPS.map((step, index) => {
+                const isPast = index < currentStep
+                const isActive = index === currentStep
+                return (
+                  <li key={step.id} className="flex items-center gap-2">
+                    <span
+                      className={
+                        isActive
+                          ? 'text-primary'
+                          : isPast
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                      }
+                    >
+                      {step.name}
+                    </span>
+                    {index !== STEPS.length - 1 && (
+                      <span className="h-px w-6 bg-border opacity-70" aria-hidden="true" />
+                    )}
+                  </li>
+                )
+              })}
             </ol>
           </nav>
-        </div>
 
-        {/* General Error Display (for validation or API errors) */}
-        {generalError && ( // Or {apiError && ...} if you keep them separate
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">Error: {generalError}</span> {/* Or "API Error: {apiError}" */}
+          {generalError && <Alert variant="destructive">Error: {generalError}</Alert>}
+          {apiError && <Alert variant="destructive">API Error: {apiError}</Alert>}
+
+          {getStepContent()}
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
+            <Button variant="outline" onClick={prevStep} disabled={currentStep === 0} className="sm:w-auto">
+              Back
+            </Button>
+            {currentStep < STEPS.length - 1 ? (
+              <Button onClick={nextStep} className="sm:w-auto">
+                Next
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={isLoading} className="sm:w-auto">
+                {isLoading ? 'Creating Profile…' : 'Create Profile'}
+              </Button>
+            )}
           </div>
-        )}
-
-        {/* API Error Display */}
-        {apiError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">API Error: {apiError}</span>
-          </div>
-        )}
-
-        {/* Step Content */}
-        {getStepContent()}
-
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8">
-          <button
-            type="button"
-            onClick={prevStep}
-            disabled={currentStep === 0}
-            className={`px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${
-              currentStep === 0 ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            Back
-          </button>
-          {currentStep < STEPS.length - 1 ? (
-            <button
-              type="button"
-              onClick={nextStep}
-              className="ml-3 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className={`ml-3 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white ${
-                isLoading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
-            >
-              {isLoading ? 'Creating Profile...' : 'Create Profile'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </Section>
   )
 }
