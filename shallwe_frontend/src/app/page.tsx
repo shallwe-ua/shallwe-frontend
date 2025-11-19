@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
+import { CSSProperties, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -106,7 +106,7 @@ export default function LandingPage() {
         <div className="bg-orb bg-orb--peach" style={{ bottom: '-160px', right: '-60px' }} />
           <div className="pointer-events-none absolute inset-0">
             {houseRain.map((house, idx) => {
-              const style: React.CSSProperties & { ['--house-duration']?: string } = {
+              const style: CSSProperties & { ['--house-duration']?: string } = {
                 top: house.startY,
                 left: house.startX,
                 animationDelay: house.delay,
