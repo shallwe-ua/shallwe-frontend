@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shallwe · Створення профілю (Крок 1)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --deep-blue: #182f53;
+      --blue-2: #a5d2eb;
+      --coral: #259ac2;       /* style 582:11323 */
+      --muted-line: #d7e2e9;  /* style 210:96 */
+      --input-text: #d7e2e9;
+      --pill-text: #182f53;
+      --card-width: 1060px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 48px;
+      font-family: "Rubik", system-ui, sans-serif;
+      color: var(--deep-blue);
+      background: #f8fafc;
+      display: grid;
+      place-items: start center;
+    }
+    main {
+      width: min(var(--card-width), 92vw);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .steps {
+      display: flex;
+      gap: 32px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .steps .active {
+      font-weight: 700;
+    }
+    .progress {
+      position: relative;
+      height: 4px;
+      background: var(--muted-line);
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 8px 0 28px;
+    }
+    .progress .fill {
+      width: 50%;
+      height: 100%;
+      background: var(--coral);
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .input-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .input {
+      flex: 1;
+      height: 48px;
+      border-radius: 5px;
+      border: 1px solid var(--muted-line);
+      padding: 0 14px 0 14px;
+      font-size: 14px;
+      color: var(--deep-blue);
+      background: white;
+    }
+    .input::placeholder { color: var(--input-text); }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      background: var(--blue-2);
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--pill-text);
+      white-space: nowrap;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin: 28px 0 32px;
+    }
+    .filter-card {
+      min-height: 73px;
+      border-radius: 10px;
+      background: white;
+      border: 1px solid var(--muted-line);
+      padding: 10px 14px 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 32px;
+      grid-template-rows: auto 1fr;
+      align-items: center;
+      row-gap: 8px;
+      column-gap: 12px;
+      color: var(--deep-blue);
+      font-weight: 500;
+      position: relative;
+    }
+    .filter-card label {
+      margin: 0;
+      font-size: 14px;
+      grid-column: 1 / -1;
+    }
+    .chip-input {
+      height: 48px;
+      border: 1px solid var(--muted-line);
+      border-radius: 5px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: white;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--deep-blue);
+    }
+    .chip-input .dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .chip-input .bar {
+      width: 10px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--deep-blue);
+    }
+    .chip-input .caret {
+      width: 14px;
+      height: 8px;
+      border: 0;
+      border-left: 2px solid var(--deep-blue);
+      border-bottom: 2px solid var(--deep-blue);
+      transform: rotate(-45deg);
+      background: none;
+      padding: 0;
+    }
+    footer {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .link {
+      font-size: 16px;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .cta {
+      margin-left: auto;
+      height: 51px;
+      padding: 0 40px;
+      border-radius: 5px;
+      border: 0;
+      font-size: 16px;
+      font-weight: 500;
+      background: var(--muted-line);
+      color: #6f7e93;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1 class="title">Створення профілю</h1>
+      <nav class="steps">
+        <span class="active">1. Про бажане житло</span>
+        <span>2. Про себе</span>
+      </nav>
+    </header>
+
+    <div class="progress">
+      <div class="fill"></div>
+    </div>
+
+    <section>
+      <label for="region">Регіон</label>
+      <div class="input-row">
+        <input id="region" class="input" placeholder="Почніть вводити населений пункт" />
+        <span class="pill">Вся Україна</span>
+      </div>
+    </section>
+
+    <section class="filters">
+      <div class="filter-card">
+        <label>Тривалість аренди*</label>
+        <div class="chip-input">
+          <span>Вкажіть від і до</span>
+          <button class="caret" aria-label="Відкрити випадаюче"></button>
+        </div>
+        <div class="chip-input">
+          <div class="dots"><span class="bar"></span><span class="bar"></span></div>
+          <button class="caret" aria-label="Відкрити випадаюче"></button>
+        </div>
+      </div>
+
+      <div class="filter-card">
+        <label>Бюджет (грн.)*</label>
+        <div class="chip-input">
+          <span>Вкажіть бюджет</span>
+          <button class="caret" aria-label="Відкрити випадаюче"></button>
+        </div>
+        <div class="chip-input">
+          <div class="dots"><span class="bar"></span><span class="bar"></span></div>
+          <button class="caret" aria-label="Відкрити випадаюче"></button>
+        </div>
+      </div>
+
+      <div class="filter-card">
+        <label>Я готовий(а) розділити кімнату*</label>
+        <div class="chip-input">
+          <span>Оберіть варіант</span>
+          <button class="caret" aria-label="Відкрити випадаюче"></button>
+        </div>
+        <div class="chip-input">
+          <div class="dots"><span class="bar"></span><span class="bar"></span></div>
+          <button class="caret" aria-label="Відкрити випадаюче"></button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span class="link">Скасувати реєстрацію</span>
+      <button class="cta" disabled>Далі</button>
+    </footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shallwe · Як це працює</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue-2: #a5d2eb;
+      --deep-blue: #182f53;
+      --card-radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f8fafc;
+      display: grid;
+      place-items: center;
+      font-family: "Rubik", system-ui, -apple-system, sans-serif;
+      color: var(--deep-blue);
+      padding: 32px;
+    }
+    .card {
+      position: relative;
+      width: 1180px;
+      max-width: 100%;
+      min-height: 381px;
+      background: var(--blue-2);
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr 1.05fr;
+      gap: 48px;
+      padding: 48px 56px;
+      box-shadow: 0 16px 40px rgba(24, 47, 83, 0.08);
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(165,210,235,0.95) 55%, rgba(165,210,235,0));
+      pointer-events: none;
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=80") center/cover no-repeat;
+      opacity: 0.18;
+      mix-blend-mode: multiply;
+      pointer-events: none;
+    }
+    .content { position: relative; z-index: 1; }
+    .kicker {
+      font-size: 10px;
+      font-weight: 400;
+      margin-bottom: 8px;
+      letter-spacing: 0.2px;
+    }
+    h2 {
+      margin: 0 0 18px;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.18;
+    }
+    .steps {
+      display: grid;
+      gap: 16px;
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 1.18;
+      max-width: 420px;
+    }
+    .brand {
+      font-size: 64px;
+      font-weight: 900;
+      line-height: 1.18;
+      margin: 0 0 12px;
+    }
+    .subhead {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.18;
+      margin: 0 0 32px;
+      max-width: 520px;
+    }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 22px;
+      height: 61px;
+      min-width: 209px;
+      border-radius: 8px;
+      border: 1px solid rgba(24, 47, 83, 0.08);
+      background: white;
+      color: #1f2937;
+      font-size: 16px;
+      font-weight: 500;
+      text-decoration: none;
+      box-shadow: 0 6px 16px rgba(24, 47, 83, 0.12);
+    }
+    .cta img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+    }
+    @media (max-width: 1024px) {
+      .card { grid-template-columns: 1fr; }
+      .subhead { margin-bottom: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <section class="content">
+      <div class="kicker">3 простих кроки</div>
+      <h2>Як це працює</h2>
+      <div class="steps">
+        <div>1. Шукаємо сусіда, використовуючи фільтри</div>
+        <div>2. Списуємось</div>
+        <div>3. Знімаємо житло разом</div>
+      </div>
+    </section>
+    <section class="content">
+      <h1 class="brand">Shallwe</h1>
+      <p class="subhead">Місце, де можна легко знайти сусіда для аренди житла</p>
+      <a class="cta" href="#">
+        <img alt="" src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" />
+        Увійти з Google
+      </a>
+    </section>
+  </main>
+</body>
+</html>
