@@ -1,16 +1,16 @@
-## Shallwe UI Primitives (v0.2)
+## Shallwe UI Primitives (v0.3 – Figma-aligned)
 
-Single-source rules so every screen stays on the pared-back white + slate system and on the shadcn/Radix rails.
+Single-source rules, now aligned to the Figma export palette (DeepBlue/Blue2/Coral) while keeping shadcn/Radix rails.
 
 ### Semantic Tokens
 
 - **Colors** – Only use the Tailwind tokens generated from `@theme` in `src/app/globals.css`:
-  - Surfaces → `bg-background`, `bg-card`, `bg-surface-muted`, `bg-surface-elevated` (all subtle off-whites)
-  - Text → `text-foreground`, `text-muted-foreground` (charcoal + gray)
-  - Accent/brand → `bg-primary` (standard app blue #2563eb), `bg-accent` (safety orange #f97316), `bg-secondary` (slate), `bg-brand-weak` (pale blue)
+  - Surfaces → `bg-background`, `bg-card`, `bg-surface-muted`, `bg-surface-elevated` (white to light blue-gray)
+  - Text → `text-foreground` (DeepBlue #182f53), `text-muted-foreground` (slate-blue #5a6a85)
+  - Accent/brand → `bg-primary`/`text-primary` (DeepBlue), `bg-accent` (Coral blue #259ac2), `bg-brand-weak` (Blue2 #a5d2eb)
   - Status fills → `bg-success-soft`, `bg-warning-soft`, `bg-destructive-soft`; overlays must use `bg-overlay`
 - **Borders & inputs** – `border-border`, `ring-primary`, and `bg-card`. Skip opacity utilities entirely; rely on the provided solid tokens for any subtle fills.
-- **Radii** – softened just a hair: `--radius-xs` = 2px, `--radius-sm` = 4px, `--radius-md` = 6px, `--radius-lg` = 8px. Use `rounded-[var(--radius-sm)]` for controls, `rounded-[var(--radius-lg)]` for sections/cards, and avoid bigger Tailwind radius utilities.
+- **Radii** – matches Figma 10px cards: `--radius-xs` = 2px, `--radius-sm` = 4px, `--radius-md` = 6px, `--radius-lg` = 10px. Use `rounded-[var(--radius-sm)]` for controls, `rounded-[var(--radius-lg)]` for sections/cards, and avoid bigger Tailwind radius utilities.
 - **Shadows** – `shadow-[var(--shadow-soft)]` or `shadow-[var(--shadow-card)]` only.
 
 ### Layout Helpers
@@ -26,9 +26,9 @@ Single-source rules so every screen stays on the pared-back white + slate system
 
 ### Control & Button Scale
 
-- **Buttons** – `Button` sizes are now h-9/h-10/h-11 (sm/md/lg) for better touch targets; mix sizes sparingly on the same view.
-- **Inputs/selects** – `Input`, `Select`, and similar controls sit at h-8 by default so they feel lighter than primary buttons.
-- **Typography** – Stick to three font sizes across the app: `text-base` for titles/body, `text-sm` for meta/hints, and `text-xs` is prohibited. No custom `[text-*]` or `text-lg` utilities.
+- **Buttons** – `Button` sizes are h-9/h-10/h-11 (sm/md/lg); mix sizes sparingly on the same view.
+- **Inputs/selects** – `Input`, `Select`, and similar controls are h-12 with 14px text to mirror Figma’s 48px fields; keep radius at `--radius-sm`.
+- **Typography & font** – Use Rubik (400/500/700/900). Default sizes stay compact (text-base, text-sm; text-xs prohibited). Heros may use one-up display sizes (`text-2xl`–`text-4xl`) when mirroring Figma, but keep it to headlines only.
 - **Cards/sections** – Card padding is capped at 1.25rem (header 1.25rem, content 1.25rem) to avoid huge gutters. Add internal `Stack` components if more breathing room is needed.
 
 ### Components

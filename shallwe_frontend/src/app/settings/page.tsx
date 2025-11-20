@@ -307,7 +307,7 @@ export default function SettingsPage() {
     return (
       <Section as="div" className="flex items-center justify-center" fullWidth>
         <Card className="w-full max-w-md text-center">
-          <CardContent className="py-8 text-sm text-muted">Loading your profile…</CardContent>
+          <CardContent className="py-8 text-sm text-muted-foreground">Loading your profile…</CardContent>
         </Card>
       </Section>
     )
@@ -322,7 +322,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <Stack gap="sm">
-              <p className="text-sm text-muted">We couldn&apos;t load your profile data.</p>
+              <p className="text-sm text-muted-foreground">We couldn&apos;t load your profile data.</p>
               {apiError && <Alert variant="destructive">{apiError}</Alert>}
               <Button onClick={() => router.push('/')} className="w-full">
                 Go to landing
@@ -425,7 +425,7 @@ export default function SettingsPage() {
             <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
               <span className={`h-2.5 w-2.5 rounded-full ${visibilityDotClass}`} aria-hidden />
               <span>{visibilityLabel}</span>
-              <span className="text-sm font-normal text-muted">{visibilityHint}</span>
+              <span className="text-sm font-normal text-muted-foreground">{visibilityHint}</span>
             </div>
           </Stack>
           <div className="flex flex-wrap items-center gap-2">
@@ -465,7 +465,7 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-2 text-sm text-foreground">
                     <span className={`h-2.5 w-2.5 rounded-full ${visibilityDotClass}`} aria-hidden />
                     <span className="font-semibold">{visibilityLabel}</span>
-                    <span className="text-muted">{visibilityHint}</span>
+                    <span className="text-muted-foreground">{visibilityHint}</span>
                   </div>
                   <Button
                       onClick={handleToggleVisibility}
@@ -508,7 +508,7 @@ export default function SettingsPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm font-medium text-muted">All Ukraine (default)</p>
+                          <p className="text-sm font-medium text-muted-foreground">All Ukraine (default)</p>
                         )}
                       </FormField>
                     </Stack>
@@ -532,7 +532,7 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Stack gap="xs">
               <p className="text-sm font-semibold text-destructive">Delete account</p>
-              <p className="text-sm text-muted">Remove your profile and access instantly. This can’t be undone.</p>
+              <p className="text-sm text-muted-foreground">Remove your profile and access instantly. This can’t be undone.</p>
             </Stack>
             <Button variant="destructive" onClick={() => setIsDeleteModalOpen(true)} size="sm" className="sm:w-auto">
               Delete account
@@ -570,7 +570,7 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <CardTitle className="text-base">Delete account</CardTitle>
-                  <p className="text-sm text-muted">
+                  <p className="text-sm text-muted-foreground">
                     This permanently removes your profile, matches, and account access.
                   </p>
                 </div>

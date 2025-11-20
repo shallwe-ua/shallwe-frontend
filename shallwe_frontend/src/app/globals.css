@@ -6,27 +6,27 @@
 
   --color-background: #ffffff;
   --color-background-soft: #ffffff;
-  --color-foreground: #111827;
-  --color-foreground-soft: #1f2937;
-  --color-muted: #4b5563;
-  --color-muted-foreground: #6b7280;
+  --color-foreground: #182f53;
+  --color-foreground-soft: #1f2f46;
+  --color-muted: #3c4a63;
+  --color-muted-foreground: #5a6a85;
 
   --color-card: #ffffff;
   --color-card-foreground: #111827;
   --color-popover: #ffffff;
   --color-popover-foreground: #111827;
 
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
-  --color-input: #e2e8f0;
-  --color-ring: #2563eb;
+  --color-border: #d7e2e9;
+  --color-border-strong: #c2d2dd;
+  --color-input: #d7e2e9;
+  --color-ring: #182f53;
 
-  --color-primary: #2563eb;
+  --color-primary: #182f53; /* DeepBlue */
   --color-primary-foreground: #ffffff;
   --color-secondary: #1f2937;
   --color-secondary-foreground: #f9fafb;
-  --color-accent: #f97316;
-  --color-accent-foreground: #1f2937;
+  --color-accent: #259ac2; /* Coral-ish blue from Figma */
+  --color-accent-foreground: #0f172a;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #fef2f2;
   --color-destructive-soft: #fee2e2;
@@ -36,10 +36,10 @@
   --color-warning-soft: #fef3c7;
 
   --color-surface: #ffffff;
-  --color-surface-elevated: #f9fafb;
-  --color-surface-muted: #f5f6fb;
-  --color-brand-weak: #e0e7ff;
-  --color-brand-strong: #1d4ed8;
+  --color-surface-elevated: #f8fafc;
+  --color-surface-muted: #f2f6fb;
+  --color-brand-weak: #a5d2eb; /* Blue2 */
+  --color-brand-strong: #182f53;
   --color-overlay: rgba(15, 23, 42, 0.55);
 
   /* Subtle rounding per compact directive */
@@ -47,7 +47,7 @@
   --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-lg: 10px;
 }
 
 @layer base {

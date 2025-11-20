@@ -216,18 +216,18 @@ const Locations: React.FC<LocationsProps> = ({
           className={searchInputClasses}
           disabled={isInputFrozen}
         />
-        {isLoading && (
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-weak border-t-primary" />
-          </div>
-        )}
+      {isLoading && (
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
+        </div>
+      )}
       </div>
 
       {searchError && <p className="text-sm text-muted">{searchError}</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {/* Location Counter */}
-      <div className="flex items-center justify-between text-sm text-subtle">
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span className={cn('inline-block transition-colors', isCounterSwinging && 'animate-pulse text-destructive')}>
           {selectedLocations.length}/{MAX_LOCATIONS} locations picked
         </span>
@@ -251,7 +251,7 @@ const Locations: React.FC<LocationsProps> = ({
       {/* Search Results Dropdown (absolute overlay) */}
       {showResults && searchResults && (
         <div
-          className="absolute left-0 right-0 z-50 max-h-60 overflow-y-auto rounded-lg border border-border bg-card shadow-[var(--shadow-soft)]"
+          className="absolute left-0 right-0 z-50 max-h-72 overflow-y-auto rounded-[var(--radius-lg)] border border-border bg-card shadow-[var(--shadow-soft)]"
         >
           {/* Regions */}
           {searchResults.regions && searchResults.regions.length > 0 && (

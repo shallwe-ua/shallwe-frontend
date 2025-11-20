@@ -29,9 +29,9 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Radio } from '@/components/ui/radio'
 import { Select } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { Textarea } from '@/components/ui/textarea'
 
 
 // Dividing visual flow in steps for better UX
@@ -41,10 +41,10 @@ const STEPS = [
   { id: 'preferences', name: 'Rent Preferences' },
 ]
 
-const tagInputWrapperClass = 'rounded-lg border border-border bg-card px-3 py-2'
+const tagInputWrapperClass = 'rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-3'
 
 const tagInputClassNames = {
-  tag: 'rounded-md bg-brand-weak px-2 py-1 text-sm text-primary',
+  tag: 'rounded-[var(--radius-xs)] bg-brand-weak px-2 py-1 text-sm text-primary',
   input:
     'mt-0 block w-full border-0 bg-transparent p-0 text-sm text-foreground placeholder:text-muted focus:outline-none',
 }
@@ -128,19 +128,18 @@ export default function ProfileSetupPage() {
 
   // Define a helper function to run validation and update errors
   const validateCurrentTagsInput = (fieldName: string, tagsToValidate: string[], validatorKey: string) => {
-    const validationError = validators[validatorKey](tagsToValidate, formState);
-    setErrors(prevErrors => {
-      const newErrors = { ...prevErrors };
+    const validationError = validators[validatorKey](tagsToValidate, formState)
+    setErrors((prevErrors) => {
+      const newErrors = { ...prevErrors }
       if (validationError !== null) {
-        newErrors[fieldName] = validationError;
+        newErrors[fieldName] = validationError
       } else {
-        delete newErrors[fieldName]; // Clear error if validation passes
+        delete newErrors[fieldName] // Clear error if validation passes
       }
-      return newErrors;
-    });
+      return newErrors
+    })
     return validationError
-  };
-
+  }
 
   const updateSmokingLevelAndClearTypes = (newLevel: ProfileCreateFormState['about']['smoking_level']) => {
     setGeneralError(null);
@@ -391,7 +390,7 @@ export default function ProfileSetupPage() {
           <Stack gap="sm">
             <Stack gap="xs">
               <h2 className="text-base font-semibold text-foreground">About you</h2>
-              <p className="text-sm text-muted">Tell us the basics about your household and habits.</p>
+              <p className="text-sm text-muted-foreground">Tell us the basics about your household and habits.</p>
             </Stack>
 
             <FormField label="Birth date" error={errors['about.birth_date']} required>
@@ -427,7 +426,7 @@ export default function ProfileSetupPage() {
 
             <div className="grid gap-3 md:grid-cols-2">
               <FormField label="Apply as a couple" error={errors['about.is_couple']}>
-                <Label htmlFor="is_couple" className="flex items-center gap-2 text-sm text-muted">
+                <Label htmlFor="is_couple" className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Checkbox
                     id="is_couple"
                     checked={formState.about.is_couple === true}
@@ -438,7 +437,7 @@ export default function ProfileSetupPage() {
               </FormField>
 
               <FormField label="Children at home" error={errors['about.has_children']}>
-                <Label htmlFor="has_children" className="flex items-center gap-2 text-sm text-muted">
+                <Label htmlFor="has_children" className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Checkbox
                     id="has_children"
                     checked={formState.about.has_children === true}
@@ -459,7 +458,7 @@ export default function ProfileSetupPage() {
               >
                 <span>Lifestyle extras</span>
                 <svg
-                  className={cn('h-4 w-4 text-muted transition-transform', isAboutAccordionOpen && 'rotate-180')}
+                  className={cn('h-4 w-4 text-muted-foreground transition-transform', isAboutAccordionOpen && 'rotate-180')}
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -473,8 +472,8 @@ export default function ProfileSetupPage() {
                 </svg>
               </button>
               {isAboutAccordionOpen && (
-                <div className="px-3 py-3 space-y-2">
-                  <div className="grid gap-2 md:grid-cols-2">
+                <div className="px-3 py-3 space-y-3">
+                  <div className="grid gap-3 md:grid-cols-2">
                     <FormField label="Occupation Type" error={errors['about.occupation_type']}>
                       <Select
                         id="occupation_type"
@@ -515,6 +514,102 @@ export default function ProfileSetupPage() {
                       </Select>
                     </FormField>
 
+                    <FormField label="Neighbourliness Level" error={errors['about.neighbourliness_level']}>
+                      <Select
+                        id="neighbourliness_level"
+                        value={formState.about.neighbourliness_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'neighbourliness_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                          )
+                        }
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                      </Select>
+                    </FormField>
+
+                    <FormField label="Guests Level" error={errors['about.guests_level']}>
+                      <Select
+                        id="guests_level"
+                        value={formState.about.guests_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'guests_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                          )
+                        }
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                      </Select>
+                    </FormField>
+
+                    <FormField label="Parties Level" error={errors['about.parties_level']}>
+                      <Select
+                        id="parties_level"
+                        value={formState.about.parties_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'parties_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                          )
+                        }
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                      </Select>
+                    </FormField>
+
+                    <FormField label="Bedtime" error={errors['about.bedtime_level']}>
+                      <Select
+                        id="bedtime_level"
+                        value={formState.about.bedtime_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'bedtime_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
+                          )
+                        }
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Early (around 22:00)</option>
+                        <option value="2">Midnight</option>
+                        <option value="3">Late (around 02:00)</option>
+                        <option value="4">Very Late (around 04:00)</option>
+                      </Select>
+                    </FormField>
+
+                    <FormField label="Neatness Level" error={errors['about.neatness_level']}>
+                      <Select
+                        id="neatness_level"
+                        value={formState.about.neatness_level ?? ''}
+                        onChange={(e) =>
+                          updateFormState(
+                            'about',
+                            'neatness_level',
+                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
+                          )
+                        }
+                      >
+                        <option value="">Select...</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                      </Select>
+                    </FormField>
+
                     <FormField label="Smoking Level" error={errors['about.smoking_level']}>
                       <Select
                         id="smoking_level"
@@ -541,7 +636,11 @@ export default function ProfileSetupPage() {
                           { id: 'smokes_tobacco', label: 'Tobacco', field: 'smokes_tobacco' as const },
                           { id: 'smokes_cigs', label: 'Cigarettes', field: 'smokes_cigs' as const },
                         ].map((option) => (
-                          <Label key={option.id} htmlFor={option.id} className="flex items-center gap-2 text-sm text-muted">
+                          <Label
+                            key={option.id}
+                            htmlFor={option.id}
+                            className="flex items-center gap-2 text-sm text-muted-foreground"
+                          >
                             <Checkbox
                               id={option.id}
                               checked={formState.about[option.field] === true}
@@ -551,6 +650,176 @@ export default function ProfileSetupPage() {
                           </Label>
                         ))}
                       </div>
+                    </FormField>
+
+                    <FormField label="I have animals" hint="Pick every animal you live with.">
+                      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+                        {animalOptions.map((animal) => (
+                          <Label
+                            key={animal.id}
+                            htmlFor={animal.id}
+                            className="flex items-center gap-2 text-sm text-muted-foreground"
+                          >
+                            <Checkbox
+                              id={animal.id}
+                              checked={formState.about[animal.field] === true}
+                              onChange={(e) => updateFormState('about', animal.field, e.target.checked)}
+                            />
+                            {animal.label}
+                          </Label>
+                        ))}
+                      </div>
+                    </FormField>
+
+                    <FormField
+                      label="Other animals (up to 5)"
+                      error={errors['about.other_animals']}
+                      hint="Press Enter to add each animal."
+                      className="md:col-span-2"
+                    >
+                      <div className={tagInputWrapperClass}>
+                        <TagsInput
+                          isEditOnRemove
+                          value={formState.about.other_animals || []}
+                          beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                            const newTagsCandidate = [...currentTags, newTag]
+                            const validationError = validators['about.other_animals'](newTagsCandidate, formState)
+                            if (validationError !== null) {
+                              setErrors((prevErrors) => ({
+                                ...prevErrors,
+                                'about.other_animals': validationError,
+                              }))
+                              return false
+                            }
+                            setErrors((prevErrors) => {
+                              const newErrors = { ...prevErrors }
+                              delete newErrors['about.other_animals']
+                              return newErrors
+                            })
+                            return true
+                          }}
+                          onChange={(tags: string[]) => {
+                            setErrors((prevErrors) => {
+                              const newErrors = { ...prevErrors }
+                              delete newErrors['about.other_animals']
+                              return newErrors
+                            })
+                            updateFormState('about', 'other_animals', tags)
+                          }}
+                          onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                            const inputValue = (e.target as HTMLInputElement).value
+                            const currentTags = formState.about.other_animals || []
+                            if (inputValue) {
+                              const newTagsCandidate = [...currentTags, inputValue]
+                              validateCurrentTagsInput('about.other_animals', newTagsCandidate, 'about.other_animals')
+                            } else {
+                              validateCurrentTagsInput('about.other_animals', currentTags, 'about.other_animals')
+                            }
+                          }}
+                          onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                            const inputElement = e.target as HTMLInputElement
+                            const inputValue = inputElement.value
+                            if (inputValue) {
+                              inputElement.value = ''
+                              setErrors((prevErrors) => {
+                                const newErrors = { ...prevErrors }
+                                delete newErrors['about.other_animals']
+                                return newErrors
+                              })
+                            }
+                          }}
+                          name="other_animals"
+                          placeholder="Press Enter to add"
+                          classNames={tagInputClassNames}
+                        />
+                      </div>
+                    </FormField>
+
+                    <FormField
+                      label="Interests (up to 5)"
+                      error={errors['about.interests']}
+                      hint="Press Enter to add each hobby."
+                      className="md:col-span-2"
+                    >
+                      <div className={tagInputWrapperClass}>
+                        <TagsInput
+                          isEditOnRemove
+                          value={formState.about.interests || []}
+                          beforeAddValidate={(newTag: string, currentTags: string[]) => {
+                            const newTagsCandidate = [...currentTags, newTag]
+                            const validationError = validators['about.interests'](newTagsCandidate, formState)
+                            if (validationError !== null) {
+                              setErrors((prevErrors) => ({
+                                ...prevErrors,
+                                'about.interests': validationError,
+                              }))
+                              return false
+                            }
+
+                            setErrors((prevErrors) => {
+                              const newErrors = { ...prevErrors }
+                              delete newErrors['about.interests']
+                              return newErrors
+                            })
+                            return true
+                          }}
+                          onChange={(tags) => {
+                            setErrors((prevErrors) => {
+                              const newErrors = { ...prevErrors }
+                              delete newErrors['about.interests']
+                              return newErrors
+                            })
+                            updateFormState('about', 'interests', tags)
+                          }}
+                          onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                            const inputValue = (e.target as HTMLInputElement).value
+                            const currentTags = formState.about.interests || []
+                            if (inputValue) {
+                              const newTagsCandidate = [...currentTags, inputValue]
+                              validateCurrentTagsInput('about.interests', newTagsCandidate, 'about.interests')
+                            } else {
+                              validateCurrentTagsInput('about.interests', currentTags, 'about.interests')
+                            }
+                          }}
+                          onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                            const inputElement = e.target as HTMLInputElement
+                            const inputValue = inputElement.value
+                            if (inputValue) {
+                              inputElement.value = ''
+                              setErrors((prevErrors) => {
+                                const newErrors = { ...prevErrors }
+                                delete newErrors['about.interests']
+                                return newErrors
+                              })
+                            }
+                          }}
+                          name="interests"
+                          placeholder="Press Enter to add"
+                          classNames={tagInputClassNames}
+                        />
+                      </div>
+                    </FormField>
+
+                    <FormField label="Bio (up to 1024 chars)" error={errors['about.bio']} className="md:col-span-2">
+                      <Textarea
+                        id="bio"
+                        rows={3}
+                        value={formState.about.bio ?? ''}
+                        onChange={(e) => updateFormState('about', 'bio', e.target.value || null)}
+                        className={cn(
+                          'min-h-[120px]',
+                          (errors['about.bio'] || (formState.about.bio && formState.about.bio.length > 1024)) &&
+                            'ring-2 ring-destructive'
+                        )}
+                      />
+                      <p
+                        className={cn(
+                          'text-xs',
+                          formState.about.bio && formState.about.bio.length > 1024 ? 'text-destructive' : 'text-muted-foreground'
+                        )}
+                      >
+                        {formState.about.bio ? formState.about.bio.length : 0} / 1024 characters
+                      </p>
                     </FormField>
                   </div>
                 </div>
@@ -568,7 +837,7 @@ export default function ProfileSetupPage() {
           <Stack gap="xs">
             <Stack gap="xs">
               <h2 className="text-base font-semibold text-foreground">Rent preferences</h2>
-              <p className="text-sm text-muted">Set the budget, duration, and areas you want.</p>
+              <p className="text-sm text-muted-foreground">Set the budget, duration, and areas you want.</p>
             </Stack>
             <div className="grid gap-3 md:grid-cols-2">
               <FormField label="Min Budget" error={errors['rent_preferences.min_budget']}>
@@ -697,70 +966,74 @@ export default function ProfileSetupPage() {
 
 
   // --- RENDER ---
-  return (
-    <Section as="div" className="bg-background-soft" fullWidth>
-      <Card className="mx-auto w-full max-w-3xl">
-        <CardContent className="p-2 sm:p-3">
-          <Stack gap="xs">
-            <Stack gap="xs" className="text-center">
-              <h1 className="text-base font-semibold leading-tight text-foreground">
-                Wrap up your flatmate profile
-              </h1>
-            </Stack>
+  const progress = ((currentStep + 1) / STEPS.length) * 100
 
-            <div className="rounded-lg p-2">
-              <nav aria-label="Setup progress" className="overflow-x-auto">
-                <ol className="flex items-center justify-center gap-2 text-sm font-medium">
+  return (
+    <Section as="div" className="bg-surface-muted" fullWidth>
+      <div className="page-shell">
+        <Card className="mx-auto w-full max-w-4xl rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]">
+          <CardContent className="p-4 sm:p-6">
+            <Stack gap="sm">
+              <Stack gap="xs">
+                <p className="text-sm font-medium text-muted-foreground">Profile setup</p>
+                <h1 className="text-base font-bold leading-tight text-foreground">Wrap up your flatmate profile</h1>
+              </Stack>
+
+              <div className="space-y-2 rounded-[var(--radius-lg)] bg-brand-weak/40 p-3">
+                <div className="flex items-center gap-3 text-sm font-medium text-foreground">
                   {STEPS.map((step, index) => {
                     const isPast = index < currentStep
                     const isActive = index === currentStep
                     return (
-                      <li key={step.id} className="flex items-center gap-2">
-                        <span
-                          className={
-                            isActive
-                              ? 'text-primary'
-                              : isPast
-                              ? 'text-foreground'
-                              : 'text-muted-foreground'
-                          }
-                        >
-                          {step.name}
-                        </span>
-                        {index !== STEPS.length - 1 && (
-                          <span className="h-px w-6 bg-border opacity-70" aria-hidden="true" />
-                        )}
-                      </li>
+                      <span
+                        key={step.id}
+                        className={
+                          isActive
+                            ? 'text-primary'
+                            : isPast
+                            ? 'text-foreground'
+                            : 'text-muted-foreground'
+                        }
+                      >
+                        {index + 1}. {step.name}
+                      </span>
                     )
                   })}
-                </ol>
-              </nav>
-            </div>
+                </div>
+                <div className="h-1 w-full rounded-full bg-border">
+                  <div
+                    className="h-1 rounded-full bg-accent transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                    aria-hidden
+                  />
+                </div>
+              </div>
 
-            {generalError && <Alert variant="destructive">Error: {generalError}</Alert>}
-            {apiError && <Alert variant="destructive">API Error: {apiError}</Alert>}
+              {generalError && <Alert variant="destructive">Error: {generalError}</Alert>}
+              {apiError && <Alert variant="destructive">API Error: {apiError}</Alert>}
 
-            <div className="rounded bg-card p-2">
-              {getStepContent()}
-            </div>
+              <div className="rounded-[var(--radius-lg)] bg-card p-3 shadow-[var(--shadow-soft)]">
+                {getStepContent()}
+              </div>
 
-            <div className="flex flex-col gap-1 pt-1 sm:flex-row sm:justify-between">
-              <Button variant="outline" onClick={prevStep} disabled={currentStep === 0} className="sm:w-auto">
-                Back
-              </Button>
-              {currentStep < STEPS.length - 1 ? (
-                <Button onClick={nextStep} className="sm:w-auto">
-                  Continue
+              <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:justify-between">
+                <Button variant="outline" onClick={prevStep} disabled={currentStep === 0} className="sm:w-auto">
+                  Back
                 </Button>
-              ) : (
-                <Button onClick={handleSubmit} disabled={isLoading} className="sm:w-auto">
-                  {isLoading ? 'Submitting…' : 'Finish profile'}
-                </Button>
-              )}
-            </div>
-          </Stack>
-        </CardContent>
-      </Card>
+                {currentStep < STEPS.length - 1 ? (
+                  <Button onClick={nextStep} className="sm:w-auto">
+                    Continue
+                  </Button>
+                ) : (
+                  <Button onClick={handleSubmit} disabled={isLoading} className="sm:w-auto">
+                    {isLoading ? 'Submitting…' : 'Finish profile'}
+                  </Button>
+                )}
+              </div>
+            </Stack>
+          </CardContent>
+        </Card>
+      </div>
     </Section>
   )
 }

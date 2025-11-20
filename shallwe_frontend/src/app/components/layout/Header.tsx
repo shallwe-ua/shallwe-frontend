@@ -73,29 +73,30 @@ const Header = () => {
   const isLanding = pathname === '/'
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background shadow-[var(--shadow-soft)]">
+    <header className="sticky top-0 z-30 border-b border-border bg-brand-weak/60 backdrop-blur-sm">
       <div className="page-shell">
-        <div className="flex h-14 items-center justify-between">
+        <div className="flex h-16 items-center justify-between">
           <Link
             href={isLoggedIn ? '/settings' : '/'}
-            className="text-base font-semibold text-foreground tracking-tight"
+            className="text-base font-black tracking-tight text-foreground"
             aria-label="Shallwe home"
           >
             Shallwe
           </Link>
 
           {!isLanding && (
-            <div>
+            <div className="flex items-center gap-2">
               {isLoggedIn ? (
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   Logout
                 </Button>
               ) : isSetupPage ? (
                 <Button
-                  variant="destructive"
+                  variant="ghost"
                   size="sm"
                   onClick={handleCancelSetup}
                   disabled={isCancellingSetup}
+                  className="text-foreground hover:bg-surface-muted"
                 >
                   {isCancellingSetup ? 'Cancelling…' : 'Cancel setup'}
                 </Button>

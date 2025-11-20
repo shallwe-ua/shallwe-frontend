@@ -61,11 +61,11 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
 
     // Populate map from cities
     locationsData.cities?.forEach(city => {
-      // Format city name like in getDisplayName (e.g., "Kyiv (Kyivska)")
+      // Format city name like in getDisplayName (e.g., 'Kyiv (Kyivska)')
       map[city.hierarchy] = `${city.ppl_name} (${city.region_name})`;
       // Populate map from districts within cities
       city.districts?.forEach(district => {
-        // Format district name like in getDisplayName (e.g., "Kyiv, Podilskyi")
+        // Format district name like in getDisplayName (e.g., 'Kyiv, Podilskyi')
         map[district.hierarchy] = `${city.ppl_name}, ${district.district_name}`;
       });
     });
@@ -204,7 +204,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
     { id: 'has_birds_edit', field: 'has_birds', label: 'Birds' },
   ] as const
 
-  const tagInputWrapperClass = 'rounded-lg border border-border bg-card px-3 py-2'
+  const tagInputWrapperClass = 'rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-3'
 
   // Define a helper function to run validation and update errors
   const validateCurrentTagsInput = (fieldName: string, tagsToValidate: string[], validatorKey: string) => {
@@ -238,7 +238,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
   // Save function
   const handleSave = async () => {
     if (!validateEditForm()) {
-      console.log("Edit form validation failed.")
+      console.log('Edit form validation failed.')
       return
     }
 
@@ -249,16 +249,16 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
       // Use the NEW collector to determine the payload based on differences between editFormState and initialProfileData
       const profileDataToUpdate: ProfileUpdateData = collectProfileUpdateDataFromState(editFormState, initialProfileData)
 
-      console.log("Collected Profile Data for Update API:", profileDataToUpdate)
+      console.log('Collected Profile Data for Update API:', profileDataToUpdate)
 
       // Call the updateProfile API function with the structured data object
       await updateProfile(profileDataToUpdate)
-      console.log("Profile updated successfully!")
+      console.log('Profile updated successfully!')
       onSave() // Notify parent component of success
     } catch (error) {
-      console.error("Error updating profile:", error)
+      console.error('Error updating profile:', error)
       setIsSaving(false)
-      let errorMessage = "Failed to update profile."
+      let errorMessage = 'Failed to update profile.'
       if (error && typeof error === 'object' && 'details' in error) {
         const err = error as ApiError
         if (typeof err.details === 'string') {
@@ -284,34 +284,34 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
 
   // --- RENDER LOGIC ---
   return (
-    <div className="bg-background-soft">
-      <Stack gap="sm" className="mx-auto w-full max-w-5xl">
+    <div className='bg-surface-muted'>
+      <Stack gap='md' className='mx-auto w-full max-w-5xl'>
         {apiError && !isFloatingApiErrorDismissed && (
-          <Alert variant="destructive" className="flex items-center justify-between gap-4">
+          <Alert variant='destructive' className='flex items-center justify-between gap-4'>
             <span>API Error: {apiError}</span>
-            <Button variant="outline" size="sm" onClick={() => setIsFloatingApiErrorDismissed(true)}>
+            <Button variant='outline' size='sm' onClick={() => setIsFloatingApiErrorDismissed(true)}>
               Dismiss
             </Button>
           </Alert>
         )}
 
-        <Card>
-          <CardContent className="p-4">
-            <Stack gap="sm">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Stack gap="sm" className="items-center">
+        <Card className='rounded-[var(--radius-lg)] shadow-[var(--shadow-card)]'>
+          <CardContent className='p-5 sm:p-6'>
+            <Stack gap='md'>
+              <div className='grid grid-cols-1 gap-5 md:grid-cols-3'>
+                <Stack gap='sm' className='items-center'>
                   <ProfilePhotoPick
                     initialFile={editFormState.profile.photo}
                     initialPhotoUrl={initialProfileData.profile.photo_w192 || null}
                     onError={handlePhotoError}
                     onClearError={clearPhotoError}
                     onCropComplete={handlePhotoCropped}
-                    mode="edit"
+                    mode='edit'
                   />
                   {errors['profile.photo'] && (
-                    <p className="text-sm text-destructive">{errors['profile.photo']}</p>
+                    <p className='text-sm text-destructive'>{errors['profile.photo']}</p>
                   )}
-                  <FormField label="Display Name" error={errors['profile.name']} className="w-full text-left">
+                  <FormField label='Display Name' error={errors['profile.name']} className='w-full text-left'>
                     <Input
                       value={editFormState.profile.name ?? ''}
                       onChange={(e) => updateEditFormState('profile', 'name', e.target.value)}
@@ -319,21 +319,21 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   </FormField>
                 </Stack>
 
-        {/* Main Details */}
-                <div className="md:col-span-2">
-                  <Stack gap="sm">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Main Details */}
+                <div className='md:col-span-2'>
+                  <Stack gap='md'>
+            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 
-            <FormField label="Birth Date" error={errors['about.birth_date']}>
+            <FormField label='Birth Date' error={errors['about.birth_date']}>
               <BirthDateSelect
-                inputId="birth_date"
+                inputId='birth_date'
                 currentValue={editFormState.about.birth_date}
                 onChange={(dateString) => updateEditFormState('about', 'birth_date', dateString)}
               />
             </FormField>
 
-            <FormField label="Gender" error={errors['about.gender']}>
-              <div className="space-y-2">
+            <FormField label='Gender' error={errors['about.gender']}>
+              <div className='space-y-2'>
                 {[
                   { id: 'gender_male_edit', value: 1, label: 'Male' },
                   { id: 'gender_female_edit', value: 2, label: 'Female' },
@@ -341,11 +341,11 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   <Label
                     key={option.id}
                     htmlFor={option.id}
-                    className="flex items-center gap-2 text-sm text-muted"
+                    className='flex items-center gap-2 text-sm text-muted-foreground'
                   >
                     <Radio
                       id={option.id}
-                      name="gender_edit"
+                      name='gender_edit'
                       checked={editFormState.about.gender === option.value}
                       onChange={() => updateEditFormState('about', 'gender', option.value as 1 | 2)}
                     />
@@ -354,10 +354,10 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 ))}
               </div>
             </FormField>
-            <FormField label="Is Couple" error={errors['about.is_couple']}>
-              <Label htmlFor="is_couple_edit" className="flex items-center gap-2 text-sm text-muted">
+            <FormField label='Is Couple' error={errors['about.is_couple']}>
+              <Label htmlFor='is_couple_edit' className='flex items-center gap-2 text-sm text-muted-foreground'>
                 <Checkbox
-                  id="is_couple_edit"
+                  id='is_couple_edit'
                   checked={editFormState.about.is_couple === true}
                   onChange={(e) => updateEditFormState('about', 'is_couple', e.target.checked)}
                 />
@@ -365,10 +365,10 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
               </Label>
             </FormField>
 
-            <FormField label="Has Children" error={errors['about.has_children']}>
-              <Label htmlFor="has_children_edit" className="flex items-center gap-2 text-sm text-muted">
+            <FormField label='Has Children' error={errors['about.has_children']}>
+              <Label htmlFor='has_children_edit' className='flex items-center gap-2 text-sm text-muted-foreground'>
                 <Checkbox
-                  id="has_children_edit"
+                  id='has_children_edit'
                   checked={editFormState.about.has_children === true}
                   onChange={(e) => updateEditFormState('about', 'has_children', e.target.checked)}
                 />
@@ -376,9 +376,9 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
               </Label>
             </FormField>
             {/* Add more fields as needed, mirroring the structure from ProfileSetupPage for the 'about' section */}
-            <FormField label="Occupation Type" error={errors['about.occupation_type']}>
+            <FormField label='Occupation Type' error={errors['about.occupation_type']}>
               <Select
-                id="occupation_type_edit"
+                id='occupation_type_edit'
                 value={editFormState.about.occupation_type ?? ''}
                 onChange={(e) =>
                   updateEditFormState(
@@ -388,17 +388,17 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   )
                 }
               >
-                <option value="">Select...</option>
-                <option value="1">Employed</option>
-                <option value="2">Student</option>
-                <option value="3">Unemployed</option>
-                <option value="4">Retired</option>
+                <option value=''>Select...</option>
+                <option value='1'>Employed</option>
+                <option value='2'>Student</option>
+                <option value='3'>Unemployed</option>
+                <option value='4'>Retired</option>
               </Select>
             </FormField>
 
-            <FormField label="Drinking Level" error={errors['about.drinking_level']}>
+            <FormField label='Drinking Level' error={errors['about.drinking_level']}>
               <Select
-                id="drinking_level_edit"
+                id='drinking_level_edit'
                 value={editFormState.about.drinking_level ?? ''}
                 onChange={(e) =>
                   updateEditFormState(
@@ -408,17 +408,17 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   )
                 }
               >
-                <option value="">Select...</option>
-                <option value="1">Never</option>
-                <option value="2">Rarely</option>
-                <option value="3">Socially</option>
-                <option value="4">Often</option>
+                <option value=''>Select...</option>
+                <option value='1'>Never</option>
+                <option value='2'>Rarely</option>
+                <option value='3'>Socially</option>
+                <option value='4'>Often</option>
               </Select>
             </FormField>
 
-            <FormField label="Smoking Level" error={errors['about.smoking_level']}>
+            <FormField label='Smoking Level' error={errors['about.smoking_level']}>
               <Select
-                id="smoking_level_edit"
+                id='smoking_level_edit'
                 value={editFormState.about.smoking_level ?? ''}
                 onChange={(e) =>
                   updateSmokingLevelAndClearTypes(
@@ -426,25 +426,25 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   )
                 }
               >
-                <option value="">Select...</option>
-                <option value="1">Never</option>
-                <option value="2">Rarely</option>
-                <option value="3">Socially</option>
-                <option value="4">Often</option>
+                <option value=''>Select...</option>
+                <option value='1'>Never</option>
+                <option value='2'>Rarely</option>
+                <option value='3'>Socially</option>
+                <option value='4'>Often</option>
               </Select>
             </FormField>
 
             {/* Add Smoking Type Checkboxes (Conditional based on smoking_level) - ADD THIS BLOCK */}
             {editFormState.about.smoking_level !== null && editFormState.about.smoking_level > 1 && (
-              <FormField label="Smoking Types" hint="Select all that apply" className="col-span-2">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
+              <FormField label='Smoking Types' hint='Select all that apply' className='col-span-2'>
+                <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4'>
                   {[
                     { id: 'smokes_iqos_edit', label: 'IQOS', field: 'smokes_iqos' as const },
                     { id: 'smokes_vape_edit', label: 'Vape', field: 'smokes_vape' as const },
                     { id: 'smokes_tobacco_edit', label: 'Tobacco', field: 'smokes_tobacco' as const },
                     { id: 'smokes_cigs_edit', label: 'Cigarettes', field: 'smokes_cigs' as const },
                   ].map((option) => (
-                    <Label key={option.id} htmlFor={option.id} className="flex items-center gap-2 text-sm text-muted">
+                    <Label key={option.id} htmlFor={option.id} className='flex items-center gap-2 text-sm text-muted-foreground'>
                       <Checkbox
                         id={option.id}
                         checked={editFormState.about[option.field] === true}
@@ -460,14 +460,14 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           </div>
 
           {/* Rent Preferences */}
-          <div className="space-y-3">
-            <h3 className="text-base font-semibold text-foreground">Rent Preferences</h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField label="Min Budget" error={errors['rent_preferences.min_budget']}>
+          <div className='space-y-3'>
+            <h3 className='text-base font-semibold text-foreground'>Rent Preferences</h3>
+            <div className='grid gap-4 md:grid-cols-2'>
+              <FormField label='Min Budget' error={errors['rent_preferences.min_budget']}>
                 <Input
-                  type="number"
-                  inputMode="numeric"
-                  id="min_budget_edit"
+                  type='number'
+                  inputMode='numeric'
+                  id='min_budget_edit'
                   value={editFormState.rent_preferences.min_budget ?? ''}
                   onChange={(e) => {
                     const raw = e.target.value
@@ -482,11 +482,11 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   }}
                 />
               </FormField>
-              <FormField label="Max Budget" error={errors['rent_preferences.max_budget']}>
+              <FormField label='Max Budget' error={errors['rent_preferences.max_budget']}>
                 <Input
-                  type="number"
-                  inputMode="numeric"
-                  id="max_budget_edit"
+                  type='number'
+                  inputMode='numeric'
+                  id='max_budget_edit'
                   value={editFormState.rent_preferences.max_budget ?? ''}
                   onChange={(e) => {
                     const raw = e.target.value
@@ -502,11 +502,11 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 />
               </FormField>
               <FormField
-                label="Min Rent Duration Level"
+                label='Min Rent Duration Level'
                 error={errors['rent_preferences.min_rent_duration_level']}
               >
                 <Select
-                  id="min_rent_duration_level_edit"
+                  id='min_rent_duration_level_edit'
                   value={editFormState.rent_preferences.min_rent_duration_level ?? ''}
                   onChange={(e) =>
                     updateEditFormState(
@@ -518,20 +518,20 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     )
                   }
                 >
-                  <option value="">Select...</option>
-                  <option value="1">1 month</option>
-                  <option value="2">2 months</option>
-                  <option value="3">3 months</option>
-                  <option value="4">6 months</option>
-                  <option value="5">1 year</option>
+                  <option value=''>Select...</option>
+                  <option value='1'>1 month</option>
+                  <option value='2'>2 months</option>
+                  <option value='3'>3 months</option>
+                  <option value='4'>6 months</option>
+                  <option value='5'>1 year</option>
                 </Select>
               </FormField>
               <FormField
-                label="Max Rent Duration Level"
+                label='Max Rent Duration Level'
                 error={errors['rent_preferences.max_rent_duration_level']}
               >
                 <Select
-                  id="max_rent_duration_level_edit"
+                  id='max_rent_duration_level_edit'
                   value={editFormState.rent_preferences.max_rent_duration_level ?? ''}
                   onChange={(e) =>
                     updateEditFormState(
@@ -543,20 +543,20 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     )
                   }
                 >
-                  <option value="">Select...</option>
-                  <option value="1">1 month</option>
-                  <option value="2">2 months</option>
-                  <option value="3">3 months</option>
-                  <option value="4">6 months</option>
-                  <option value="5">1 year</option>
+                  <option value=''>Select...</option>
+                  <option value='1'>1 month</option>
+                  <option value='2'>2 months</option>
+                  <option value='3'>3 months</option>
+                  <option value='4'>6 months</option>
+                  <option value='5'>1 year</option>
                 </Select>
               </FormField>
               <FormField
-                label="Room Sharing Level"
+                label='Room Sharing Level'
                 error={errors['rent_preferences.room_sharing_level']}
               >
                 <Select
-                  id="room_sharing_level_edit"
+                  id='room_sharing_level_edit'
                   value={editFormState.rent_preferences.room_sharing_level ?? ''}
                   onChange={(e) =>
                     updateEditFormState(
@@ -568,16 +568,16 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     )
                   }
                 >
-                  <option value="">Select...</option>
-                  <option value="1">Private Room Only</option>
-                  <option value="2">Shared Room Possible</option>
-                  <option value="3">Flexible (Any Arrangement)</option>
+                  <option value=''>Select...</option>
+                  <option value='1'>Private Room Only</option>
+                  <option value='2'>Shared Room Possible</option>
+                  <option value='3'>Flexible (Any Arrangement)</option>
                 </Select>
               </FormField>
             </div>
             <FormField
-              label="Locations"
-              hint="Select up to 30, no overlaps."
+              label='Locations'
+              hint='Select up to 30, no overlaps.'
               error={errors['rent_preferences.locations']}
             >
               <Locations
@@ -591,13 +591,13 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
           </div>
 
           {/* Other Details - Similar structure, add fields as needed */}
-          <div className="space-y-3">
-              <h3 className="text-base font-semibold text-foreground">Other Details</h3>
-              <div className="grid grid-cols-2 gap-4">
+          <div className='space-y-3'>
+              <h3 className='text-base font-semibold text-foreground'>Other Details</h3>
+              <div className='grid grid-cols-2 gap-4'>
                 {/* Example: Neighbourliness Level */}
-                <FormField label="Neighbourliness Level" error={errors['about.neighbourliness_level']}>
+                <FormField label='Neighbourliness Level' error={errors['about.neighbourliness_level']}>
                   <Select
-                    id="neighbourliness_level_edit"
+                    id='neighbourliness_level_edit'
                     value={editFormState.about.neighbourliness_level ?? ''}
                     onChange={(e) =>
                       updateEditFormState(
@@ -607,16 +607,16 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       )
                     }
                   >
-                    <option value="">Select...</option>
-                    <option value="1">Low</option>
-                    <option value="2">Medium</option>
-                    <option value="3">High</option>
+                    <option value=''>Select...</option>
+                    <option value='1'>Low</option>
+                    <option value='2'>Medium</option>
+                    <option value='3'>High</option>
                   </Select>
                 </FormField>
                 
-                <FormField label="Guests Level" error={errors['about.guests_level']}>
+                <FormField label='Guests Level' error={errors['about.guests_level']}>
                   <Select
-                    id="guests_level_edit"
+                    id='guests_level_edit'
                     value={editFormState.about.guests_level ?? ''}
                     onChange={(e) =>
                       updateEditFormState(
@@ -626,15 +626,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       )
                     }
                   >
-                    <option value="">Select...</option>
-                    <option value="1">Low</option>
-                    <option value="2">Medium</option>
-                    <option value="3">High</option>
+                    <option value=''>Select...</option>
+                    <option value='1'>Low</option>
+                    <option value='2'>Medium</option>
+                    <option value='3'>High</option>
                   </Select>
                 </FormField>
-                <FormField label="Parties Level" error={errors['about.parties_level']}>
+                <FormField label='Parties Level' error={errors['about.parties_level']}>
                   <Select
-                    id="parties_level_edit"
+                    id='parties_level_edit'
                     value={editFormState.about.parties_level ?? ''}
                     onChange={(e) =>
                       updateEditFormState(
@@ -644,15 +644,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       )
                     }
                   >
-                    <option value="">Select...</option>
-                    <option value="1">Low</option>
-                    <option value="2">Medium</option>
-                    <option value="3">High</option>
+                    <option value=''>Select...</option>
+                    <option value='1'>Low</option>
+                    <option value='2'>Medium</option>
+                    <option value='3'>High</option>
                   </Select>
                 </FormField>
-                <FormField label="Bedtime Level" error={errors['about.bedtime_level']}>
+                <FormField label='Bedtime Level' error={errors['about.bedtime_level']}>
                   <Select
-                    id="bedtime_level_edit"
+                    id='bedtime_level_edit'
                     value={editFormState.about.bedtime_level ?? ''}
                     onChange={(e) =>
                       updateEditFormState(
@@ -662,16 +662,16 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       )
                     }
                   >
-                    <option value="">Select...</option>
-                    <option value="1">Early (e.g., 22:00)</option>
-                    <option value="2">Midnight</option>
-                    <option value="3">Late (e.g., 02:00)</option>
-                    <option value="4">Very Late (e.g., 04:00)</option>
+                    <option value=''>Select...</option>
+                    <option value='1'>Early (e.g., 22:00)</option>
+                    <option value='2'>Midnight</option>
+                    <option value='3'>Late (e.g., 02:00)</option>
+                    <option value='4'>Very Late (e.g., 04:00)</option>
                   </Select>
                 </FormField>
-                <FormField label="Neatness Level" error={errors['about.neatness_level']}>
+                <FormField label='Neatness Level' error={errors['about.neatness_level']}>
                   <Select
-                    id="neatness_level_edit"
+                    id='neatness_level_edit'
                     value={editFormState.about.neatness_level ?? ''}
                     onChange={(e) =>
                       updateEditFormState(
@@ -681,17 +681,17 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                       )
                     }
                   >
-                    <option value="">Select...</option>
-                    <option value="1">Low</option>
-                    <option value="2">Medium</option>
-                    <option value="3">High</option>
+                    <option value=''>Select...</option>
+                    <option value='1'>Low</option>
+                    <option value='2'>Medium</option>
+                    <option value='3'>High</option>
                   </Select>
                 </FormField>
 
-                <FormField label="I have animals" className="md:col-span-2">
-                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+                <FormField label='I have animals' className='md:col-span-2'>
+                  <div className='grid gap-3 sm:grid-cols-2 md:grid-cols-4'>
                     {petOptions.map((option) => (
-                      <Label key={option.id} htmlFor={option.id} className="flex items-center gap-2 text-sm text-muted">
+                      <Label key={option.id} htmlFor={option.id} className='flex items-center gap-2 text-sm text-muted-foreground'>
                         <Checkbox
                           id={option.id}
                           checked={editFormState.about[option.field] === true}
@@ -706,9 +706,9 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                 </FormField>
                   {/* other_animals (TagsInput or similar) */}
                   <FormField
-                    label="Other animals (up to 5)"
+                    label='Other animals (up to 5)'
                     error={errors['about.other_animals']}
-                    className="md:col-span-2"
+                    className='md:col-span-2'
                   >
                     <div className={tagInputWrapperClass}>
                     <TagsInput
@@ -771,12 +771,12 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                             })
                           }
                         }}
-                      name="other_animals_edit" // Unique name for this instance
-                      placeHolder="Press Enter to add"
+                      name='other_animals_edit' // Unique name for this instance
+                      placeholder='Press Enter to add'
                       // Adapted Tailwind classes for styling, matching the pattern from ProfileSetupPage and other inputs in ProfileEditView
                       classNames={{
-                        tag: "bg-brand-weak text-primary px-2 py-1 rounded-md text-sm", // Style for individual tags
-                        input: "mt-0 block w-full p-0 text-sm border-0 focus:outline-none focus:ring-0", // Style for the input field itself, removing default border/ring to inherit from parent
+                        tag: 'bg-brand-weak text-primary px-2 py-1 rounded-[var(--radius-xs)] text-sm', // Style for individual tags
+                        input: 'mt-0 block w-full p-0 text-sm border-0 focus:outline-none focus:ring-0', // Style for the input field itself, removing default border/ring to inherit from parent
                         // The parent div provides the border, focus ring, and error styling
                       }}
                     />
@@ -784,9 +784,9 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                   </FormField>
 
                   <FormField
-                    label="Interests (up to 5)"
+                    label='Interests (up to 5)'
                     error={errors['about.interests']}
-                    className="md:col-span-2"
+                    className='md:col-span-2'
                   >
                     <div className={tagInputWrapperClass}>
                     <TagsInput
@@ -846,21 +846,21 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                             })
                           }
                         }}
-                      name="interests_edit" // Unique name for this instance
-                      placeHolder="Press Enter to add"
+                      name='interests_edit' // Unique name for this instance
+                      placeholder='Press Enter to add'
                       // Adapted Tailwind classes for styling
                       classNames={{
-                        tag: "bg-brand-weak text-primary px-2 py-1 rounded-md text-sm",
-                        input: "mt-0 block w-full p-0 text-sm border-0 focus:outline-none focus:ring-0",
+                        tag: 'bg-brand-weak text-primary px-2 py-1 rounded-[var(--radius-xs)] text-sm',
+                        input: 'mt-0 block w-full p-0 text-sm border-0 focus:outline-none focus:ring-0',
                       }}
                     />
                     </div>
                   </FormField>
 
                   {/* bio (textarea) */}
-                  <FormField label="Bio (up to 1024 chars)" error={errors['about.bio']} className="md:col-span-2">
+                  <FormField label='Bio (up to 1024 chars)' error={errors['about.bio']} className='md:col-span-2'>
                     <Textarea
-                      id="bio_edit"
+                      id='bio_edit'
                       rows={3}
                       value={editFormState.about.bio ?? ''}
                       onChange={(e) => updateEditFormState('about', 'bio', e.target.value || null)}
@@ -868,7 +868,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
                     />
                     <p
                       className={`text-sm mt-1 ${
-                        editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'text-destructive' : 'text-muted'
+                        editFormState.about.bio && editFormState.about.bio.length > 1024 ? 'text-destructive' : 'text-muted-foreground'
                       }`}
                     >
                       {editFormState.about.bio ? editFormState.about.bio.length : 0} / 1024 characters
@@ -881,8 +881,8 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialProfile
       </div>
 
       {/* Save/Cancel Buttons */}
-      <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-end">
-        <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+      <div className='flex flex-col gap-3 pt-4 sm:flex-row sm:justify-end'>
+        <Button variant='outline' onClick={onCancel} disabled={isSaving}>
           Cancel
         </Button>
         <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
