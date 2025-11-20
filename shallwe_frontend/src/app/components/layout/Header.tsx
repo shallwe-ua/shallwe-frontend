@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 
 import { ApiError } from '@/lib/shallwe/common/api/calls'
 import { logout, deleteUser } from '@/lib/shallwe/auth/api/calls'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/app/components/ui/primitives/button'
 
 
 
@@ -73,7 +73,7 @@ const Header = () => {
   const isLanding = pathname === '/'
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-brand-weak/60 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 border-b border-border bg-brand-weak backdrop-blur-sm">
       <div className="page-shell">
         <div className="flex h-16 items-center justify-between">
           <Link

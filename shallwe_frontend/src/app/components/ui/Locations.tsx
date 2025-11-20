@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { searchLocations } from '@/lib/shallwe/locations/api/calls'
 import { LocationsReadFields, GenericLocationReadFields } from '@/lib/shallwe/locations/api/schema'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
-import { Input } from '@/components/ui/input'
-import { MetaPill } from '@/components/ui/meta-pill'
-import { Button } from '@/components/ui/button'
+import { Input } from '@/app/components/ui/primitives/input'
+import { MetaPill } from '@/app/components/ui/primitives/meta-pill'
+import { Button } from '@/app/components/ui/primitives/button'
 import { cn } from '@/lib/utils'
 
 interface LocationsProps {

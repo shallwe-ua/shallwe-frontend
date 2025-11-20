@@ -4,10 +4,40 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { TagsInput } from 'react-tag-input-component'
-
-import ProfilePhotoPick from '../components/profile/ProfilePhotoPick'
-import Locations from '../components/profile/Locations'
+import {
+  DisplayNameField,
+  ProfilePhotoField,
+  BirthDateField,
+  GenderField,
+  CoupleField,
+  ChildrenField,
+  SmokingLevelField,
+  SmokingTypesField,
+  AnimalsOwnedField,
+  OtherAnimalsTagsField,
+  InterestsTagsField,
+  BioField,
+  BudgetRangeField,
+  RentDurationRangeField,
+  RoomSharingLevelField,
+  LocationsField,
+  OccupationField,
+  DrinkingLevelField,
+  NeighbourlinessLevelField,
+  GuestsLevelField,
+  PartiesLevelField,
+  BedtimeLevelField,
+  NeatnessLevelField,
+} from '../components/fields'
+import {
+  ABOUT_FIELDS_TO_VALIDATE,
+  PROFILE_FIELDS_TO_VALIDATE,
+  RENT_PREFERENCES_FIELDS_TO_VALIDATE,
+  SETUP_STEP_0_FIELDS_TO_VALIDATE,
+  SETUP_STEP_1_FIELDS_TO_VALIDATE,
+  SETUP_STEP_2_FIELDS_TO_VALIDATE,
+} from '../components/fields/validationFieldLists'
+import { applySmokingLevelReset, ensureSmokingLevelBeforeTypes } from '../components/fields/smokingHelpers'
 
 import { env } from '@/config/env'
 import { getDocumentCookie } from '@/lib/common/cookie'
@@ -18,20 +48,12 @@ import { ValidationResult, validators } from '@/lib/shallwe/profile/formstates/v
 import { ProfileCreateData } from '@/lib/shallwe/profile/api/schema/create'
 import { createProfile } from '@/lib/shallwe/profile/api/calls'
 import { ApiError } from '@/lib/shallwe/common/api/calls'
-import BirthDateSelect from '../components/profile/BirthDateSelect'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Alert } from '@/components/ui/alert'
-import { Section } from '@/components/ui/section'
-import { Stack } from '@/components/ui/stack'
-import { FormField } from '@/components/ui/form-field'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Radio } from '@/components/ui/radio'
-import { Select } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
+import { Button } from '@/app/components/ui/primitives/button'
+import { Card, CardContent } from '@/app/components/ui/primitives/card'
+import { Alert } from '@/app/components/ui/primitives/alert'
+import { Section } from '@/app/components/ui/primitives/section'
+import { Stack } from '@/app/components/ui/primitives/stack'
 import { cn } from '@/lib/utils'
-import { Textarea } from '@/components/ui/textarea'
 
 
 // Dividing visual flow in steps for better UX
@@ -40,56 +62,6 @@ const STEPS = [
   { id: 'about', name: 'About You' },
   { id: 'preferences', name: 'Rent Preferences' },
 ]
-
-const tagInputWrapperClass = 'rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-3'
-
-const tagInputClassNames = {
-  tag: 'rounded-[var(--radius-xs)] bg-brand-weak px-2 py-1 text-sm text-primary',
-  input:
-    'mt-0 block w-full border-0 bg-transparent p-0 text-sm text-foreground placeholder:text-muted focus:outline-none',
-}
-
-type SmokingField = 'smokes_iqos' | 'smokes_vape' | 'smokes_tobacco' | 'smokes_cigs'
-type AnimalField = 'has_cats' | 'has_dogs' | 'has_reptiles' | 'has_birds'
-
-const smokingTypeOptions: { id: string; label: string; field: SmokingField }[] = [
-  { id: 'smokes_iqos', label: 'IQOS', field: 'smokes_iqos' },
-  { id: 'smokes_vape', label: 'Vape', field: 'smokes_vape' },
-  { id: 'smokes_tobacco', label: 'Tobacco', field: 'smokes_tobacco' },
-  { id: 'smokes_cigs', label: 'Cigarettes', field: 'smokes_cigs' },
-]
-
-const animalOptions: { id: string; label: string; field: AnimalField }[] = [
-  { id: 'has_cats', label: 'Cats', field: 'has_cats' },
-  { id: 'has_dogs', label: 'Dogs', field: 'has_dogs' },
-  { id: 'has_reptiles', label: 'Reptiles', field: 'has_reptiles' },
-  { id: 'has_birds', label: 'Birds', field: 'has_birds' },
-]
-
-
-// Fields that are validated beyond basic type match
-const STEP_0_FIELDS_TO_VALIDATE = [
-  'profile.name',
-  'profile.photo',
-]
-const STEP_1_FIELDS_TO_VALIDATE = [
-  'about.birth_date',
-  'about.gender',
-  'about.is_couple',
-  'about.has_children',
-  'about.smoking_level',
-  'about.other_animals',
-  'about.interests',
-  'about.bio',
-]
-const STEP_2_FIELDS_VALIDATE = [
-  'rent_preferences.min_budget',
-  'rent_preferences.max_budget',
-  'rent_preferences.min_rent_duration_level',
-  'rent_preferences.max_rent_duration_level',
-  'rent_preferences.locations',
-]
-
 
 export default function ProfileSetupPage() {
   const [currentStep, setCurrentStep] = useState(0)
@@ -126,50 +98,21 @@ export default function ProfileSetupPage() {
   }, [])
 
 
-  // Define a helper function to run validation and update errors
-  const validateCurrentTagsInput = (fieldName: string, tagsToValidate: string[], validatorKey: string) => {
-    const validationError = validators[validatorKey](tagsToValidate, formState)
-    setErrors((prevErrors) => {
-      const newErrors = { ...prevErrors }
-      if (validationError !== null) {
-        newErrors[fieldName] = validationError
-      } else {
-        delete newErrors[fieldName] // Clear error if validation passes
-      }
-      return newErrors
-    })
-    return validationError
-  }
-
   const updateSmokingLevelAndClearTypes = (newLevel: ProfileCreateFormState['about']['smoking_level']) => {
-    setGeneralError(null);
-    setFormState(prev => {
-      const updatedAbout = { ...prev.about, smoking_level: newLevel };
+    setGeneralError(null)
+    setFormState(prev => ({
+      ...prev,
+      about: applySmokingLevelReset(prev.about, newLevel),
+    }))
 
-      // Check if the new level is null or 1
-      if (newLevel === null || newLevel === 1) {
-        // Reset smoking type booleans to false
-        updatedAbout.smokes_iqos = false;
-        updatedAbout.smokes_vape = false;
-        updatedAbout.smokes_tobacco = false;
-        updatedAbout.smokes_cigs = false;
-      }
-
-      return {
-        ...prev,
-        about: updatedAbout,
-      };
-    });
-
-    // Clear specific field error when user starts typing/modifying
     if (errors['about.smoking_level']) {
       setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors['about.smoking_level'];
-        return newErrors;
-      });
+        const newErrors = { ...prev }
+        delete newErrors['about.smoking_level']
+        return newErrors
+      })
     }
-  };
+  }
   
 
   // Update the photo handler to interact with the PhotoCropper component
@@ -177,17 +120,8 @@ export default function ProfileSetupPage() {
     updateFormState('profile', 'photo', croppedFile)
   }
 
-  const ensureSmokingLevelBeforeTypes = (errorsMap: Record<string, string>) => {
-    const hasTypeSelected = smokingTypeOptions.some(option => formState.about[option.field])
-    const missingLevel = formState.about.smoking_level === null || formState.about.smoking_level === undefined
-
-    if (hasTypeSelected && missingLevel) {
-      errorsMap['about.smoking_level'] = 'Select a smoking level before choosing smoking types.'
-      return false
-    }
-
-    return true
-  }
+  const ensureSmokingLevelBeforeTypesLocal = (errorsMap: Record<string, string>) =>
+    ensureSmokingLevelBeforeTypes(formState.about, errorsMap)
 
   // Callback for PhotoCropper to set error in the main page's state
   const handlePhotoError = (error: string) => {
@@ -240,13 +174,13 @@ export default function ProfileSetupPage() {
     let fieldsToValidate: string[] = []
     switch (currentStep) {
       case 0:
-        fieldsToValidate = STEP_0_FIELDS_TO_VALIDATE
+        fieldsToValidate = [...SETUP_STEP_0_FIELDS_TO_VALIDATE]
         break
       case 1:
-        fieldsToValidate = STEP_1_FIELDS_TO_VALIDATE
+        fieldsToValidate = [...SETUP_STEP_1_FIELDS_TO_VALIDATE]
         break
       case 2:
-        fieldsToValidate = STEP_2_FIELDS_VALIDATE
+        fieldsToValidate = [...SETUP_STEP_2_FIELDS_TO_VALIDATE]
         break
       default:
         fieldsToValidate = []
@@ -254,7 +188,7 @@ export default function ProfileSetupPage() {
 
     const validation: ValidationResult = validateProfileCreateFields(formState, fieldsToValidate)
     const nextErrors = { ...validation.errors }
-    const smokingOk = ensureSmokingLevelBeforeTypes(nextErrors)
+    const smokingOk = ensureSmokingLevelBeforeTypesLocal(nextErrors)
     setErrors(nextErrors)
     return validation.isValid && smokingOk
   }
@@ -262,10 +196,14 @@ export default function ProfileSetupPage() {
 
   const validateAllFields = (): ValidationResult => {
     // Validate all fields for final submission
-    const allFields = [...STEP_0_FIELDS_TO_VALIDATE, ...STEP_1_FIELDS_TO_VALIDATE, ...STEP_2_FIELDS_VALIDATE]
+    const allFields = [
+      ...PROFILE_FIELDS_TO_VALIDATE,
+      ...ABOUT_FIELDS_TO_VALIDATE,
+      ...RENT_PREFERENCES_FIELDS_TO_VALIDATE,
+    ]
     const validation: ValidationResult = validateProfileCreateFields(formState, allFields)
     const nextErrors = { ...validation.errors }
-    const smokingOk = ensureSmokingLevelBeforeTypes(nextErrors)
+    const smokingOk = ensureSmokingLevelBeforeTypesLocal(nextErrors)
     setErrors(nextErrors)
     return { isValid: validation.isValid && smokingOk, errors: nextErrors }
   }
@@ -298,7 +236,7 @@ export default function ProfileSetupPage() {
       console.log("Final validation failed, cannot submit.");
       // Set a user-facing error message
       const prevStepErrors = Object.keys(validationResult.errors).filter(
-        fieldName => !STEP_2_FIELDS_VALIDATE.includes(fieldName)
+        fieldName => !SETUP_STEP_2_FIELDS_TO_VALIDATE.includes(fieldName as (typeof SETUP_STEP_2_FIELDS_TO_VALIDATE)[number])
       );
 
       if (prevStepErrors.length > 0) {
@@ -360,27 +298,22 @@ export default function ProfileSetupPage() {
             <Stack gap="xs">
               <h2 className="text-base font-semibold text-foreground">Profile basics</h2>
             </Stack>
-            <FormField label="Display name (Cyrillic)" error={errors['profile.name']} required>
-              <Input
-                id="name"
-                autoComplete="name"
-                value={formState.profile.name ?? ''}
-                onChange={(e) => updateFormState('profile', 'name', e.target.value || null)}
-              />
-            </FormField>
+            <DisplayNameField
+              value={formState.profile.name}
+              error={errors['profile.name']}
+              onChange={(val) => updateFormState('profile', 'name', val)}
+              onErrorClear={() => {
+                if (errors['profile.name']) setErrors((prev) => { const n={...prev}; delete n['profile.name']; return n })
+              }}
+            />
 
-            <FormField
-              label="Profile Photo"
-              description="Clear, square photos crop best."
+            <ProfilePhotoField
+              value={formState.profile.photo}
               error={errors['profile.photo']}
-            >
-              <ProfilePhotoPick
-                initialFile={formState.profile.photo}
-                onError={handlePhotoError}
-                onClearError={clearPhotoError}
-                onCropComplete={handlePhotoCropped}
-              />
-            </FormField>
+              onError={handlePhotoError}
+              onClearError={clearPhotoError}
+              onChange={handlePhotoCropped}
+            />
           </Stack>
         )
       
@@ -393,59 +326,42 @@ export default function ProfileSetupPage() {
               <p className="text-sm text-muted-foreground">Tell us the basics about your household and habits.</p>
             </Stack>
 
-            <FormField label="Birth date" error={errors['about.birth_date']} required>
-              <BirthDateSelect
-                inputId="birth_date"
-                currentValue={formState.about.birth_date}
-                onChange={(dateString) => updateFormState('about', 'birth_date', dateString)}
-              />
-            </FormField>
+            <BirthDateField
+              value={formState.about.birth_date}
+              error={errors['about.birth_date']}
+              onChange={(val) => updateFormState('about', 'birth_date', val)}
+              onErrorClear={() => {
+                if (errors['about.birth_date']) setErrors((prev) => { const n={...prev}; delete n['about.birth_date']; return n })
+              }}
+            />
 
-            <FormField label="Gender" error={errors['about.gender']} required>
-              <div className="space-y-2">
-                {[
-                  { id: 'gender_male', value: 1, label: 'Male' },
-                  { id: 'gender_female', value: 2, label: 'Female' },
-                ].map((option) => (
-                  <Label
-                    key={option.id}
-                    htmlFor={option.id}
-                    className="flex items-center gap-2 text-sm text-muted"
-                  >
-                    <Radio
-                      id={option.id}
-                      name="gender"
-                      checked={formState.about.gender === option.value}
-                      onChange={() => updateFormState('about', 'gender', option.value as 1 | 2)}
-                    />
-                    {option.label}
-                  </Label>
-                ))}
-              </div>
-            </FormField>
+            <GenderField
+              value={formState.about.gender as 1 | 2 | null}
+              error={errors['about.gender']}
+              onChange={(val) => updateFormState('about', 'gender', val)}
+              onErrorClear={() => {
+                if (errors['about.gender']) setErrors((prev) => { const n={...prev}; delete n['about.gender']; return n })
+              }}
+            />
 
             <div className="grid gap-3 md:grid-cols-2">
-              <FormField label="Apply as a couple" error={errors['about.is_couple']}>
-                <Label htmlFor="is_couple" className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Checkbox
-                    id="is_couple"
-                    checked={formState.about.is_couple === true}
-                    onChange={(e) => updateFormState('about', 'is_couple', e.target.checked)}
-                  />
-                  We’re applying as a couple
-                </Label>
-              </FormField>
+              <CoupleField
+                value={formState.about.is_couple === true}
+                error={errors['about.is_couple']}
+                onChange={(val) => updateFormState('about', 'is_couple', val)}
+                onErrorClear={() => {
+                  if (errors['about.is_couple']) setErrors((prev) => { const n={...prev}; delete n['about.is_couple']; return n })
+                }}
+              />
 
-              <FormField label="Children at home" error={errors['about.has_children']}>
-                <Label htmlFor="has_children" className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Checkbox
-                    id="has_children"
-                    checked={formState.about.has_children === true}
-                    onChange={(e) => updateFormState('about', 'has_children', e.target.checked)}
-                  />
-                  Kids live with me
-                </Label>
-              </FormField>
+              <ChildrenField
+                value={formState.about.has_children === true}
+                error={errors['about.has_children']}
+                onChange={(val) => updateFormState('about', 'has_children', val)}
+                onErrorClear={() => {
+                  if (errors['about.has_children']) setErrors((prev) => { const n={...prev}; delete n['about.has_children']; return n })
+                }}
+              />
             </div>
 
             {/* Optional Fields Accordion */}
@@ -474,353 +390,143 @@ export default function ProfileSetupPage() {
               {isAboutAccordionOpen && (
                 <div className="px-3 py-3 space-y-3">
                   <div className="grid gap-3 md:grid-cols-2">
-                    <FormField label="Occupation Type" error={errors['about.occupation_type']}>
-                      <Select
-                        id="occupation_type"
-                        value={formState.about.occupation_type ?? ''}
-                        onChange={(e) =>
-                          updateFormState(
-                            'about',
-                            'occupation_type',
-                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
-                          )
-                        }
-                      >
-                        <option value="">Select...</option>
-                        <option value="1">Employed</option>
-                        <option value="2">Student</option>
-                        <option value="3">Unemployed</option>
-                        <option value="4">Retired</option>
-                      </Select>
-                    </FormField>
+                    <OccupationField
+                      value={formState.about.occupation_type}
+                      error={errors['about.occupation_type']}
+                      onChange={(val) => updateFormState('about', 'occupation_type', val)}
+                      onErrorClear={() => {
+                        if (errors['about.occupation_type']) setErrors((prev) => { const n={...prev}; delete n['about.occupation_type']; return n })
+                      }}
+                    />
 
-                    <FormField label="Drinking Level" error={errors['about.drinking_level']}>
-                      <Select
-                        id="drinking_level"
-                        value={formState.about.drinking_level ?? ''}
-                        onChange={(e) =>
-                          updateFormState(
-                            'about',
-                            'drinking_level',
-                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
-                          )
-                        }
-                      >
-                        <option value="">Select...</option>
-                        <option value="1">Never</option>
-                        <option value="2">Rarely</option>
-                        <option value="3">Socially</option>
-                        <option value="4">Often</option>
-                      </Select>
-                    </FormField>
+                    <DrinkingLevelField
+                      value={formState.about.drinking_level}
+                      error={errors['about.drinking_level']}
+                      onChange={(val) => updateFormState('about', 'drinking_level', val)}
+                      onErrorClear={() => {
+                        if (errors['about.drinking_level']) setErrors((prev) => { const n={...prev}; delete n['about.drinking_level']; return n })
+                      }}
+                    />
 
-                    <FormField label="Neighbourliness Level" error={errors['about.neighbourliness_level']}>
-                      <Select
-                        id="neighbourliness_level"
-                        value={formState.about.neighbourliness_level ?? ''}
-                        onChange={(e) =>
-                          updateFormState(
-                            'about',
-                            'neighbourliness_level',
-                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
-                          )
-                        }
-                      >
-                        <option value="">Select...</option>
-                        <option value="1">Low</option>
-                        <option value="2">Medium</option>
-                        <option value="3">High</option>
-                      </Select>
-                    </FormField>
+                    <NeighbourlinessLevelField
+                      value={formState.about.neighbourliness_level}
+                      error={errors['about.neighbourliness_level']}
+                      onChange={(val) => updateFormState('about', 'neighbourliness_level', val)}
+                      onErrorClear={() => {
+                        if (errors['about.neighbourliness_level']) setErrors((prev) => { const n={...prev}; delete n['about.neighbourliness_level']; return n })
+                      }}
+                    />
 
-                    <FormField label="Guests Level" error={errors['about.guests_level']}>
-                      <Select
-                        id="guests_level"
-                        value={formState.about.guests_level ?? ''}
-                        onChange={(e) =>
-                          updateFormState(
-                            'about',
-                            'guests_level',
-                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
-                          )
-                        }
-                      >
-                        <option value="">Select...</option>
-                        <option value="1">Low</option>
-                        <option value="2">Medium</option>
-                        <option value="3">High</option>
-                      </Select>
-                    </FormField>
+                    <GuestsLevelField
+                      value={formState.about.guests_level}
+                      error={errors['about.guests_level']}
+                      onChange={(val) => updateFormState('about', 'guests_level', val)}
+                      onErrorClear={() => {
+                        if (errors['about.guests_level']) setErrors((prev) => { const n={...prev}; delete n['about.guests_level']; return n })
+                      }}
+                    />
 
-                    <FormField label="Parties Level" error={errors['about.parties_level']}>
-                      <Select
-                        id="parties_level"
-                        value={formState.about.parties_level ?? ''}
-                        onChange={(e) =>
-                          updateFormState(
-                            'about',
-                            'parties_level',
-                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
-                          )
-                        }
-                      >
-                        <option value="">Select...</option>
-                        <option value="1">Low</option>
-                        <option value="2">Medium</option>
-                        <option value="3">High</option>
-                      </Select>
-                    </FormField>
+                    <PartiesLevelField
+                      value={formState.about.parties_level}
+                      error={errors['about.parties_level']}
+                      onChange={(val) => updateFormState('about', 'parties_level', val)}
+                      onErrorClear={() => {
+                        if (errors['about.parties_level']) setErrors((prev) => { const n={...prev}; delete n['about.parties_level']; return n })
+                      }}
+                    />
 
-                    <FormField label="Bedtime" error={errors['about.bedtime_level']}>
-                      <Select
-                        id="bedtime_level"
-                        value={formState.about.bedtime_level ?? ''}
-                        onChange={(e) =>
-                          updateFormState(
-                            'about',
-                            'bedtime_level',
-                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
-                          )
-                        }
-                      >
-                        <option value="">Select...</option>
-                        <option value="1">Early (around 22:00)</option>
-                        <option value="2">Midnight</option>
-                        <option value="3">Late (around 02:00)</option>
-                        <option value="4">Very Late (around 04:00)</option>
-                      </Select>
-                    </FormField>
+                    <BedtimeLevelField
+                      value={formState.about.bedtime_level}
+                      error={errors['about.bedtime_level']}
+                      onChange={(val) => updateFormState('about', 'bedtime_level', val)}
+                      onErrorClear={() => {
+                        if (errors['about.bedtime_level']) setErrors((prev) => { const n={...prev}; delete n['about.bedtime_level']; return n })
+                      }}
+                    />
 
-                    <FormField label="Neatness Level" error={errors['about.neatness_level']}>
-                      <Select
-                        id="neatness_level"
-                        value={formState.about.neatness_level ?? ''}
-                        onChange={(e) =>
-                          updateFormState(
-                            'about',
-                            'neatness_level',
-                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
-                          )
-                        }
-                      >
-                        <option value="">Select...</option>
-                        <option value="1">Low</option>
-                        <option value="2">Medium</option>
-                        <option value="3">High</option>
-                      </Select>
-                    </FormField>
+                    <NeatnessLevelField
+                      value={formState.about.neatness_level}
+                      error={errors['about.neatness_level']}
+                      onChange={(val) => updateFormState('about', 'neatness_level', val)}
+                      onErrorClear={() => {
+                        if (errors['about.neatness_level']) setErrors((prev) => { const n={...prev}; delete n['about.neatness_level']; return n })
+                      }}
+                    />
 
-                    <FormField label="Smoking Level" error={errors['about.smoking_level']}>
-                      <Select
-                        id="smoking_level"
-                        value={formState.about.smoking_level ?? ''}
-                        onChange={(e) =>
-                          updateSmokingLevelAndClearTypes(
-                            e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4) : null
-                          )
-                        }
-                      >
-                        <option value="">Select...</option>
-                        <option value="1">Never</option>
-                        <option value="2">Rarely</option>
-                        <option value="3">Socially</option>
-                        <option value="4">Often</option>
-                      </Select>
-                    </FormField>
+                    <SmokingLevelField
+                      value={formState.about.smoking_level}
+                      error={errors['about.smoking_level']}
+                      onChange={(val) => updateSmokingLevelAndClearTypes(val)}
+                      onErrorClear={() => {
+                        if (errors['about.smoking_level']) setErrors((prev) => { const n={...prev}; delete n['about.smoking_level']; return n })
+                      }}
+                    />
 
-                    <FormField label="Smoking Types" hint="Select all that apply" className="col-span-2">
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
-                        {[
-                          { id: 'smokes_iqos', label: 'IQOS', field: 'smokes_iqos' as const },
-                          { id: 'smokes_vape', label: 'Vape', field: 'smokes_vape' as const },
-                          { id: 'smokes_tobacco', label: 'Tobacco', field: 'smokes_tobacco' as const },
-                          { id: 'smokes_cigs', label: 'Cigarettes', field: 'smokes_cigs' as const },
-                        ].map((option) => (
-                          <Label
-                            key={option.id}
-                            htmlFor={option.id}
-                            className="flex items-center gap-2 text-sm text-muted-foreground"
-                          >
-                            <Checkbox
-                              id={option.id}
-                              checked={formState.about[option.field] === true}
-                              onChange={(e) => updateFormState('about', option.field, e.target.checked)}
-                            />
-                            {option.label}
-                          </Label>
-                        ))}
-                      </div>
-                    </FormField>
+                    <SmokingTypesField
+                      value={{
+                        smokes_iqos: formState.about.smokes_iqos,
+                        smokes_vape: formState.about.smokes_vape,
+                        smokes_tobacco: formState.about.smokes_tobacco,
+                        smokes_cigs: formState.about.smokes_cigs,
+                      }}
+                      smokingLevel={formState.about.smoking_level}
+                      error={errors['about.smoking_level']}
+                      onChange={(field, checked) =>
+                        updateFormState(
+                          'about',
+                          field as keyof ProfileCreateFormState['about'],
+                          checked as ProfileCreateFormState['about'][typeof field]
+                        )
+                      }
+                      onErrorClear={() => {
+                        if (errors['about.smoking_level']) setErrors((prev) => { const n={...prev}; delete n['about.smoking_level']; return n })
+                      }}
+                    />
 
-                    <FormField label="I have animals" hint="Pick every animal you live with.">
-                      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-                        {animalOptions.map((animal) => (
-                          <Label
-                            key={animal.id}
-                            htmlFor={animal.id}
-                            className="flex items-center gap-2 text-sm text-muted-foreground"
-                          >
-                            <Checkbox
-                              id={animal.id}
-                              checked={formState.about[animal.field] === true}
-                              onChange={(e) => updateFormState('about', animal.field, e.target.checked)}
-                            />
-                            {animal.label}
-                          </Label>
-                        ))}
-                      </div>
-                    </FormField>
+                    <AnimalsOwnedField
+                      value={{
+                        has_cats: formState.about.has_cats,
+                        has_dogs: formState.about.has_dogs,
+                        has_reptiles: formState.about.has_reptiles,
+                        has_birds: formState.about.has_birds,
+                      }}
+                      onChange={(field, checked) =>
+                        updateFormState(
+                          'about',
+                          field as keyof ProfileCreateFormState['about'],
+                          checked as ProfileCreateFormState['about'][typeof field]
+                        )
+                      }
+                    />
 
-                    <FormField
-                      label="Other animals (up to 5)"
+                    <OtherAnimalsTagsField
+                      value={formState.about.other_animals || []}
                       error={errors['about.other_animals']}
-                      hint="Press Enter to add each animal."
-                      className="md:col-span-2"
-                    >
-                      <div className={tagInputWrapperClass}>
-                        <TagsInput
-                          isEditOnRemove
-                          value={formState.about.other_animals || []}
-                          beforeAddValidate={(newTag: string, currentTags: string[]) => {
-                            const newTagsCandidate = [...currentTags, newTag]
-                            const validationError = validators['about.other_animals'](newTagsCandidate, formState)
-                            if (validationError !== null) {
-                              setErrors((prevErrors) => ({
-                                ...prevErrors,
-                                'about.other_animals': validationError,
-                              }))
-                              return false
-                            }
-                            setErrors((prevErrors) => {
-                              const newErrors = { ...prevErrors }
-                              delete newErrors['about.other_animals']
-                              return newErrors
-                            })
-                            return true
-                          }}
-                          onChange={(tags: string[]) => {
-                            setErrors((prevErrors) => {
-                              const newErrors = { ...prevErrors }
-                              delete newErrors['about.other_animals']
-                              return newErrors
-                            })
-                            updateFormState('about', 'other_animals', tags)
-                          }}
-                          onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                            const inputValue = (e.target as HTMLInputElement).value
-                            const currentTags = formState.about.other_animals || []
-                            if (inputValue) {
-                              const newTagsCandidate = [...currentTags, inputValue]
-                              validateCurrentTagsInput('about.other_animals', newTagsCandidate, 'about.other_animals')
-                            } else {
-                              validateCurrentTagsInput('about.other_animals', currentTags, 'about.other_animals')
-                            }
-                          }}
-                          onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                            const inputElement = e.target as HTMLInputElement
-                            const inputValue = inputElement.value
-                            if (inputValue) {
-                              inputElement.value = ''
-                              setErrors((prevErrors) => {
-                                const newErrors = { ...prevErrors }
-                                delete newErrors['about.other_animals']
-                                return newErrors
-                              })
-                            }
-                          }}
-                          name="other_animals"
-                          placeholder="Press Enter to add"
-                          classNames={tagInputClassNames}
-                        />
-                      </div>
-                    </FormField>
+                      onChange={(tags) => updateFormState('about', 'other_animals', tags)}
+                      validator={(tags) => validators['about.other_animals'](tags, formState)}
+                      onErrorClear={() => {
+                        if (errors['about.other_animals']) setErrors((prev) => { const n={...prev}; delete n['about.other_animals']; return n })
+                      }}
+                    />
 
-                    <FormField
-                      label="Interests (up to 5)"
+                    <InterestsTagsField
+                      value={formState.about.interests || []}
                       error={errors['about.interests']}
-                      hint="Press Enter to add each hobby."
-                      className="md:col-span-2"
-                    >
-                      <div className={tagInputWrapperClass}>
-                        <TagsInput
-                          isEditOnRemove
-                          value={formState.about.interests || []}
-                          beforeAddValidate={(newTag: string, currentTags: string[]) => {
-                            const newTagsCandidate = [...currentTags, newTag]
-                            const validationError = validators['about.interests'](newTagsCandidate, formState)
-                            if (validationError !== null) {
-                              setErrors((prevErrors) => ({
-                                ...prevErrors,
-                                'about.interests': validationError,
-                              }))
-                              return false
-                            }
+                      onChange={(tags) => updateFormState('about', 'interests', tags)}
+                      validator={(tags) => validators['about.interests'](tags, formState)}
+                      onErrorClear={() => {
+                        if (errors['about.interests']) setErrors((prev) => { const n={...prev}; delete n['about.interests']; return n })
+                      }}
+                    />
 
-                            setErrors((prevErrors) => {
-                              const newErrors = { ...prevErrors }
-                              delete newErrors['about.interests']
-                              return newErrors
-                            })
-                            return true
-                          }}
-                          onChange={(tags) => {
-                            setErrors((prevErrors) => {
-                              const newErrors = { ...prevErrors }
-                              delete newErrors['about.interests']
-                              return newErrors
-                            })
-                            updateFormState('about', 'interests', tags)
-                          }}
-                          onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                            const inputValue = (e.target as HTMLInputElement).value
-                            const currentTags = formState.about.interests || []
-                            if (inputValue) {
-                              const newTagsCandidate = [...currentTags, inputValue]
-                              validateCurrentTagsInput('about.interests', newTagsCandidate, 'about.interests')
-                            } else {
-                              validateCurrentTagsInput('about.interests', currentTags, 'about.interests')
-                            }
-                          }}
-                          onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                            const inputElement = e.target as HTMLInputElement
-                            const inputValue = inputElement.value
-                            if (inputValue) {
-                              inputElement.value = ''
-                              setErrors((prevErrors) => {
-                                const newErrors = { ...prevErrors }
-                                delete newErrors['about.interests']
-                                return newErrors
-                              })
-                            }
-                          }}
-                          name="interests"
-                          placeholder="Press Enter to add"
-                          classNames={tagInputClassNames}
-                        />
-                      </div>
-                    </FormField>
-
-                    <FormField label="Bio (up to 1024 chars)" error={errors['about.bio']} className="md:col-span-2">
-                      <Textarea
-                        id="bio"
-                        rows={3}
-                        value={formState.about.bio ?? ''}
-                        onChange={(e) => updateFormState('about', 'bio', e.target.value || null)}
-                        className={cn(
-                          'min-h-[120px]',
-                          (errors['about.bio'] || (formState.about.bio && formState.about.bio.length > 1024)) &&
-                            'ring-2 ring-destructive'
-                        )}
-                      />
-                      <p
-                        className={cn(
-                          'text-xs',
-                          formState.about.bio && formState.about.bio.length > 1024 ? 'text-destructive' : 'text-muted-foreground'
-                        )}
-                      >
-                        {formState.about.bio ? formState.about.bio.length : 0} / 1024 characters
-                      </p>
-                    </FormField>
+                    <BioField
+                      value={formState.about.bio}
+                      error={errors['about.bio']}
+                      onChange={(val) => updateFormState('about', 'bio', val)}
+                      onErrorClear={() => {
+                        if (errors['about.bio']) setErrors((prev) => { const n={...prev}; delete n['about.bio']; return n })
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -840,123 +546,51 @@ export default function ProfileSetupPage() {
               <p className="text-sm text-muted-foreground">Set the budget, duration, and areas you want.</p>
             </Stack>
             <div className="grid gap-3 md:grid-cols-2">
-              <FormField label="Min Budget" error={errors['rent_preferences.min_budget']}>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  id="min_budget"
-                  value={formState.rent_preferences.min_budget ?? ''}
-                  onChange={(e) =>
-                    updateFormState(
-                      'rent_preferences',
-                      'min_budget',
-                      e.target.value ? Number(e.target.value) : null
-                    )
-                  }
-                  placeholder="e.g., 500"
-                />
-              </FormField>
+              <BudgetRangeField
+                min={formState.rent_preferences.min_budget}
+                max={formState.rent_preferences.max_budget}
+                minError={errors['rent_preferences.min_budget']}
+                maxError={errors['rent_preferences.max_budget']}
+                onChange={(which, val) =>
+                  updateFormState(
+                    'rent_preferences',
+                    which === 'min' ? 'min_budget' : 'max_budget',
+                    val
+                  )
+                }
+              />
 
-              <FormField label="Max Budget" error={errors['rent_preferences.max_budget']}>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  id="max_budget"
-                  value={formState.rent_preferences.max_budget ?? ''}
-                  onChange={(e) =>
-                    updateFormState(
-                      'rent_preferences',
-                      'max_budget',
-                      e.target.value ? Number(e.target.value) : null
-                    )
-                  }
-                  placeholder="e.g., 800"
-                />
-              </FormField>
+              <RentDurationRangeField
+                min={formState.rent_preferences.min_rent_duration_level}
+                max={formState.rent_preferences.max_rent_duration_level}
+                minError={errors['rent_preferences.min_rent_duration_level']}
+                maxError={errors['rent_preferences.max_rent_duration_level']}
+                onChange={(which, val) =>
+                  updateFormState(
+                    'rent_preferences',
+                    which === 'min' ? 'min_rent_duration_level' : 'max_rent_duration_level',
+                    val
+                  )
+                }
+              />
 
-              <FormField
-                label="Min Rent Duration Level"
-                error={errors['rent_preferences.min_rent_duration_level']}
-              >
-                <Select
-                  id="min_rent_duration_level"
-                  value={formState.rent_preferences.min_rent_duration_level ?? ''}
-                  onChange={(e) =>
-                    updateFormState(
-                      'rent_preferences',
-                      'min_rent_duration_level',
-                      e.target.value ? Number(e.target.value) : null
-                    )
-                  }
-                >
-                  <option value="">Select...</option>
-                  <option value="1">1 month</option>
-                  <option value="2">2 months</option>
-                  <option value="3">3 months</option>
-                  <option value="4">6 months</option>
-                  <option value="5">1 year</option>
-                </Select>
-              </FormField>
-
-              <FormField
-                label="Max Rent Duration Level"
-                error={errors['rent_preferences.max_rent_duration_level']}
-              >
-                <Select
-                  id="max_rent_duration_level"
-                  value={formState.rent_preferences.max_rent_duration_level ?? ''}
-                  onChange={(e) =>
-                    updateFormState(
-                      'rent_preferences',
-                      'max_rent_duration_level',
-                      e.target.value ? Number(e.target.value) : null
-                    )
-                  }
-                >
-                  <option value="">Select...</option>
-                  <option value="1">1 month</option>
-                  <option value="2">2 months</option>
-                  <option value="3">3 months</option>
-                  <option value="4">6 months</option>
-                  <option value="5">1 year</option>
-                </Select>
-              </FormField>
-
-              <FormField
-                label="Room Sharing Level"
+              <RoomSharingLevelField
+                value={formState.rent_preferences.room_sharing_level}
                 error={errors['rent_preferences.room_sharing_level']}
-              >
-                <Select
-                  id="room_sharing_level"
-                  value={formState.rent_preferences.room_sharing_level ?? ''}
-                  onChange={(e) =>
-                    updateFormState(
-                      'rent_preferences',
-                      'room_sharing_level',
-                      e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : null
-                    )
-                  }
-                >
-                  <option value="">Select...</option>
-                  <option value="1">Private Room Only</option>
-                  <option value="2">Shared Room Possible</option>
-                  <option value="3">Flexible (Any Arrangement)</option>
-                </Select>
-              </FormField>
+                onChange={(val) => updateFormState('rent_preferences', 'room_sharing_level', val)}
+                onErrorClear={() => {
+                  if (errors['rent_preferences.room_sharing_level'])
+                    setErrors((prev) => { const n={...prev}; delete n['rent_preferences.room_sharing_level']; return n })
+                }}
+              />
             </div>
 
-            <FormField
-              label="Locations"
-              hint="Pick up to 30 distinct areas; overlaps auto-clear."
-              error={undefined}
-            >
-              <Locations
-                selectedLocations={formState.rent_preferences.locations as string[]}
-                onLocationsChange={(newLocations) => updateFormState('rent_preferences', 'locations', newLocations)}
-                error={locationsApiError || errors['rent_preferences.locations']}
-                onClearError={clearLocationsApiError}
-              />
-            </FormField>
+            <LocationsField
+              value={formState.rent_preferences.locations as string[]}
+              error={locationsApiError || errors['rent_preferences.locations']}
+              onChange={(locs) => updateFormState('rent_preferences', 'locations', locs)}
+              onClearError={clearLocationsApiError}
+            />
           </Stack>
         )
       default:
@@ -979,7 +613,7 @@ export default function ProfileSetupPage() {
                 <h1 className="text-base font-bold leading-tight text-foreground">Wrap up your flatmate profile</h1>
               </Stack>
 
-              <div className="space-y-2 rounded-[var(--radius-lg)] bg-brand-weak/40 p-3">
+              <div className="space-y-2 rounded-[var(--radius-lg)] bg-brand-weak p-3">
                 <div className="flex items-center gap-3 text-sm font-medium text-foreground">
                   {STEPS.map((step, index) => {
                     const isPast = index < currentStep

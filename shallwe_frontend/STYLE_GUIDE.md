@@ -9,6 +9,7 @@ Single-source rules, now aligned to the Figma export palette (DeepBlue/Blue2/Cor
   - Text → `text-foreground` (DeepBlue #182f53), `text-muted-foreground` (slate-blue #5a6a85)
   - Accent/brand → `bg-primary`/`text-primary` (DeepBlue), `bg-accent` (Coral blue #259ac2), `bg-brand-weak` (Blue2 #a5d2eb)
   - Status fills → `bg-success-soft`, `bg-warning-soft`, `bg-destructive-soft`; overlays must use `bg-overlay`
+- **No opacity hacks** – Never use slash-opacity utilities (e.g., `bg-brand-weak/40`). Use the solid soft tokens above; if you need a softer fill, add a token first.
 - **Borders & inputs** – `border-border`, `ring-primary`, and `bg-card`. Skip opacity utilities entirely; rely on the provided solid tokens for any subtle fills.
 - **Radii** – matches Figma 10px cards: `--radius-xs` = 2px, `--radius-sm` = 4px, `--radius-md` = 6px, `--radius-lg` = 10px. Use `rounded-[var(--radius-sm)]` for controls, `rounded-[var(--radius-lg)]` for sections/cards, and avoid bigger Tailwind radius utilities.
 - **Shadows** – `shadow-[var(--shadow-soft)]` or `shadow-[var(--shadow-card)]` only.
@@ -33,7 +34,7 @@ Single-source rules, now aligned to the Figma export palette (DeepBlue/Blue2/Cor
 
 ### Components
 
-- All new UI **must** import from `src/components/ui/*` (Button, Card, Alert, Input, Select, Textarea, Checkbox, Radio, Stack, Section, FormField, MetaPill). Do not hand-roll Tailwind blobs inside pages.
+- All new UI **must** import from `src/app/components/ui/primitives/*` for primitives (Button, Card, Alert, Input, Select, Textarea, Checkbox, Radio, Stack, Section, FormField, MetaPill). Do not hand-roll Tailwind blobs inside pages.
 - Inputs, selects, textareas, radios, and checkboxes inherit `--radius-sm`, `bg-card`, and `ring-primary` via the shared primitives.
 - To introduce a new semantic color/spacing token: add it to `@theme` in `globals.css`, re-run Tailwind, then surface it via the UI primitives. Never drop raw hex/HSL directly into JSX.
 
@@ -55,7 +56,7 @@ Single-source rules, now aligned to the Figma export palette (DeepBlue/Blue2/Cor
 
 ### Self-check Before Shipping
 
-1. Re-read the [official shadcn docs](https://ui.shadcn.com/docs) checklist: verify components stay inside `src/components/ui` and rely on Tailwind tokens.
+1. Re-read the [official shadcn docs](https://ui.shadcn.com/docs) checklist: verify components stay inside `src/app/components/ui/primitives` and rely on Tailwind tokens.
 2. Run `npm run lint` and `npm run build -- --no-lint`; builds must pass before review.
 3. Inspect the page in the browser, toggling devtools to confirm no raw `#hex` or inline styles slipped in.
 4. Ensure any new primitive updates `STYLE_GUIDE.md` and is referenced from `PROGRES.md` if it adds a new guardrail.

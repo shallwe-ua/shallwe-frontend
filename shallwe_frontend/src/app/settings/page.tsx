@@ -9,15 +9,15 @@ import { deleteUser } from '@/lib/shallwe/auth/api/calls' // Import delete API c
 import { ProfileReadData } from '@/lib/shallwe/profile/api/schema/read' // Import the read data type
 import { ApiError } from '@/lib/shallwe/common/api/calls' // Import ApiError type
 import { ProfileEditView } from '../components/profile/ProfileEditView'
-import PhotoWithFallbacks from '../components/profile/PhotoWithFallbacks'
+import PhotoWithFallbacks from '../components/ui/PhotoWithFallbacks'
 import { LocationsReadFields } from '@/lib/shallwe/locations/api/schema'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert } from '@/components/ui/alert'
-import { Stack } from '@/components/ui/stack'
-import { Section } from '@/components/ui/section'
-import { MetaPill } from '@/components/ui/meta-pill'
-import { FormField } from '@/components/ui/form-field'
+import { Button } from '@/app/components/ui/primitives/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/primitives/card'
+import { Alert } from '@/app/components/ui/primitives/alert'
+import { Stack } from '@/app/components/ui/primitives/stack'
+import { Section } from '@/app/components/ui/primitives/section'
+import { MetaPill } from '@/app/components/ui/primitives/meta-pill'
+import { FormField } from '@/app/components/ui/primitives/form-field'
 import { cn } from '@/lib/utils'
 
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { isBefore, isAfter, parseISO } from 'date-fns'
-import { Select } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
+import { Select } from '@/app/components/ui/primitives/select'
+import { Button } from '@/app/components/ui/primitives/button'
+import { Label } from '@/app/components/ui/primitives/label'
 import { cn } from '@/lib/utils'
 
 

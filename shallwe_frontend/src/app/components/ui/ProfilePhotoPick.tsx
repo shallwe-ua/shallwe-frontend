@@ -2,11 +2,8 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 
 import Cropper, { Area, Point } from 'react-easy-crop'
 
-import { ApiError } from '@/lib/shallwe/common/api/calls'
-import { performFacecheck } from '@/lib/shallwe/photo/api/calls'
-import { validateProfilePhotoFile } from '@/lib/shallwe/photo/formstates/validators'
 import PhotoWithFallbacks, { PhotoGlyphPlaceholder } from './PhotoWithFallbacks'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/app/components/ui/primitives/button'
 
 
 type Crop = Point // Type alias for {x, y} point
@@ -20,6 +17,8 @@ interface ProfilePhotoPickProps {
   onClearError: () => void
   onCropComplete: (croppedFile: File) => void
   mode?: 'setup' | 'edit'
+  validateRawFile?: (file: File) => string | null
+  validateCroppedFile?: (file: File) => Promise<string | null>
 }
 
 
@@ -30,6 +29,8 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
   onClearError, 
   onCropComplete,
   mode = 'setup',
+  validateRawFile,
+  validateCroppedFile,
 }) => {
   
   const [imageSrc, setImageSrc] = useState<string | null>(null); // Source for the image to crop (from new file)
@@ -137,7 +138,7 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
 
       // --- RUN THE SPECIFIC VALIDATOR FOR THE RAW FILE ---
       // Pass the raw file directly to the dedicated validator
-      const fieldError = validateProfilePhotoFile(file) // Call the specific validator
+      const fieldError = validateRawFile ? validateRawFile(file) : null
 
       if (fieldError) {
           // Validator failed for the raw file
@@ -246,40 +247,27 @@ const ProfilePhotoPick: React.FC<ProfilePhotoPickProps> = ({
 
       // Convert blob to file - this is the final file that will be validated and sent
       const croppedFile = new File([croppedBlob], selectedRawFile.name, { type: selectedRawFile.type })
-
-      // Perform facecheck API call with the cropped file
-      const facecheckResult = await performFacecheck(croppedFile)
-
-      // Check the result of the facecheck API call
-      if (facecheckResult.success) {
-        setFinalCroppedFile(croppedFile)
-        setCommittedCroppedFile(croppedFile)
-        onCropComplete(croppedFile)
-        onClearError()
-        setSelectedRawFile(null)
-        setImageSrc(null)
-        setCrop({ x: 0, y: 0 })
-        setZoom(1)
-        setCroppedAreaPixels(null)
-      } else {
-        onError(facecheckResult.error || 'Facecheck failed. Please ensure your photo contains a clear face.')
-        setFinalCroppedFile(null)
+      if (validateCroppedFile) {
+        const validationError = await validateCroppedFile(croppedFile)
+        if (validationError) {
+          onError(validationError)
+          setFinalCroppedFile(null)
+          return
+        }
       }
+
+      setFinalCroppedFile(croppedFile)
+      setCommittedCroppedFile(croppedFile)
+      onCropComplete(croppedFile)
+      onClearError()
+      setSelectedRawFile(null)
+      setImageSrc(null)
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setCroppedAreaPixels(null)
     } catch (error) {
-      console.error('Error during facecheck:', error)
-      // Handle API errors (e.g., network issues, 400 bad request from facecheck)
-      let errorMessage = 'An error occurred during photo validation.'
-      if (error && typeof error === 'object' && 'details' in error) {
-          const apiError = error as ApiError
-          if (apiError.details && typeof apiError.details === 'object' && 'error' in apiError.details) {
-              const apiErrorMsg = apiError.details.error
-              errorMessage = typeof apiErrorMsg === 'string' ? apiErrorMsg : JSON.stringify(apiErrorMsg)
-          } else if (apiError.message) {
-              errorMessage = apiError.message
-          }
-      } else if (error instanceof Error) {
-          errorMessage = error.message
-      }
+      console.error('Error during crop apply:', error)
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred during photo validation.'
       onError(errorMessage)
       setFinalCroppedFile(null) // Clear the final file state as it's invalid
     } finally {
